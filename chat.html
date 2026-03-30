@@ -155,17 +155,38 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
   border-radius: 50%;
   display: inline-block;
 }
-.kick-btn {
-  background: rgba(253,121,168,0.2);
+.kick-btn, .ban-btn, .invite-btn {
   border: none;
-  color: #fd79a8;
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 0.7rem;
   cursor: pointer;
   font-family: 'Nunito', sans-serif;
+  margin-left: 3px;
 }
+.kick-btn { background: rgba(253,121,168,0.2); color: #fd79a8; }
 .kick-btn:hover { background: rgba(253,121,168,0.4); }
+.ban-btn { background: rgba(255,50,50,0.2); color: #ff5555; }
+.ban-btn:hover { background: rgba(255,50,50,0.4); }
+.invite-btn { background: rgba(108,92,231,0.2); color: #a29bfe; }
+.invite-btn:hover { background: rgba(108,92,231,0.4); }
+.member-actions { display: flex; gap: 3px; flex-shrink: 0; }
+.invite-toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,40,0.95); border: 1px solid rgba(108,92,231,0.5);
+  border-radius: 14px; padding: 14px 20px; z-index: 10000;
+  font-family: 'Nunito', sans-serif; color: #e0e0e0; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5); max-width: 320px; width: 90%;
+  animation: slideUp 0.3s ease;
+}
+.invite-toast .invite-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+.invite-toast button {
+  padding: 6px 18px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem;
+}
+.invite-accept { background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; }
+.invite-decline { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+@keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
 
 /* Main chat area */
 .chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -811,6 +832,7 @@ function listenRooms() {
     for (const [id, room] of Object.entries(rooms)) {
       if (!room.name) continue;
       roomOwnerCache[id] = room.ownerId;
+      _roomNameCache[id] = room.name;
       const memberCount = room.members ? Object.keys(room.members).length : 0;
       const div = document.createElement('div');
       div.className = 'room-item' + (id === currentRoomId ? ' active' : '');
@@ -823,6 +845,21 @@ function listenRooms() {
 
 // Join room
 function joinRoom(roomId, roomName) {
+  // Check room-level ban first
+  if (roomId !== LOBBY_ID) {
+    db.ref(`rooms/${roomId}/banned/${currentUser.userId}`).once('value', snap => {
+      if (snap.val()) {
+        appendSystemMessage('You are banned from that room.');
+        return;
+      }
+      _doJoinRoom(roomId, roomName);
+    });
+    return;
+  }
+  _doJoinRoom(roomId, roomName);
+}
+
+function _doJoinRoom(roomId, roomName) {
   // Leave current room
   leaveCurrentRoom();
 
@@ -904,14 +941,29 @@ function listenMembers(roomId) {
     roomInfo.textContent = count + ' member' + (count !== 1 ? 's' : '');
     membersList.innerHTML = '';
     const isOwner = roomOwnerCache[roomId] === currentUser.userId;
+    const isInLobby = roomId === LOBBY_ID;
+    // Check if current user owns any custom rooms (for invite buttons)
+    const myRooms = [];
+    if (isInLobby) {
+      for (const [rid, oid] of Object.entries(roomOwnerCache)) {
+        if (oid === currentUser.userId && rid !== LOBBY_ID) myRooms.push(rid);
+      }
+    }
     for (const [uid, m] of Object.entries(members)) {
       const div = document.createElement('div');
       div.className = 'member-item';
-      let kickHtml = '';
-      if (isOwner && uid !== currentUser.userId && roomId !== LOBBY_ID) {
-        kickHtml = `<button class="kick-btn" data-uid="${uid}">Kick</button>`;
+      let actionsHtml = '';
+      const isMe = uid === currentUser.userId;
+      if (!isMe) {
+        if (isInLobby && myRooms.length > 0) {
+          // In lobby: show invite button if I own a room
+          actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button></div>`;
+        } else if (!isInLobby && isOwner) {
+          // In custom room as owner: show kick and ban
+          actionsHtml = `<div class="member-actions"><button class="kick-btn" data-uid="${uid}">Kick</button><button class="ban-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Ban</button></div>`;
+        }
       }
-      div.innerHTML = `<span class="member-name"><span class="online-dot"></span>${escapeHtml(m.name || 'Unknown')}</span>${kickHtml}`;
+      div.innerHTML = `<span class="member-name"><span class="online-dot"></span>${escapeHtml(m.name || 'Unknown')}</span>${actionsHtml}`;
       membersList.appendChild(div);
     }
     // Kick handlers
@@ -920,9 +972,105 @@ function listenMembers(roomId) {
         const uid = btn.dataset.uid;
         db.ref(`rooms/${roomId}/kicked/${uid}`).set(true);
         db.ref(`rooms/${roomId}/members/${uid}`).remove();
+        appendSystemMessage('User has been kicked.');
+      };
+    });
+    // Ban handlers (room-level ban + kick)
+    membersList.querySelectorAll('.ban-btn').forEach(btn => {
+      btn.onclick = () => {
+        const uid = btn.dataset.uid;
+        const name = btn.dataset.name;
+        if (confirm(`Ban ${name} from this room permanently?`)) {
+          db.ref(`rooms/${roomId}/banned/${uid}`).set({name: name, bannedAt: Date.now()});
+          db.ref(`rooms/${roomId}/kicked/${uid}`).set(true);
+          db.ref(`rooms/${roomId}/members/${uid}`).remove();
+          appendSystemMessage(`${name} has been banned from this room.`);
+        }
+      };
+    });
+    // Invite handlers
+    membersList.querySelectorAll('.invite-btn').forEach(btn => {
+      btn.onclick = () => {
+        const uid = btn.dataset.uid;
+        const name = btn.dataset.name;
+        if (myRooms.length === 1) {
+          // Only one room, invite directly
+          sendInvite(uid, name, myRooms[0]);
+        } else {
+          // Multiple rooms, pick one
+          const roomNames = myRooms.map(rid => {
+            const rdata = roomOwnerCache[rid] ? rid : rid;
+            return rid;
+          });
+          // Simple: just use first room for now, or show picker
+          const pick = prompt('Which room? Enter room number:\\n' + myRooms.map((rid,i)=>`${i+1}. ${getRoomName(rid)}`).join('\\n'));
+          const idx = parseInt(pick) - 1;
+          if (idx >= 0 && idx < myRooms.length) sendInvite(uid, name, myRooms[idx]);
+        }
       };
     });
   });
+}
+
+// Room name lookup
+let _roomNameCache = {};
+function getRoomName(roomId) { return _roomNameCache[roomId] || roomId; }
+
+// Send invite to a user
+function sendInvite(targetUid, targetName, roomId) {
+  db.ref(`invites/${targetUid}/${roomId}`).set({
+    from: currentUser.userId,
+    fromName: currentUser.username,
+    roomId: roomId,
+    roomName: getRoomName(roomId),
+    timestamp: Date.now()
+  });
+  appendSystemMessage(`Invited ${targetName} to ${getRoomName(roomId)}`);
+}
+
+// Listen for invites to current user
+function listenInvites() {
+  db.ref(`invites/${currentUser.userId}`).on('child_added', snap => {
+    const inv = snap.val();
+    if (!inv) return;
+    const key = snap.key;
+    showInviteToast(inv, key);
+  });
+}
+
+function showInviteToast(inv, key) {
+  // Remove existing toasts
+  document.querySelectorAll('.invite-toast').forEach(el => el.remove());
+  const toast = document.createElement('div');
+  toast.className = 'invite-toast';
+  toast.innerHTML = `
+    <div style="font-size:13px;"><strong>${escapeHtml(inv.fromName)}</strong> invited you to</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#a29bfe;margin:4px 0;">${escapeHtml(inv.roomName)}</div>
+    <div class="invite-actions">
+      <button class="invite-accept" onclick="acceptInvite('${key}','${escapeHtml(inv.roomName)}')">Join</button>
+      <button class="invite-decline" onclick="declineInvite('${key}')">Decline</button>
+    </div>`;
+  document.body.appendChild(toast);
+  // Auto-dismiss after 15s
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 15000);
+}
+
+function acceptInvite(roomId, roomName) {
+  document.querySelectorAll('.invite-toast').forEach(el => el.remove());
+  db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
+  // Check if banned from this room
+  db.ref(`rooms/${roomId}/banned/${currentUser.userId}`).once('value', snap => {
+    if (snap.val()) {
+      appendSystemMessage('You are banned from that room.');
+    } else {
+      joinRoom(roomId, roomName);
+    }
+  });
+}
+
+function declineInvite(roomId) {
+  document.querySelectorAll('.invite-toast').forEach(el => el.remove());
+  db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
 }
 
 // Listen for being kicked
@@ -985,6 +1133,7 @@ function initChat() {
   userDisplay.textContent = currentUser.username;
   ensureLobby();
   listenRooms();
+  listenInvites();
   // Small delay to ensure lobby exists
   setTimeout(() => joinRoom(LOBBY_ID, 'Lobby'), 500);
 }
