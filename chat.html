@@ -519,6 +519,119 @@ function getCookie(name) {
   return v ? decodeURIComponent(v[2]) : null;
 }
 
+// Moderation system
+const _PF=JSON.parse(atob('WyJmdWNrIiwgInNoaXQiLCAiYXNzIiwgImJpdGNoIiwgImRhbW4iLCAiaGVsbCIsICJkaWNrIiwgInB1c3N5IiwgImNvY2siLCAiY3VudCIsICJiYXN0YXJkIiwgInNsdXQiLCAid2hvcmUiLCAibmlnZ2VyIiwgIm5pZ2dhIiwgImZhZ2dvdCIsICJmYWciLCAicmV0YXJkIiwgInJldGFyZGVkIiwgInBlbmlzIiwgInZhZ2luYSIsICJib29iIiwgImJvb2JzIiwgInRpdHMiLCAidGl0dHkiLCAiZGlsZG8iLCAiYmxvd2pvYiIsICJoYW5kam9iIiwgImFuYWwiLCAiYW51cyIsICJidXR0IiwgImJ1dHRob2xlIiwgImFzc2hvbGUiLCAiYXJzZWhvbGUiLCAiYm9sbG9ja3MiLCAid2Fua2VyIiwgInR3YXQiLCAicHJpY2siLCAibW90aGVyZnVja2VyIiwgImZ1Y2tlciIsICJmdWNraW5nIiwgInNoaXR0eSIsICJidWxsc2hpdCIsICJnb2RkYW1uIiwgImphY2thc3MiLCAiZHVtYmFzcyIsICJiYWRhc3MiLCAic21hcnRhc3MiLCAiZmF0YXNzIiwgImxtYW8iLCAic3RmdSIsICJ3dGYiLCAia3lzIiwgImtpbGwgeW91cnNlbGYiLCAiZGllIiwgInJhcGUiLCAicmFwaXN0IiwgIm1vbGVzdCIsICJwZWRvIiwgInBlZG9waGlsZSIsICJuYXppIiwgImhpdGxlciIsICJwb3JuIiwgInBvcm5vIiwgInBvcm5vZ3JhcGh5IiwgInNleCIsICJzZXh5IiwgIm51ZGUiLCAibmFrZWQiLCAiaG9ybnkiLCAiZXJlY3Rpb24iLCAib3JnYXNtIiwgImN1bSIsICJzZW1lbiIsICJzcGVybSIsICJoZW50YWkiLCAieHh4IiwgImNvY2FpbmUiLCAiaGVyb2luIiwgIm1ldGgiLCAid2VlZCIsICJkcnVncyIsICJtYXJpanVhbmEiLCAic3VpY2lkIiwgInNob290IiwgImd1biIsICJib21iIiwgInRlcnJvcmlzdCIsICJtdXJkZXIiXQ=='));
+let _userIP = null;
+let _isBanned = false;
+
+// Get user IP
+fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{_userIP=d.ip;checkIPBan();}).catch(()=>{});
+
+function containsProfanity(text) {
+  const lower = text.toLowerCase().replace(/[^a-z ]/g,'');
+  // Also check with spaces removed for bypass attempts like "f u c k"
+  const nospace = lower.replace(/\s/g,'');
+  for (const w of _PF) {
+    if (lower.includes(w) || nospace.includes(w)) return true;
+  }
+  // Check l33tspeak: a=@/4, e=3, i=1/!, o=0, s=$, t=7
+  const deleet = text.toLowerCase()
+    .replace(/@/g,'a').replace(/4/g,'a')
+    .replace(/3/g,'e').replace(/1/g,'i').replace(/!/g,'i')
+    .replace(/0/g,'o').replace(/\$/g,'s').replace(/7/g,'t')
+    .replace(/[^a-z ]/g,'');
+  const deleetnospace = deleet.replace(/\s/g,'');
+  for (const w of _PF) {
+    if (deleet.includes(w) || deleetnospace.includes(w)) return true;
+  }
+  return false;
+}
+
+function banUser(reason) {
+  _isBanned = true;
+  // Record ban in Firebase
+  const banData = {
+    userId: currentUser.userId,
+    username: currentUser.username,
+    ip: _userIP,
+    reason: reason,
+    timestamp: Date.now()
+  };
+  db.ref('bans/users/' + currentUser.userId).set(banData);
+  if (_userIP) db.ref('bans/ips/' + _userIP.replace(/\./g,'_')).set(banData);
+  // Clear all cookies and storage
+  localStorage.removeItem('averthan_userId');
+  localStorage.removeItem('averthan_username');
+  localStorage.removeItem('av_userId');
+  localStorage.removeItem('av_username');
+  document.cookie='averthan_userId=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+  document.cookie='averthan_username=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+  document.cookie='av_userId=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+  document.cookie='av_username=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+  // Set banned cookie (hard to clear)
+  const exp = new Date(Date.now()+365*86400000).toUTCString();
+  document.cookie='av_banned=1;expires='+exp+';path=/;SameSite=Lax';
+  showBanScreen();
+}
+
+function showBanScreen() {
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;
+      background:#0a0a1a;font-family:'Nunito',sans-serif;text-align:center;padding:20px;">
+      <div>
+        <div style="font-size:64px;margin-bottom:16px;">🚫</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:28px;color:#fd79a8;margin-bottom:12px;">
+          You've Been Banned
+        </div>
+        <div style="color:rgba(255,255,255,0.5);font-size:14px;max-width:400px;line-height:1.6;">
+          Your account has been permanently banned for using inappropriate language. 
+          This is a kid-friendly community. This ban cannot be appealed.
+        </div>
+        <a href="index.html" style="display:inline-block;margin-top:24px;padding:10px 24px;
+          border-radius:12px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);
+          text-decoration:none;font-size:13px;">Return to Games</a>
+      </div>
+    </div>`;
+}
+
+function checkBanOnLoad() {
+  // Check banned cookie
+  if (document.cookie.split(';').some(c=>c.trim().startsWith('av_banned='))) {
+    _isBanned = true;
+    showBanScreen();
+    return true;
+  }
+  return false;
+}
+
+function checkIPBan() {
+  if (!_userIP || _isBanned) return;
+  db.ref('bans/ips/' + _userIP.replace(/\./g,'_')).once('value', snap => {
+    if (snap.val()) {
+      _isBanned = true;
+      const exp = new Date(Date.now()+365*86400000).toUTCString();
+      document.cookie='av_banned=1;expires='+exp+';path=/;SameSite=Lax';
+      showBanScreen();
+    }
+  });
+}
+
+function checkUserBan(userId) {
+  return db.ref('bans/users/' + userId).once('value').then(snap => {
+    if (snap.val()) {
+      _isBanned = true;
+      const exp = new Date(Date.now()+365*86400000).toUTCString();
+      document.cookie='av_banned=1;expires='+exp+';path=/;SameSite=Lax';
+      showBanScreen();
+      return true;
+    }
+    return false;
+  });
+}
+
+// Check ban immediately
+if (checkBanOnLoad()) throw new Error('banned');
+
 // User management
 let currentUser = { userId: null, username: null };
 let currentRoomId = LOBBY_ID;
@@ -553,6 +666,8 @@ function loadUser() {
   if (userId && username) {
     currentUser = { userId, username };
     saveUser(userId, username); // sync both stores
+    // Check if this user is banned
+    checkUserBan(userId);
     return true;
   }
   return false;
@@ -604,6 +719,10 @@ function submitUsername() {
   const name = usernameInput.value.trim();
   if (!validateUsername(name)) {
     usernameError.textContent = '2-20 characters, letters, numbers & spaces only';
+    return;
+  }
+  if (containsProfanity(name)) {
+    usernameError.textContent = 'That name contains inappropriate language.';
     return;
   }
   usernameError.textContent = '';
@@ -830,8 +949,13 @@ function appendSystemMessage(text) {
 
 // Send message
 function sendMessage() {
+  if (_isBanned) return;
   const text = msgInput.value.trim();
   if (!text) return;
+  if (containsProfanity(text)) {
+    banUser(text);
+    return;
+  }
   msgInput.value = '';
   db.ref(`rooms/${currentRoomId}/messages`).push({
     userId: currentUser.userId,

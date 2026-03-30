@@ -550,6 +550,9 @@
             document.getElementById('playerBanner').style.display = 'flex';
         }
 
+        const _PF=JSON.parse(atob('WyJmdWNrIiwgInNoaXQiLCAiYXNzIiwgImJpdGNoIiwgImRhbW4iLCAiaGVsbCIsICJkaWNrIiwgInB1c3N5IiwgImNvY2siLCAiY3VudCIsICJiYXN0YXJkIiwgInNsdXQiLCAid2hvcmUiLCAibmlnZ2VyIiwgIm5pZ2dhIiwgImZhZ2dvdCIsICJmYWciLCAicmV0YXJkIiwgInJldGFyZGVkIiwgInBlbmlzIiwgInZhZ2luYSIsICJib29iIiwgImJvb2JzIiwgInRpdHMiLCAidGl0dHkiLCAiZGlsZG8iLCAiYmxvd2pvYiIsICJoYW5kam9iIiwgImFuYWwiLCAiYW51cyIsICJidXR0IiwgImJ1dHRob2xlIiwgImFzc2hvbGUiLCAiYXJzZWhvbGUiLCAiYm9sbG9ja3MiLCAid2Fua2VyIiwgInR3YXQiLCAicHJpY2siLCAibW90aGVyZnVja2VyIiwgImZ1Y2tlciIsICJmdWNraW5nIiwgInNoaXR0eSIsICJidWxsc2hpdCIsICJnb2RkYW1uIiwgImphY2thc3MiLCAiZHVtYmFzcyIsICJiYWRhc3MiLCAic21hcnRhc3MiLCAiZmF0YXNzIiwgImxtYW8iLCAic3RmdSIsICJ3dGYiLCAia3lzIiwgImtpbGwgeW91cnNlbGYiLCAiZGllIiwgInJhcGUiLCAicmFwaXN0IiwgIm1vbGVzdCIsICJwZWRvIiwgInBlZG9waGlsZSIsICJuYXppIiwgImhpdGxlciIsICJwb3JuIiwgInBvcm5vIiwgInBvcm5vZ3JhcGh5IiwgInNleCIsICJzZXh5IiwgIm51ZGUiLCAibmFrZWQiLCAiaG9ybnkiLCAiZXJlY3Rpb24iLCAib3JnYXNtIiwgImN1bSIsICJzZW1lbiIsICJzcGVybSIsICJoZW50YWkiLCAieHh4IiwgImNvY2FpbmUiLCAiaGVyb2luIiwgIm1ldGgiLCAid2VlZCIsICJkcnVncyIsICJtYXJpanVhbmEiLCAic3VpY2lkIiwgInNob290IiwgImd1biIsICJib21iIiwgInRlcnJvcmlzdCIsICJtdXJkZXIiXQ=='));
+        function nameHasProfanity(t){const l=t.toLowerCase().replace(/[^a-z ]/g,'');const n=l.replace(/\s/g,'');for(const w of _PF){if(l.includes(w)||n.includes(w))return true;}return false;}
+
         function submitWelcome(){
             const input = document.getElementById('welcomeName');
             let name = input.value.trim().replace(/[^a-zA-Z0-9 ]/g,'');
@@ -557,6 +560,13 @@
                 input.style.borderColor='#fd79a8';
                 input.value='';
                 input.setAttribute('placeholder','Please enter at least 2 characters!');
+                input.focus();
+                return;
+            }
+            if(nameHasProfanity(name)){
+                input.style.borderColor='#fd79a8';
+                input.value='';
+                input.setAttribute('placeholder','That name is not allowed!');
                 input.focus();
                 return;
             }
