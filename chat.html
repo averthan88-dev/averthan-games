@@ -541,13 +541,15 @@ function validateUsername(name) {
 function saveUser(userId, username) {
   localStorage.setItem('averthan_userId', userId);
   localStorage.setItem('averthan_username', username);
+  localStorage.setItem('av_userId', userId);
+  localStorage.setItem('av_username', username);
   setCookie('averthan_userId', userId, 30);
   setCookie('averthan_username', username, 30);
 }
 
 function loadUser() {
-  let userId = localStorage.getItem('averthan_userId') || getCookie('averthan_userId');
-  let username = localStorage.getItem('averthan_username') || getCookie('averthan_username');
+  let userId = localStorage.getItem('averthan_userId') || localStorage.getItem('av_userId') || getCookie('averthan_userId');
+  let username = localStorage.getItem('averthan_username') || localStorage.getItem('av_username') || getCookie('averthan_username');
   if (userId && username) {
     currentUser = { userId, username };
     saveUser(userId, username); // sync both stores
