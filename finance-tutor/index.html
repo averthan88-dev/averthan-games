@@ -218,14 +218,15 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 
 <script>
 // ── ELEVENLABS TTS ──
-var XI_KEY='sk_939be73bcd0a9ef45fde7aadb962fb5c327addd2285c6df0';
+var XI_KEY='sk_829c7c66b4f149beb858b00101142d9aca349e29ad67e218';
 var XI_VOICE='hpp4J3VqNfWAUOO0d1Us';
 var curAudio=null, voiceCache={};
 function speak(text,cb){
   if(curAudio){curAudio.pause();curAudio=null;}
   if(voiceCache[text]){var a=new Audio(voiceCache[text]);curAudio=a;a.onended=cb||null;a.play().catch(function(){});return;}
-  fetch('https://api.elevenlabs.io/v1/text-to-speech/'+XI_VOICE,{method:'POST',headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},body:JSON.stringify({text:text,model_id:'eleven_v3',voice_settings:{stability:0.5,similarity_boost:0.75,style:0.3}})}).then(function(r){return r.blob()}).then(function(b){var u=URL.createObjectURL(b);voiceCache[text]=u;var a=new Audio(u);curAudio=a;a.onended=cb||null;a.play().catch(function(){});}).catch(function(){});
+  fetch('https://api.elevenlabs.io/v1/text-to-speech/'+XI_VOICE,{method:'POST',headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},body:JSON.stringify({text:text,model_id:'eleven_v3',voice_settings:{stability:0.5,similarity_boost:0.75,style:0.3}})}).then(function(r){if(!r.ok){speakFallback(text,cb);throw new Error('API error');}return r.blob();}).then(function(b){var u=URL.createObjectURL(b);voiceCache[text]=u;var a=new Audio(u);curAudio=a;a.onended=cb||null;a.play().catch(function(){});}).catch(function(e){if(e.message!=='API error')speakFallback(text,cb);});
 }
+function speakFallback(t,cb){if('speechSynthesis' in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.rate=0.95;u.pitch=1.15;u.onend=cb||null;speechSynthesis.speak(u);}}
 
 // ── LESSONS DATA ──
 var TOPICS = [
