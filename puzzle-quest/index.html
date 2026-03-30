@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Puzzle Quest 🧩</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);
+  --card:rgba(255,255,255,0.95);
+  --correct:#00c853;--wrong:#ff1744;--gold:#ffd700;
+  --shadow:0 8px 32px rgba(0,0,0,0.15);
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;display:flex;justify-content:center;align-items:flex-start;overflow-x:hidden;padding:10px 0;}
+.container{width:100%;max-width:480px;padding:16px;text-align:center;}
+.screen{display:none;}.screen.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+.card{background:var(--card);border-radius:20px;padding:24px;margin:12px 0;box-shadow:var(--shadow);}
+.title{font-family:'Fredoka One',cursive;font-size:2.8em;color:#fff;text-shadow:3px 3px 0 rgba(0,0,0,.2);}
+.subtitle{font-size:1.1em;color:rgba(255,255,255,.85);margin:5px 0 20px;}
+.mascot{font-size:72px;animation:bounce 2s infinite;display:block;margin:10px 0;}
+.btn{display:block;width:100%;padding:14px;margin:8px 0;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:1.1em;font-weight:700;color:#fff;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 15px rgba(0,0,0,.2);}
+.btn:active{transform:scale(.96);}
+.btn-green{background:linear-gradient(135deg,#43e97b,#38f9d7);}
+.btn-blue{background:linear-gradient(135deg,#4facfe,#00f2fe);}
+.btn-purple{background:linear-gradient(135deg,#a18cd1,#fbc2eb);}
+.btn-orange{background:linear-gradient(135deg,#fa709a,#fee140);}
+.btn-pink{background:linear-gradient(135deg,#f093fb,#f5576c);}
+.btn-small{display:inline-block;width:auto;padding:10px 20px;font-size:.95em;margin:4px;}
+.emoji-pick{font-size:36px;cursor:pointer;padding:6px;border-radius:12px;border:3px solid transparent;display:inline-block;transition:border-color .2s;}
+.emoji-pick.sel{border-color:#4facfe;background:rgba(79,172,254,.15);}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.9);border-radius:14px;margin-bottom:12px;font-weight:700;font-size:.9em;}
+.topbar .back{cursor:pointer;font-size:1.3em;}
+.stars{color:var(--gold);}
+input[type=text]{width:80%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:1.1em;font-family:'Nunito',sans-serif;text-align:center;margin:8px 0;}
+input:focus{outline:none;border-color:#4facfe;}
+.confetti-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;}
+.confetti{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall 2s ease-in forwards;}
+/* Maze */
+#mazeCanvas{border-radius:12px;display:block;margin:0 auto;touch-action:none;box-shadow:var(--shadow);}
+/* Hidden Objects */
+.ho-scene{position:relative;border-radius:12px;overflow:hidden;margin:0 auto;box-shadow:var(--shadow);}
+.ho-scene svg{display:block;width:100%;height:auto;}
+.ho-clues{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:10px 0;}
+.ho-clue{width:48px;height:48px;background:rgba(0,0,0,.08);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;opacity:.5;transition:all .3s;}
+.ho-clue.found{opacity:1;background:rgba(0,200,83,.15);}
+/* Pattern */
+.pat-sequence{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center;}
+.pat-shape{width:52px;height:52px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.pat-option{cursor:pointer;transition:transform .15s,box-shadow .15s;border:3px solid transparent;border-radius:14px;padding:4px;}
+.pat-option:active{transform:scale(.92);}
+.pat-option.correct{border-color:var(--correct);background:rgba(0,200,83,.1);}
+.pat-option.wrong{border-color:var(--wrong);background:rgba(255,23,68,.1);}
+/* Spot Diff */
+.spot-pair{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.spot-scene{position:relative;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);cursor:pointer;flex:1;min-width:140px;max-width:220px;}
+.spot-scene svg{display:block;width:100%;height:auto;}
+.spot-circle{position:absolute;border:3px solid #ff1744;border-radius:50%;width:30px;height:30px;margin:-15px 0 0 -15px;animation:pulse 1s infinite;pointer-events:none;}
+.hint-glow{position:absolute;border:3px dashed #ffd700;border-radius:50%;width:40px;height:40px;margin:-20px 0 0 -20px;animation:pulse .6s infinite;pointer-events:none;}
+.result-stars{font-size:48px;margin:12px 0;}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+
+<!-- TITLE SCREEN -->
+<div class="screen active" id="scrTitle">
+  <div class="mascot">🧩</div>
+  <div class="title">Puzzle Quest</div>
+  <div class="subtitle">Train your brain with fun puzzles!</div>
+  <div class="card">
+    <div id="profileArea"></div>
+  </div>
+</div>
+
+<!-- MODE SELECT -->
+<div class="screen" id="scrMode">
+  <div class="card">
+    <h2 style="font-family:'Fredoka One',cursive;font-size:1.5em;margin-bottom:15px;">Choose Your Level</h2>
+    <button class="btn btn-green" onclick="setMode('explorer')">🌟 Explorer (Ages 7+)</button>
+    <button class="btn btn-purple" onclick="setMode('champion')">🏆 Champion (Ages 11+)</button>
+  </div>
+</div>
+
+<!-- MAIN MENU -->
+<div class="screen" id="scrMenu">
+  <div class="topbar">
+    <span class="back" onclick="goScreen('scrMode')">←</span>
+    <span id="menuGreet"></span>
+    <span class="stars" id="menuStars">⭐ 0</span>
+  </div>
+  <button class="btn btn-blue" onclick="startPuzzle('hidden')">🔍 Hidden Objects</button>
+  <button class="btn btn-orange" onclick="startPuzzle('maze')">🌀 Mazes</button>
+  <button class="btn btn-purple" onclick="startPuzzle('pattern')">🧩 Pattern Puzzles</button>
+  <button class="btn btn-pink" onclick="startPuzzle('spot')">👀 Spot the Difference</button>
+  <div class="card" style="margin-top:16px;padding:14px;">
+    <div style="font-weight:900;margin-bottom:6px;">📊 Progress</div>
+    <div id="progressStats" style="font-size:.9em;text-align:left;"></div>
+  </div>
+</div>
+
+<!-- HIDDEN OBJECTS -->
+<div class="screen" id="scrHidden">
+  <div class="topbar">
+    <span class="back" onclick="goScreen('scrMenu')">←</span>
+    <span>🔍 Hidden Objects</span>
+    <span id="hoTimer">⏱ 0s</span>
+  </div>
+  <div style="font-weight:700;margin:6px 0;" id="hoProgress">Found: 0/6</div>
+  <div class="ho-scene" id="hoScene"></div>
+  <div class="ho-clues" id="hoClues"></div>
+</div>
+
+<!-- MAZE -->
+<div class="screen" id="scrMaze">
+  <div class="topbar">
+    <span class="back" onclick="goScreen('scrMenu')">←</span>
+    <span>🌀 Maze</span>
+    <span id="mazeTimer">⏱ 0s</span>
+  </div>
+  <canvas id="mazeCanvas"></canvas>
+  <div style="margin-top:10px;">
+    <button class="btn btn-small btn-orange" id="mazeHintBtn" onclick="mazeShowHint()" style="display:none;">💡 Hint</button>
+    <button class="btn btn-small btn-blue" onclick="startPuzzle('maze')">🔄 New Maze</button>
+  </div>
+</div>
+
+<!-- PATTERN -->
+<div class="screen" id="scrPattern">
+  <div class="topbar">
+    <span class="back" onclick="goScreen('scrMenu')">←</span>
+    <span>🧩 Q<span id="patQ">1</span>/10</span>
+    <span>Score: <span id="patScore">0</span> <span id="patStreak"></span></span>
+  </div>
+  <div class="card">
+    <div style="font-weight:900;margin-bottom:8px;">What comes next?</div>
+    <div class="pat-sequence" id="patSeq"></div>
+    <div style="font-size:1.5em;margin:8px 0;">❓</div>
+    <div id="patOpts" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
+  </div>
+</div>
+
+<!-- SPOT DIFFERENCE -->
+<div class="screen" id="scrSpot">
+  <div class="topbar">
+    <span class="back" onclick="goScreen('scrMenu')">←</span>
+    <span>👀 Spot Diff</span>
+    <span id="spotProgress">0/5</span>
+  </div>
+  <div style="font-weight:700;margin:6px 0;">Tap the differences!</div>
+  <div class="spot-pair" id="spotPair"></div>
+  <div style="margin-top:8px;">
+    <button class="btn btn-small btn-orange" id="spotHintBtn" onclick="spotShowHint()">💡 Hint</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="scrResult">
+  <div class="card">
+    <div class="result-stars" id="resStars"></div>
+    <h2 id="resTitle" style="font-family:'Fredoka One',cursive;"></h2>
+    <p id="resMsg" style="margin:10px 0;"></p>
+    <button class="btn btn-green" id="resAgain">🔄 Play Again</button>
+    <button class="btn btn-blue" onclick="goScreen('scrMenu')">🏠 Menu</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ═══════ GLOBALS ═══════
+let profile = JSON.parse(localStorage.getItem('pq-profile')||'null');
+let progress = JSON.parse(localStorage.getItem('pq-progress')||'{"stars":0,"hidden":0,"maze":0,"pattern":0,"spot":0}');
+let mode = 'explorer'; // or 'champion'
+let timerInterval = null;
+
+function save(){localStorage.setItem('pq-profile',JSON.stringify(profile));localStorage.setItem('pq-progress',JSON.stringify(progress));}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rand(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// ═══════ AUDIO ═══════
+const actx = new (window.AudioContext||window.webkitAudioContext)();
+function playTone(freq,dur,type='sine'){const o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=0.15;o.connect(g);g.connect(actx.destination);o.start();g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+dur);o.stop(actx.currentTime+dur);}
+function sfxClick(){playTone(800,.08,'square');}
+function sfxCorrect(){playTone(523,.1);setTimeout(()=>playTone(659,.1),100);setTimeout(()=>playTone(784,.2),200);}
+function sfxWrong(){playTone(200,.3,'sawtooth');}
+function sfxFanfare(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,.25),i*150));}
+function sfxFind(){playTone(880,.1);setTimeout(()=>playTone(1100,.15),80);}
+
+// ═══════ SPEECH ═══════
+function say(text){try{const u=new SpeechSynthesisUtterance(text);u.rate=0.95;u.pitch=1.1;speechSynthesis.speak(u);}catch(e){}}
+
+// ═══════ CONFETTI ═══════
+function confetti(){const c=document.createElement('div');c.className='confetti-container';const colors=['#ff1744','#ffd700','#00c853','#2979ff','#aa00ff','#ff6d00'];for(let i=0;i<50;i++){const p=document.createElement('div');p.className='confetti';p.style.cssText=`left:${rand(0,100)}%;top:-10px;background:${pick(colors)};width:${rand(6,12)}px;height:${rand(6,12)}px;animation-delay:${Math.random()*1.5}s;animation-duration:${1.5+Math.random()*1.5}s;border-radius:${rand(0,1)?'50%':'2px'};`;c.appendChild(p);}document.body.appendChild(c);setTimeout(()=>c.remove(),4000);}
+
+// ═══════ NAVIGATION ═══════
+function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(timerInterval){clearInterval(timerInterval);timerInterval=null;}}
+
+// ═══════ PROFILE ═══════
+const AVATARS = ['🦊','🐱','🐶','🦄','🐼','🦁','🐸','🐵','🦋','🌟'];
+function initProfile(){
+  const pa=document.getElementById('profileArea');
+  if(profile){
+    pa.innerHTML=`<p style="font-size:1.2em;">Welcome back, <b>${profile.avatar} ${profile.name}</b>!</p><button class="btn btn-green" onclick="goScreen('scrMode')">▶️ Play!</button><button class="btn btn-small btn-purple" onclick="profile=null;save();initProfile();" style="margin-top:8px;opacity:.7;">Reset Profile</button>`;
+  } else {
+    pa.innerHTML=`<p style="font-weight:700;margin-bottom:8px;">What's your name?</p><input type="text" id="profName" placeholder="Enter name..." maxlength="20"><p style="font-weight:700;margin:10px 0 6px;">Pick an avatar:</p><div id="avatarRow">${AVATARS.map(a=>`<span class="emoji-pick" onclick="pickAvatar(this,'${a}')">${a}</span>`).join('')}</div><button class="btn btn-green" style="margin-top:12px;" onclick="createProfile()">Let's Go! 🚀</button>`;
+  }
+}
+let selAvatar='🦊';
+function pickAvatar(el,a){selAvatar=a;document.querySelectorAll('.emoji-pick').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');}
+function createProfile(){const n=document.getElementById('profName').value.trim();if(!n){say("Please enter your name!");return;}profile={name:n,avatar:selAvatar};save();sfxFanfare();say(`Welcome, ${n}!`);goScreen('scrMode');}
+
+function setMode(m){mode=m;updateMenu();goScreen('scrMenu');}
+function updateMenu(){
+  document.getElementById('menuGreet').textContent=`${profile.avatar} ${profile.name}`;
+  document.getElementById('menuStars').textContent=`⭐ ${progress.stars}`;
+  document.getElementById('progressStats').innerHTML=`🔍 Hidden Objects: ${progress.hidden} completed<br>🌀 Mazes: ${progress.maze} completed<br>🧩 Patterns: ${progress.pattern} completed<br>👀 Spot Diff: ${progress.spot} completed`;
+}
+
+// ═══════ TIMER ═══════
+let timerSec=0;
+function startTimer(elId){timerSec=0;const el=document.getElementById(elId);if(timerInterval)clearInterval(timerInterval);timerInterval=setInterval(()=>{timerSec++;el.textContent=`⏱ ${timerSec}s`;},1000);}
+
+// ═══════ RESULTS ═══════
+function showResult(type,time,score,max){
+  clearInterval(timerInterval);timerInterval=null;
+  let stars=1;
+  if(type==='maze'){stars=time<30?3:time<60?2:1;}
+  else if(type==='pattern'){const pct=score/max;stars=pct>=0.9?3:pct>=0.6?2:1;}
+  else{stars=time<40?3:time<70?2:1;}
+  progress.stars+=stars;progress[type]++;save();
+  document.getElementById('resStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('resTitle').textContent=['Nice Try!','Great Job!','Amazing!'][stars-1];
+  const msgs=['Keep practicing, you\'ll get faster!','You\'re really good at this!','You\'re a puzzle master!'];
+  document.getElementById('resMsg').textContent=msgs[stars-1]+(time?` Time: ${time}s`:'')+(score!==undefined?` Score: ${score}/${max}`:'');
+  document.getElementById('resAgain').onclick=()=>startPuzzle(type);
+  goScreen('scrResult');confetti();sfxFanfare();
+  say(stars===3?'Amazing job, you got three stars!':stars===2?'Great work, two stars!':'Good try, keep it up!');
+}
+
+function startPuzzle(type){
+  sfxClick();
+  if(type==='hidden')initHidden();
+  else if(type==='maze')initMaze();
+  else if(type==='pattern')initPattern();
+  else if(type==='spot')initSpot();
+}
+
+// ═══════════════════════════════════════════
+// 1. HIDDEN OBJECTS
+// ═══════════════════════════════════════════
+let hoState={};
+const HO_THEMES=[
+  {name:'Park',bg:'#87ceeb',ground:'#7ec850',elements:[
+    {emoji:'🌳',x:10,y:30},{emoji:'🌳',x:75,y:25},{emoji:'☁️',x:40,y:5},{emoji:'☀️',x:85,y:5},{emoji:'🌺',x:20,y:80},{emoji:'🏠',x:55,y:35}
+  ]},
+  {name:'Underwater',bg:'#1565c0',ground:'#0d47a1',elements:[
+    {emoji:'🐠',x:15,y:30},{emoji:'🐙',x:70,y:60},{emoji:'🪸',x:40,y:80},{emoji:'🫧',x:60,y:15},{emoji:'🐚',x:25,y:70},{emoji:'🌊',x:50,y:5}
+  ]},
+  {name:'Space',bg:'#1a1a2e',ground:'#16213e',elements:[
+    {emoji:'🌙',x:80,y:10},{emoji:'⭐',x:20,y:15},{emoji:'🪐',x:60,y:30},{emoji:'🚀',x:35,y:50},{emoji:'🛸',x:75,y:65},{emoji:'☄️',x:15,y:60}
+  ]},
+  {name:'Kitchen',bg:'#fff8e1',ground:'#d7ccc8',elements:[
+    {emoji:'🍳',x:20,y:40},{emoji:'🧁',x:70,y:30},{emoji:'🍎',x:45,y:65},{emoji:'🥄',x:80,y:70},{emoji:'🍕',x:15,y:70},{emoji:'☕',x:55,y:20}
+  ]},
+  {name:'Garden',bg:'#e8f5e9',ground:'#81c784',elements:[
+    {emoji:'🦋',x:30,y:15},{emoji:'🌻',x:65,y:40},{emoji:'🐝',x:45,y:25},{emoji:'🍄',x:15,y:65},{emoji:'🐛',x:80,y:75},{emoji:'🌹',x:55,y:70}
+  ]},
+  {name:'Beach',bg:'#4fc3f7',ground:'#ffe0b2',elements:[
+    {emoji:'🏖️',x:50,y:30},{emoji:'🐚',x:20,y:75},{emoji:'🦀',x:70,y:70},{emoji:'⛱️',x:35,y:40},{emoji:'🐬',x:75,y:20},{emoji:'🏄',x:15,y:35}
+  ]},
+];
+
+const HO_ITEMS_POOL = ['⭐','🔑','💎','🎈','🍀','🎵','❤️','🔔','🦴','🎁','🍬','🪙','🧲','✏️','🎯','🏀','🎩','🧸','🪁','🍩'];
+
+function initHidden(){
+  const theme=pick(HO_THEMES);
+  const count=mode==='explorer'?6:8;
+  const items=shuffle([...HO_ITEMS_POOL]).slice(0,count);
+  const positions=[];
+  for(let i=0;i<count;i++){
+    let x,y,ok;
+    do{x=rand(8,88);y=rand(15,85);ok=true;for(const p of positions)if(Math.abs(p.x-x)<12&&Math.abs(p.y-y)<12)ok=false;}while(!ok);
+    positions.push({x,y,emoji:items[i],found:false});
+  }
+  hoState={theme,items:positions,found:0,count};
+  renderHidden();
+  startTimer('hoTimer');
+  goScreen('scrHidden');
+  say(`Find ${count} hidden objects in the ${theme.name}!`);
+}
+
+function renderHidden(){
+  const s=hoState, sz=mode==='explorer'?28:22;
+  // Build scene
+  let html=`<div class="ho-scene" style="background:${s.theme.bg};width:100%;aspect-ratio:4/3;position:relative;">`;
+  // Background elements
+  s.theme.elements.forEach(e=>{
+    html+=`<div style="position:absolute;left:${e.x}%;top:${e.y}%;font-size:${rand(28,42)}px;pointer-events:none;user-select:none;">${e.emoji}</div>`;
+  });
+  // Hidden items
+  s.items.forEach((item,i)=>{
+    const opacity=item.found?'0.3':'0.7';
+    html+=`<div onclick="hoFind(${i})" style="position:absolute;left:${item.x}%;top:${item.y}%;font-size:${sz}px;cursor:pointer;opacity:${opacity};transition:all .3s;user-select:none;${item.found?'transform:scale(1.5);filter:grayscale(1);':''}" id="hoItem${i}">${item.emoji}</div>`;
+  });
+  html+='</div>';
+  document.getElementById('hoScene').innerHTML=html;
+  // Clues
+  let clues='';
+  s.items.forEach((item,i)=>{
+    clues+=`<div class="ho-clue ${item.found?'found':''}" id="hoClue${i}">${item.found?item.emoji:'?'}</div>`;
+  });
+  document.getElementById('hoClues').innerHTML=clues;
+  document.getElementById('hoProgress').textContent=`Found: ${s.found}/${s.count}`;
+}
+
+function hoFind(i){
+  if(hoState.items[i].found)return;
+  hoState.items[i].found=true;
+  hoState.found++;
+  sfxFind();
+  say(pick(['Found it!','Nice eye!','Great find!','You spotted it!','Sharp eyes!']));
+  renderHidden();
+  if(hoState.found===hoState.count){
+    setTimeout(()=>showResult('hidden',timerSec),500);
+  }
+}
+
+// ═══════════════════════════════════════════
+// 2. MAZES
+// ═══════════════════════════════════════════
+let mazeState={};
+const MAZE_THEMES=[
+  {bg:'#e8f5e9',wall:'#2e7d32',path:'#c8e6c9',trail:'#ff6d00',start:'#00c853',end:'#ff1744'},
+  {bg:'#e3f2fd',wall:'#1565c0',path:'#bbdefb',trail:'#ff4081',start:'#00c853',end:'#ff1744'},
+  {bg:'#fce4ec',wall:'#c62828',path:'#ffcdd2',trail:'#6200ea',start:'#00c853',end:'#ff1744'},
+  {bg:'#fff3e0',wall:'#e65100',path:'#ffe0b2',trail:'#00bcd4',start:'#00c853',end:'#ff1744'},
+  {bg:'#f3e5f5',wall:'#6a1b9a',path:'#e1bee7',trail:'#ffd600',start:'#00c853',end:'#ff1744'},
+];
+
+function initMaze(){
+  const cols=mode==='explorer'?8:15, rows=cols;
+  const theme=pick(MAZE_THEMES);
+  const grid=generateMaze(cols,rows);
+  const solution=solveMaze(grid,cols,rows);
+  mazeState={cols,rows,grid,theme,solution,trail:[{x:0,y:0}],solved:false,hintShown:false};
+  renderMaze();
+  startTimer('mazeTimer');
+  goScreen('scrMaze');
+  document.getElementById('mazeHintBtn').style.display='none';
+  setTimeout(()=>{document.getElementById('mazeHintBtn').style.display='inline-block';},30000);
+  say('Find your way through the maze!');
+}
+
+function generateMaze(w,h){
+  const cells=[];
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)cells.push({x,y,walls:{N:true,S:true,E:true,W:true},visited:false});
+  const get=(x,y)=>(x>=0&&x<w&&y>=0&&y<h)?cells[y*w+x]:null;
+  const stack=[cells[0]];cells[0].visited=true;
+  while(stack.length){
+    const cur=stack[stack.length-1];
+    const neighbors=[];
+    [{dx:0,dy:-1,w:'N',o:'S'},{dx:0,dy:1,w:'S',o:'N'},{dx:1,dy:0,w:'E',o:'W'},{dx:-1,dy:0,w:'W',o:'E'}].forEach(d=>{
+      const n=get(cur.x+d.dx,cur.y+d.dy);
+      if(n&&!n.visited)neighbors.push({cell:n,...d});
+    });
+    if(neighbors.length){
+      const{cell,w,o}=pick(neighbors);
+      cur.walls[w]=false;cell.walls[o]=false;
+      cell.visited=true;stack.push(cell);
+    }else stack.pop();
+  }
+  return cells;
+}
+
+function solveMaze(cells,w,h){
+  const visited=new Set();const path=[];
+  function dfs(x,y){
+    if(x===w-1&&y===h-1){path.push({x,y});return true;}
+    const key=`${x},${y}`;if(visited.has(key))return false;visited.add(key);
+    const cell=cells[y*w+x];
+    const dirs=[{dx:0,dy:-1,w:'N'},{dx:0,dy:1,w:'S'},{dx:1,dy:0,w:'E'},{dx:-1,dy:0,w:'W'}];
+    for(const d of dirs){
+      if(!cell.walls[d.w]){const nx=x+d.dx,ny=y+d.dy;if(nx>=0&&nx<w&&ny>=0&&ny<h&&dfs(nx,ny)){path.push({x,y});return true;}}
+    }
+    return false;
+  }
+  dfs(0,0);return path.reverse();
+}
+
+function renderMaze(){
+  const cv=document.getElementById('mazeCanvas');
+  const s=mazeState, cellSize=mode==='explorer'?Math.floor(340/s.cols):Math.floor(340/s.cols);
+  const size=cellSize*s.cols;
+  cv.width=size;cv.height=size;cv.style.width=Math.min(size,440)+'px';cv.style.height=cv.style.width;
+  const ctx=cv.getContext('2d');
+  const sc=cv.width/size;
+  // Background
+  ctx.fillStyle=s.theme.path;ctx.fillRect(0,0,cv.width,cv.height);
+  // Walls
+  ctx.strokeStyle=s.theme.wall;ctx.lineWidth=Math.max(2,cellSize/6);
+  s.grid.forEach(c=>{
+    const x=c.x*cellSize,y=c.y*cellSize;
+    if(c.walls.N){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+cellSize,y);ctx.stroke();}
+    if(c.walls.S){ctx.beginPath();ctx.moveTo(x,y+cellSize);ctx.lineTo(x+cellSize,y+cellSize);ctx.stroke();}
+    if(c.walls.W){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+cellSize);ctx.stroke();}
+    if(c.walls.E){ctx.beginPath();ctx.moveTo(x+cellSize,y);ctx.lineTo(x+cellSize,y+cellSize);ctx.stroke();}
+  });
+  // Start/End
+  const half=cellSize/2;
+  ctx.fillStyle=s.theme.start;ctx.beginPath();ctx.arc(half,half,cellSize/3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=s.theme.end;ctx.beginPath();ctx.arc((s.cols-0.5)*cellSize,(s.rows-0.5)*cellSize,cellSize/3,0,Math.PI*2);ctx.fill();
+  // Trail
+  if(s.trail.length>1){
+    ctx.strokeStyle=s.theme.trail;ctx.lineWidth=Math.max(3,cellSize/4);ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(s.trail[0].x*cellSize+half,s.trail[0].y*cellSize+half);
+    s.trail.forEach(p=>ctx.lineTo(p.x*cellSize+half,p.y*cellSize+half));ctx.stroke();
+  }
+  // Player
+  const last=s.trail[s.trail.length-1];
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(last.x*cellSize+half,last.y*cellSize+half,cellSize/4,0,Math.PI*2);ctx.fill();
+  // Hint path
+  if(s.hintShown&&s.solution){
+    ctx.strokeStyle='rgba(255,215,0,0.4)';ctx.lineWidth=Math.max(2,cellSize/5);ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(s.solution[0].x*cellSize+half,s.solution[0].y*cellSize+half);
+    s.solution.forEach(p=>ctx.lineTo(p.x*cellSize+half,p.y*cellSize+half));ctx.stroke();ctx.setLineDash([]);
+  }
+}
+
+// Maze touch/mouse control
+(function(){
+  const cv=document.getElementById('mazeCanvas');
+  function getCell(e){
+    const rect=cv.getBoundingClientRect();
+    const s=mazeState, cellSize=cv.width/s.cols;
+    const scaleX=cv.width/rect.width, scaleY=cv.height/rect.height;
+    const touch=e.touches?e.touches[0]:e;
+    const px=(touch.clientX-rect.left)*scaleX, py=(touch.clientY-rect.top)*scaleY;
+    return{x:Math.floor(px/cellSize),y:Math.floor(py/cellSize)};
+  }
+  function tryMove(cx,cy){
+    const s=mazeState;if(s.solved)return;
+    if(cx<0||cx>=s.cols||cy<0||cy>=s.rows)return;
+    const last=s.trail[s.trail.length-1];
+    const dx=cx-last.x,dy=cy-last.y;
+    if(Math.abs(dx)+Math.abs(dy)!==1)return;
+    const dir=dx===1?'E':dx===-1?'W':dy===1?'S':'N';
+    const cell=s.grid[last.y*s.cols+last.x];
+    if(cell.walls[dir])return;
+    // Check backtrack
+    if(s.trail.length>=2){const prev=s.trail[s.trail.length-2];if(prev.x===cx&&prev.y===cy){s.trail.pop();renderMaze();return;}}
+    s.trail.push({x:cx,y:cy});renderMaze();
+    if(cx===s.cols-1&&cy===s.rows-1){s.solved=true;sfxFanfare();setTimeout(()=>showResult('maze',timerSec),600);}
+  }
+  let dragging=false;
+  cv.addEventListener('mousedown',e=>{dragging=true;const c=getCell(e);tryMove(c.x,c.y);});
+  cv.addEventListener('mousemove',e=>{if(dragging){const c=getCell(e);tryMove(c.x,c.y);}});
+  cv.addEventListener('mouseup',()=>dragging=false);
+  cv.addEventListener('touchstart',e=>{e.preventDefault();dragging=true;const c=getCell(e);tryMove(c.x,c.y);},{passive:false});
+  cv.addEventListener('touchmove',e=>{e.preventDefault();if(dragging){const c=getCell(e);tryMove(c.x,c.y);}},{passive:false});
+  cv.addEventListener('touchend',()=>dragging=false);
+})();
+
+function mazeShowHint(){mazeState.hintShown=true;renderMaze();say('Follow the golden path!');setTimeout(()=>{mazeState.hintShown=false;renderMaze();},3000);}
+
+// ═══════════════════════════════════════════
+// 3. PATTERN PUZZLES
+// ═══════════════════════════════════════════
+let patState={};
+const PAT_COLORS=['#f44336','#2196f3','#4caf50','#ff9800','#9c27b0','#00bcd4','#ff5722','#e91e63'];
+const PAT_SHAPES=['●','■','▲','◆','★','⬟','⬠','♥'];
+
+function initPattern(){
+  patState={question:0,score:0,streak:0,answered:false};
+  goScreen('scrPattern');
+  nextPatternQuestion();
+}
+
+function genPatternQuestion(){
+  if(mode==='explorer'){
+    // Simple ABAB or AABB patterns with colors
+    const type=rand(0,2);
+    const c1=pick(PAT_COLORS),c2=pick(PAT_COLORS.filter(c=>c!==c1));
+    const s1=pick(PAT_SHAPES),s2=pick(PAT_SHAPES.filter(s=>s!==s1));
+    let seq=[],answer,options;
+    if(type===0){// Color alternating, same shape
+      const sh=s1;
+      seq=[{shape:sh,color:c1},{shape:sh,color:c2},{shape:sh,color:c1},{shape:sh,color:c2},{shape:sh,color:c1}];
+      answer={shape:sh,color:c2};
+    }else if(type===1){// Shape alternating, same color
+      const co=c1;
+      seq=[{shape:s1,color:co},{shape:s2,color:co},{shape:s1,color:co},{shape:s2,color:co},{shape:s1,color:co}];
+      answer={shape:s2,color:co};
+    }else{// Both alternate
+      seq=[{shape:s1,color:c1},{shape:s2,color:c2},{shape:s1,color:c1},{shape:s2,color:c2},{shape:s1,color:c1}];
+      answer={shape:s2,color:c2};
+    }
+    options=[answer];
+    while(options.length<4){
+      const o={shape:pick(PAT_SHAPES),color:pick(PAT_COLORS)};
+      if(!options.some(op=>op.shape===o.shape&&op.color===o.color))options.push(o);
+    }
+    return{seq,answer,options:shuffle(options)};
+  }else{
+    // Champion: more complex patterns
+    const type=rand(0,4);
+    const colors=shuffle([...PAT_COLORS]).slice(0,4);
+    const shapes=shuffle([...PAT_SHAPES]).slice(0,4);
+    let seq=[],answer,options;
+    if(type===0){// ABC repeating
+      seq=[{shape:shapes[0],color:colors[0]},{shape:shapes[1],color:colors[1]},{shape:shapes[2],color:colors[2]},{shape:shapes[0],color:colors[0]},{shape:shapes[1],color:colors[1]}];
+      answer={shape:shapes[2],color:colors[2]};
+    }else if(type===1){// Growing: same shape, cycling colors with increasing count
+      seq=[{shape:shapes[0],color:colors[0]},{shape:shapes[0],color:colors[1]},{shape:shapes[0],color:colors[2]},{shape:shapes[0],color:colors[3]},{shape:shapes[0],color:colors[0]}];
+      answer={shape:shapes[0],color:colors[1]};
+    }else if(type===2){// Shape cycle, fixed color
+      seq=[{shape:shapes[0],color:colors[0]},{shape:shapes[1],color:colors[0]},{shape:shapes[2],color:colors[0]},{shape:shapes[3],color:colors[0]},{shape:shapes[0],color:colors[0]}];
+      answer={shape:shapes[1],color:colors[0]};
+    }else if(type===3){// Mirror: ABCBA
+      seq=[{shape:shapes[0],color:colors[0]},{shape:shapes[1],color:colors[1]},{shape:shapes[2],color:colors[2]},{shape:shapes[1],color:colors[1]},{shape:shapes[0],color:colors[0]}];
+      answer={shape:shapes[1],color:colors[1]};
+    }else{// Double: AABBCC
+      seq=[{shape:shapes[0],color:colors[0]},{shape:shapes[0],color:colors[0]},{shape:shapes[1],color:colors[1]},{shape:shapes[1],color:colors[1]},{shape:shapes[2],color:colors[2]}];
+      answer={shape:shapes[2],color:colors[2]};
+    }
+    options=[answer];
+    while(options.length<4){
+      const o={shape:pick(PAT_SHAPES),color:pick(PAT_COLORS)};
+      if(!options.some(op=>op.shape===o.shape&&op.color===o.color))options.push(o);
+    }
+    return{seq,answer,options:shuffle(options)};
+  }
+}
+
+function renderShape(shape,color,size=48){
+  return `<div class="pat-shape" style="width:${size}px;height:${size}px;color:${color};font-size:${size*0.7}px;background:rgba(0,0,0,.05);border-radius:10px;display:flex;align-items:center;justify-content:center;">${shape}</div>`;
+}
+
+function nextPatternQuestion(){
+  if(patState.question>=10){showResult('pattern',null,patState.score,10);return;}
+  patState.answered=false;
+  const q=genPatternQuestion();
+  patState.currentAnswer=q.answer;
+  document.getElementById('patQ').textContent=patState.question+1;
+  document.getElementById('patScore').textContent=patState.score;
+  document.getElementById('patStreak').textContent=patState.streak>1?patState.streak+'🔥':'';
+  // Render sequence
+  document.getElementById('patSeq').innerHTML=q.seq.map(s=>renderShape(s.shape,s.color)).join('')+'<div style="font-size:36px;color:#999;">?</div>';
+  // Render options
+  document.getElementById('patOpts').innerHTML=q.options.map((o,i)=>
+    `<div class="pat-option" onclick="patAnswer(${i})" id="patOpt${i}">${renderShape(o.shape,o.color,44)}</div>`
+  ).join('');
+  patState.options=q.options;
+}
+
+function patAnswer(i){
+  if(patState.answered)return;
+  patState.answered=true;
+  const chosen=patState.options[i];
+  const correct=chosen.shape===patState.currentAnswer.shape&&chosen.color===patState.currentAnswer.color;
+  if(correct){
+    patState.score++;patState.streak++;
+    document.getElementById('patOpt'+i).classList.add('correct');
+    sfxCorrect();say(pick(['Correct!','You got it!','Nice one!','Perfect!']));
+  }else{
+    patState.streak=0;
+    document.getElementById('patOpt'+i).classList.add('wrong');
+    // Highlight correct
+    patState.options.forEach((o,j)=>{
+      if(o.shape===patState.currentAnswer.shape&&o.color===patState.currentAnswer.color)
+        document.getElementById('patOpt'+j).classList.add('correct');
+    });
+    sfxWrong();say(pick(['Not quite!','Try to see the pattern!','Almost!']));
+  }
+  patState.question++;
+  setTimeout(nextPatternQuestion,1200);
+}
+
+// ═══════════════════════════════════════════
+// 4. SPOT THE DIFFERENCE
+// ═══════════════════════════════════════════
+let spotState={};
+
+function generateSpotScene(){
+  // Procedurally generate a scene of random shapes
+  const themes=[
+    {name:'Zoo',bg:'#87ceeb',ground:'#7ec850',emojis:['🦒','🐘','🦁','🐧','🐻','🦓','🐒','🦩']},
+    {name:'Toys',bg:'#fff3e0',ground:'#bcaaa4',emojis:['🧸','🎲','🪀','🎨','🧩','🎪','🎭','🪁']},
+    {name:'Food',bg:'#fce4ec',ground:'#efebe9',emojis:['🍎','🍕','🧁','🍩','🍉','🥕','🌽','🍪']},
+    {name:'Garden',bg:'#e8f5e9',ground:'#a5d6a7',emojis:['🌻','🌹','🌷','🦋','🐝','🐞','🌺','🍄']},
+    {name:'Space',bg:'#1a1a2e',ground:'#16213e',emojis:['🌙','⭐','🪐','🚀','🛸','☄️','👽','🌍']},
+    {name:'Ocean',bg:'#0277bd',ground:'#01579b',emojis:['🐠','🐙','🦑','🐡','🐬','🦈','🪸','🐚']},
+  ];
+  const theme=pick(themes);
+  const count=rand(8,12);
+  const items=[];
+  for(let i=0;i<count;i++){
+    items.push({
+      emoji:pick(theme.emojis),
+      x:rand(5,85),
+      y:rand(10,80),
+      size:rand(24,40),
+      rotation:rand(-20,20)
+    });
+  }
+  return{theme,items};
+}
+
+function initSpot(){
+  const scene=generateSpotScene();
+  const diffCount=mode==='explorer'?5:7;
+  // Generate differences
+  const diffIndices=shuffle([...Array(scene.items.length).keys()]).slice(0,Math.min(diffCount,scene.items.length));
+  const diffs=[];
+  const modifiedItems=scene.items.map((item,i)=>({...item}));
+  const altEmojis=['🔴','🟢','🔵','🟡','🟣','🟠','⚫','⚪'];
+
+  diffIndices.forEach(idx=>{
+    const diffType=rand(0,2);
+    const original={...modifiedItems[idx]};
+    if(diffType===0){// Change emoji
+      let newEmoji;
+      do{newEmoji=pick(scene.theme.emojis);}while(newEmoji===original.emoji);
+      modifiedItems[idx].emoji=newEmoji;
+    }else if(diffType===1){// Change size
+      modifiedItems[idx].size=original.size+(original.size>30?-12:12);
+    }else{// Change position slightly
+      modifiedItems[idx].x=Math.min(90,Math.max(5,original.x+rand(-12,12)));
+      modifiedItems[idx].y=Math.min(85,Math.max(10,original.y+rand(-12,12)));
+    }
+    diffs.push({idx,x:original.x,y:original.y,found:false});
+  });
+
+  spotState={scene,modifiedItems,diffs,found:0,total:diffs.length};
+  renderSpot();
+  goScreen('scrSpot');
+  startTimer('spotProgress');
+  document.getElementById('spotProgress').textContent=`0/${spotState.total}`;
+  say(`Find ${spotState.total} differences between the two pictures!`);
+}
+
+function renderSpotSVG(items,containerId,isRight){
+  const bg=spotState.scene.theme.bg;
+  let html=`<svg viewBox="0 0 200 200" style="background:${bg};">`;
+  items.forEach(item=>{
+    html+=`<text x="${item.x*2}" y="${item.y*2}" font-size="${item.size}" transform="rotate(${item.rotation},${item.x*2},${item.y*2})" style="user-select:none;">${item.emoji}</text>`;
+  });
+  html+='</svg>';
+  return html;
+}
+
+function renderSpot(){
+  const s=spotState;
+  const pair=document.getElementById('spotPair');
+  pair.innerHTML=`
+    <div class="spot-scene" id="spotLeft" onclick="spotClick(event,false)">
+      ${renderSpotSVG(s.scene.items,'spotLeft',false)}
+    </div>
+    <div class="spot-scene" id="spotRight" onclick="spotClick(event,true)">
+      ${renderSpotSVG(s.modifiedItems,'spotRight',true)}
+    </div>`;
+  // Show found circles
+  s.diffs.forEach((d,i)=>{
+    if(d.found){
+      ['spotLeft','spotRight'].forEach(id=>{
+        const el=document.getElementById(id);
+        const circle=document.createElement('div');
+        circle.className='spot-circle';
+        circle.style.left=d.x+'%';circle.style.top=d.y+'%';
+        el.appendChild(circle);
+      });
+    }
+  });
+  document.getElementById('spotProgress').textContent=`${s.found}/${s.total}`;
+}
+
+function spotClick(e,isRight){
+  const rect=e.currentTarget.getBoundingClientRect();
+  const xPct=((e.clientX-rect.left)/rect.width)*100;
+  const yPct=((e.clientY-rect.top)/rect.height)*100;
+  // Check if near any unfound difference
+  let hit=false;
+  const threshold=12;
+  spotState.diffs.forEach((d,i)=>{
+    if(!d.found&&Math.abs(xPct-d.x)<threshold&&Math.abs(yPct-d.y)<threshold){
+      d.found=true;spotState.found++;hit=true;
+    }
+  });
+  if(hit){
+    sfxFind();say(pick(['Found one!','Good eye!','Nice catch!','Spotted it!']));
+    renderSpot();
+    if(spotState.found===spotState.total){
+      setTimeout(()=>showResult('spot',timerSec),500);
+    }
+  }
+}
+
+function spotShowHint(){
+  const unfound=spotState.diffs.filter(d=>!d.found);
+  if(!unfound.length)return;
+  const d=pick(unfound);
+  ['spotLeft','spotRight'].forEach(id=>{
+    const el=document.getElementById(id);
+    const glow=document.createElement('div');
+    glow.className='hint-glow';
+    glow.style.left=d.x+'%';glow.style.top=d.y+'%';
+    el.appendChild(glow);
+    setTimeout(()=>glow.remove(),2000);
+  });
+  say('Look around the glowing area!');
+}
+
+// ═══════ INIT ═══════
+initProfile();
+</script>
+</body>
+</html>

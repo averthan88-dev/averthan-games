@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Averthan Games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a1a;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated star background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle var(--duration) ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Floating gradient orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #6c5ce7;
+            top: -100px;
+            right: -100px;
+            animation: float1 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #00cec9;
+            bottom: -50px;
+            left: -50px;
+            animation: float2 10s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #fd79a8;
+            top: 50%;
+            left: 50%;
+            animation: float3 12s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-50px, 50px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -40px); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translate(-50%, -50%); }
+            50% { transform: translate(-30%, -60%); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .logo {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3.5em;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe, #fd79a8, #fab1a0);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease-in-out infinite;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .tagline {
+            font-size: 1.15em;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* Game grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        /* Game card */
+        .game-card {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+            color: #fff;
+            display: block;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent1), var(--accent2));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .game-card:hover::before {
+            opacity: 1;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+        }
+
+        .game-card:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .card-inner {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 32px 28px;
+            height: 100%;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: background 0.3s;
+        }
+
+        .game-card:hover .card-inner {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .card-icon {
+            font-size: 3em;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--accent1), var(--accent2));
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.5em;
+            letter-spacing: -0.5px;
+        }
+
+        .card-desc {
+            color: rgba(255,255,255,0.55);
+            font-size: 0.95em;
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-play {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 0.95em;
+            color: var(--accent1);
+            margin-top: 4px;
+            transition: gap 0.3s;
+        }
+
+        .game-card:hover .card-play {
+            gap: 14px;
+        }
+
+        .play-arrow {
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        .game-card:hover .play-arrow {
+            transform: translateX(4px);
+        }
+
+        /* Featured card spans full width */
+        .game-card.featured {
+            grid-column: 1 / -1;
+        }
+
+        .featured .card-inner {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto auto auto auto;
+            column-gap: 28px;
+        }
+
+        .featured .card-icon {
+            grid-row: 1 / 3;
+            font-size: 3.5em;
+            width: 85px;
+            height: 85px;
+        }
+
+        .featured .card-title {
+            font-size: 1.8em;
+            align-self: end;
+        }
+
+        .featured .card-desc {
+            grid-column: 2;
+        }
+
+        .featured .card-tags {
+            grid-column: 1 / -1;
+        }
+
+        .featured .card-play {
+            grid-column: 1 / -1;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            color: rgba(255,255,255,0.25);
+            font-size: 0.85em;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            .logo {
+                font-size: 2.4em;
+            }
+
+            .tagline {
+                font-size: 0.9em;
+                letter-spacing: 2px;
+            }
+
+            .container {
+                padding: 30px 16px 40px;
+            }
+
+            .games-grid {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .featured .card-inner {
+                display: flex;
+            }
+
+            .card-inner {
+                padding: 24px 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">Averthan Games</div>
+            <div class="tagline">Play &bull; Learn &bull; Explore</div>
+        </header>
+
+        <div class="games-grid">
+
+            <!-- Featured: Space Blaster -->
+            <a href="space-blaster.html" class="game-card featured" style="--accent1: #00cec9; --accent2: #0984e3;">
+                <div class="card-inner">
+                    <div class="card-icon">🚀</div>
+                    <div class="card-title">Space Blaster</div>
+                    <div class="card-desc">Blast through waves of enemies in this fast-paced space shooter. Power up your weapons, dodge asteroids, and rack up the highest score!</div>
+                    <div class="card-tags">
+                        <span class="tag">Action</span>
+                        <span class="tag">Arcade</span>
+                        <span class="tag">Shooter</span>
+                    </div>
+                    <div class="card-play">PLAY NOW <span class="play-arrow">→</span></div>
+                </div>
+            </a>
+
+            <!-- Chess vs Kit -->
+            <a href="chess.html" class="game-card" style="--accent1: #6c5ce7; --accent2: #a29bfe;">
+                <div class="card-inner">
+                    <div class="card-icon">♟️</div>
+                    <div class="card-title">Chess vs Kit</div>
+                    <div class="card-desc">Challenge Kit the fox in a classic game of chess. Think ahead, plan your moves, and checkmate!</div>
+                    <div class="card-tags">
+                        <span class="tag">Strategy</span>
+                        <span class="tag">Board Game</span>
+                    </div>
+                    <div class="card-play">PLAY NOW <span class="play-arrow">→</span></div>
+                </div>
+            </a>
+
+            <!-- Puzzle Quest -->
+            <a href="puzzle-quest/index.html" class="game-card" style="--accent1: #00b894; --accent2: #55efc4;">
+                <div class="card-inner">
+                    <div class="card-icon">🧩</div>
+                    <div class="card-title">Puzzle Quest</div>
+                    <div class="card-desc">Train your brain with hidden objects, mazes, pattern puzzles, and spot-the-difference challenges. Earn stars!</div>
+                    <div class="card-tags">
+                        <span class="tag">Puzzle</span>
+                        <span class="tag">Brain Training</span>
+                    </div>
+                    <div class="card-play">PLAY NOW <span class="play-arrow">→</span></div>
+                </div>
+            </a>
+
+            <!-- MathQuest -->
+            <a href="mathquest-poc/index.html" class="game-card" style="--accent1: #fd79a8; --accent2: #e84393;">
+                <div class="card-inner">
+                    <div class="card-icon">🧮</div>
+                    <div class="card-title">MathQuest</div>
+                    <div class="card-desc">Embark on a math adventure! Tackle arithmetic, algebra, geometry, and finance challenges across multiple difficulty levels.</div>
+                    <div class="card-tags">
+                        <span class="tag">Education</span>
+                        <span class="tag">Math</span>
+                        <span class="tag">Adventure</span>
+                    </div>
+                    <div class="card-play">PLAY NOW <span class="play-arrow">→</span></div>
+                </div>
+            </a>
+
+            <!-- Money Smarts -->
+            <a href="finance-tutor/index.html" class="game-card" style="--accent1: #fdcb6e; --accent2: #f39c12;">
+                <div class="card-inner">
+                    <div class="card-icon">💰</div>
+                    <div class="card-title">Money Smarts</div>
+                    <div class="card-desc">Learn personal finance through interactive lessons, simulators, and quizzes. Master saving, budgeting, and compound interest!</div>
+                    <div class="card-tags">
+                        <span class="tag">Education</span>
+                        <span class="tag">Finance</span>
+                        <span class="tag">Interactive</span>
+                    </div>
+                    <div class="card-play">PLAY NOW <span class="play-arrow">→</span></div>
+                </div>
+            </a>
+
+        </div>
+
+        <div class="footer">
+            &copy; 2026 Averthan Games. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        // Generate twinkling stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 80; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 2.5 + 0.5;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+    </script>
+</body>
+</html>

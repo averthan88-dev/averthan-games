@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>💰 Money Smarts</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f172a; --card:#1e293b; --card2:#334155;
+  --accent:#22d3ee; --green:#34d399; --red:#f87171;
+  --gold:#fbbf24; --purple:#a78bfa; --text:#e2e8f0;
+  --text2:#94a3b8;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.app{max-width:520px;margin:0 auto;padding:16px;}
+.screen{display:none;animation:fadeIn 0.3s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Header */
+.header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.header .back-btn{background:var(--card);border:none;color:var(--text);font-size:1.3em;padding:8px 12px;border-radius:10px;cursor:pointer;}
+.header .back-btn:hover{background:var(--card2);}
+.header h1{font-family:'Fredoka One',cursive;font-size:1.4em;flex:1;}
+.logo{font-size:2.8em;text-align:center;margin:10px 0;}
+.title{font-family:'Fredoka One',cursive;font-size:2.2em;text-align:center;color:white;margin-bottom:4px;}
+.subtitle{text-align:center;color:var(--text2);margin-bottom:24px;font-size:1.05em;}
+
+/* Topic cards */
+.topic-card{
+  display:flex;gap:14px;align-items:center;padding:16px;margin:10px 0;
+  background:var(--card);border-radius:16px;cursor:pointer;
+  border:2px solid transparent;transition:all 0.15s;
+}
+.topic-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 20px rgba(34,211,238,0.15);}
+.topic-icon{font-size:2em;width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:12px;flex-shrink:0;}
+.topic-info{flex:1;}
+.topic-title{font-weight:900;font-size:1.05em;}
+.topic-desc{font-size:0.82em;color:var(--text2);margin-top:2px;}
+.topic-badge{font-size:0.7em;background:var(--accent);color:var(--bg);padding:2px 8px;border-radius:20px;font-weight:900;margin-left:8px;}
+
+/* Lesson content */
+.lesson-section{margin:16px 0;}
+.lesson-title{font-family:'Fredoka One',cursive;font-size:1.3em;color:var(--accent);margin-bottom:8px;}
+.lesson-text{line-height:1.7;font-size:1em;color:var(--text);margin-bottom:12px;}
+.lesson-text b{color:var(--gold);}
+.lesson-text .highlight{color:var(--green);font-weight:900;}
+.lesson-text .warning{color:var(--red);font-weight:900;}
+.callout{background:var(--card2);border-left:4px solid var(--accent);border-radius:0 12px 12px 0;padding:14px 16px;margin:12px 0;font-size:0.95em;}
+.callout.tip{border-left-color:var(--green);}
+.callout.warning{border-left-color:var(--red);}
+.callout .callout-icon{font-size:1.2em;margin-right:6px;}
+
+/* Interactive sim */
+.sim-box{
+  background:var(--card);border-radius:16px;padding:20px;margin:16px 0;
+  border:1px solid var(--card2);
+}
+.sim-title{font-family:'Fredoka One',cursive;font-size:1.1em;color:var(--gold);margin-bottom:12px;}
+.sim-row{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap;}
+.sim-label{font-size:0.9em;color:var(--text2);min-width:100px;}
+.sim-slider{flex:1;min-width:120px;accent-color:var(--accent);}
+.sim-value{font-family:'Fredoka One',cursive;font-size:1.1em;color:var(--accent);min-width:70px;text-align:right;}
+.sim-result{
+  text-align:center;padding:16px;margin-top:12px;
+  background:var(--bg);border-radius:12px;
+}
+.sim-result .big-num{font-family:'Fredoka One',cursive;font-size:2.2em;color:var(--green);}
+.sim-result .sub-text{font-size:0.85em;color:var(--text2);margin-top:4px;}
+.sim-compare{display:flex;gap:12px;margin-top:12px;}
+.sim-compare>div{flex:1;text-align:center;padding:12px;border-radius:12px;background:var(--bg);}
+.sim-compare .label{font-size:0.75em;color:var(--text2);margin-bottom:4px;}
+.sim-compare .val{font-family:'Fredoka One',cursive;font-size:1.3em;}
+
+/* Chart */
+.chart-container{width:100%;height:200px;position:relative;margin:12px 0;}
+.chart-container canvas{width:100%;height:100%;border-radius:12px;background:var(--bg);}
+
+/* Buttons */
+.lesson-nav{display:flex;gap:8px;margin-top:20px;}
+.nav-btn{
+  flex:1;padding:14px;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
+  font-size:1em;cursor:pointer;transition:all 0.15s;color:white;
+}
+.nav-btn.next{background:linear-gradient(135deg,#22d3ee,#06b6d4);}
+.nav-btn.prev{background:var(--card2);color:var(--text);}
+.nav-btn:hover{transform:translateY(-2px);}
+.nav-btn.speak{background:var(--card2);flex:0;padding:14px 16px;}
+
+/* Voice button */
+.voice-btn{
+  position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;
+  background:var(--accent);border:none;font-size:1.4em;cursor:pointer;z-index:100;
+  box-shadow:0 4px 15px rgba(34,211,238,0.3);transition:all 0.15s;
+}
+.voice-btn:hover{transform:scale(1.1);}
+.voice-btn.speaking{animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,0.4)}50%{box-shadow:0 0 0 12px rgba(34,211,238,0)}}
+
+/* Progress dots */
+.progress-dots{display:flex;gap:6px;justify-content:center;margin:16px 0;}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--card2);}
+.dot.active{background:var(--accent);}
+.dot.done{background:var(--green);}
+
+/* ── TUTOR CHAT ── */
+.tutor-chat{margin:12px 0;}
+.chat-bubble{
+  display:flex;gap:10px;align-items:flex-start;margin:8px 0;
+  animation:bubbleIn 0.4s ease;
+}
+.chat-bubble.hidden{display:none;}
+@keyframes bubbleIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tutor-face{font-size:2em;flex-shrink:0;animation:tutorBounce 2s infinite;}
+@keyframes tutorBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.bubble-content{
+  background:var(--card2);border-radius:4px 16px 16px 16px;
+  padding:12px 16px;font-size:0.95em;line-height:1.6;
+  max-width:85%;position:relative;
+}
+.bubble-content b{color:var(--gold);}
+.bubble-content .highlight{color:var(--green);font-weight:900;}
+.bubble-content .warning{color:var(--red);font-weight:900;}
+.typing-indicator{display:inline-block;}
+.typing-indicator span{
+  display:inline-block;width:6px;height:6px;background:var(--text2);
+  border-radius:50%;margin:0 1px;animation:typeDot 1.2s infinite;
+}
+.typing-indicator span:nth-child(2){animation-delay:0.2s;}
+.typing-indicator span:nth-child(3){animation-delay:0.4s;}
+@keyframes typeDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ── CHOICE BUTTONS ── */
+.choice-grid{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+.choice-btn{
+  padding:14px 16px;border:2px solid var(--card2);border-radius:14px;
+  background:var(--card);color:var(--text);font-family:'Nunito',sans-serif;
+  font-size:0.95em;font-weight:700;cursor:pointer;transition:all 0.15s;
+  text-align:left;
+}
+.choice-btn:hover{border-color:var(--accent);background:rgba(34,211,238,0.08);transform:translateX(4px);}
+.choice-btn.correct{border-color:var(--green);background:rgba(52,211,153,0.15);color:var(--green);}
+.choice-btn.wrong{border-color:var(--red);background:rgba(248,113,113,0.1);color:var(--red);opacity:0.6;}
+.choice-btn.disabled{pointer-events:none;}
+
+/* ── ANIMATED VISUALS ── */
+.anim-container{
+  position:relative;width:100%;min-height:180px;
+  background:var(--bg);border-radius:16px;margin:12px 0;overflow:hidden;
+}
+.coin{
+  position:absolute;font-size:1.8em;
+  animation:coinDrop 0.6s ease forwards;
+}
+@keyframes coinDrop{from{transform:translateY(-40px) rotate(0);opacity:0}to{transform:translateY(0) rotate(360deg);opacity:1}}
+.money-bar{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(180deg,var(--green),#059669);
+  border-radius:8px 8px 0 0;transition:height 1s ease;
+}
+.bar-label{
+  position:absolute;width:100%;text-align:center;
+  font-family:'Fredoka One',cursive;font-size:1em;color:white;
+  text-shadow:0 1px 3px rgba(0,0,0,0.3);
+}
+.grow-arrow{
+  position:absolute;font-size:1.5em;color:var(--green);
+  animation:arrowUp 1s ease infinite;
+}
+@keyframes arrowUp{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(-15px);opacity:0.3}}
+.interest-particle{
+  position:absolute;font-size:0.9em;
+  animation:particleFloat 2s ease forwards;pointer-events:none;
+}
+@keyframes particleFloat{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-60px) scale(0.5)}
+}
+.scenario-result{
+  background:var(--card2);border-radius:12px;padding:14px;margin:10px 0;
+  text-align:center;animation:fadeIn 0.4s ease;
+}
+.scenario-result .big{font-family:'Fredoka One',cursive;font-size:1.8em;}
+.scenario-result .sub{color:var(--text2);font-size:0.85em;margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HOME -->
+<div class="screen active" id="homeScreen">
+  <div class="logo">💰</div>
+  <div class="title">Money Smarts</div>
+  <div class="subtitle">Learn how money really works!</div>
+
+  <div id="topicList"></div>
+</div>
+
+<!-- LESSON VIEWER -->
+<div class="screen" id="lessonScreen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <h1 id="lessonHeader">Lesson</h1>
+  </div>
+  <div class="progress-dots" id="progressDots"></div>
+  <div id="lessonContent"></div>
+  <div class="lesson-nav">
+    <button class="nav-btn speak" onclick="speakCurrentSlide()">🔊</button>
+    <button class="nav-btn prev" id="prevBtn" onclick="prevSlide()">← Back</button>
+    <button class="nav-btn next" id="nextBtn" onclick="nextSlide()">Next →</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ── ELEVENLABS TTS ──
+var XI_KEY='sk_939be73bcd0a9ef45fde7aadb962fb5c327addd2285c6df0';
+var XI_VOICE='hpp4J3VqNfWAUOO0d1Us';
+var curAudio=null, voiceCache={};
+function speak(text,cb){
+  if(curAudio){curAudio.pause();curAudio=null;}
+  if(voiceCache[text]){var a=new Audio(voiceCache[text]);curAudio=a;a.onended=cb||null;a.play().catch(function(){});return;}
+  fetch('https://api.elevenlabs.io/v1/text-to-speech/'+XI_VOICE,{method:'POST',headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},body:JSON.stringify({text:text,model_id:'eleven_v3',voice_settings:{stability:0.5,similarity_boost:0.75,style:0.3}})}).then(function(r){return r.blob()}).then(function(b){var u=URL.createObjectURL(b);voiceCache[text]=u;var a=new Audio(u);curAudio=a;a.onended=cb||null;a.play().catch(function(){});}).catch(function(){});
+}
+
+// ── LESSONS DATA ──
+var TOPICS = [
+  {id:'money-basics', icon:'🪙', title:'What IS Money?', desc:'Where money comes from and why it matters', badge:'Start Here',
+   slides:[
+    {title:'Money is a Tool',
+     text:'Imagine you have a chicken, and you want bread. You go to the baker, but she says <b>"I don\'t want a chicken!"</b> 🐔❌<br><br>That was life before money. People had to <b>barter</b> — trade stuff directly. Super inconvenient!<br><br>Then someone had a genius idea: what if we all agree that <b>these shiny coins are worth something?</b>',
+     anim:'barter',
+     voice:'Imagine you have a chicken and want bread. But the baker doesn\'t want your chicken! That\'s why money was invented. Everyone agrees it has value, so you can trade it for anything.'},
+    {title:'Quick Check!',
+     text:'Let\'s see if you\'re paying attention! 🧐',
+     choices:['Money has value because it\'s made of special material','Money has value because everyone agrees it does','Money has value because banks print it','Money has value because it\'s heavy'],
+     correctChoice:1,
+     feedback:['Exactly! Money works because we all <b>trust and agree</b> it has value. That\'s called <span class="highlight">fiat money</span>. A dollar bill is just paper — but powerful paper! 💪','Not quite! A dollar bill is just paper. It has value because the <b>government backs it</b> and <b>everyone trusts and agrees</b> it does. This is called <span class="highlight">fiat money</span>.'],
+     voice:'Quick check! Why does money have value? Pick your answer.'},
+    {title:'Spending Smart: Needs vs Wants',
+     text:'Here\'s a life skill that most adults STILL struggle with: knowing the difference between <b>needs</b> and <b>wants</b>.',
+     anim:'needs-wants',
+     voice:'Here\'s a life skill most adults still struggle with. Knowing the difference between needs and wants. Needs are things you must have. Wants are things that are nice but not necessary.'},
+    {title:'Your Turn: Need or Want?',
+     text:'You just got <b>$50</b> for your birthday! 🎂 Which should you buy FIRST?',
+     choices:['🎮 New video game ($50)','👕 School clothes you need ($35)','🍕 Pizza party with friends ($50)','📱 Phone case ($15)'],
+     correctChoice:1,
+     feedback:['Smart thinking! Needs come first. You\'d still have <b>$15 left</b> for something fun too! That\'s the secret: <span class="highlight">cover needs first, then enjoy wants with what\'s left.</span> 🎉','Good try! The smartest move is <b>school clothes first</b> ($35) since that\'s a need. Then you still have $15 for something fun! <span class="highlight">Needs first, wants second.</span>'],
+     voice:'You got 50 dollars for your birthday. Which should you buy first?'},
+    {title:'The Golden Rule',
+     text:'Here\'s a rule that will make you richer than most adults:<br><br>🏆 <span class="highlight">Spend LESS than you earn. Save the difference.</span><br><br>If you get $20 allowance → spend $15, save $5.<br>If you earn $100 → spend $80, save $20.<br><br>Sounds simple, right? But <b>most adults don\'t do this!</b> That\'s why most adults are broke. You\'re already ahead just by knowing this.',
+     voice:'The golden rule of money: spend less than you earn, and save the difference. Most adults don\'t do this! You\'re already ahead just by knowing it.'}
+   ]},
+
+  {id:'saving', icon:'🏦', title:'Saving & Bank Accounts', desc:'Why saving matters and how banks work', badge:'Essential',
+   slides:[
+    {title:'Why Save Money?',
+     text:'Imagine your bike breaks and you need $50 to fix it. If you\'ve been saving, no problem! If not... you\'re stuck.<br><br><b>Saving is keeping money for later instead of spending it now.</b><br><br>Three reasons to save:<br>🛡️ <b>Emergencies</b> — unexpected costs<br>🎯 <b>Goals</b> — things you want to buy<br>🌱 <b>Growth</b> — your money can make more money!',
+     voice:'Saving means keeping money for later. You save for emergencies, for goals you want to reach, and because saved money can actually grow and make more money.'},
+    {title:'How Banks Work',
+     text:'A bank is like a <b>super-safe piggy bank</b> that pays YOU for keeping your money there.<br><br>When you deposit money, the bank lends it to other people (for houses, cars, businesses). They charge those people <b>interest</b>. And they share a little bit of that interest with you!<br><br><span class="highlight">Your money literally earns more money while you sleep.</span>',
+     voice:'A bank is like a super-safe piggy bank that pays you. When you deposit money, the bank lends it out and charges interest. They share some of that interest with you. Your money earns more money while you sleep.'},
+    {title:'Try It: Savings Calculator', sim:'savings',
+     voice:'Let\'s see how saving works. Use the sliders to set how much you save per week and watch your savings grow over time.'},
+    {title:'The 50/30/20 Rule',
+     text:'A popular budgeting rule:<br><br>🏠 <b>50%</b> — Needs (rent, food, bills)<br>🎮 <b>30%</b> — Wants (entertainment, dining out)<br>💰 <b>20%</b> — Savings & debt payment<br><br>Example: If you earn <b>$100</b>:<br>→ $50 for needs<br>→ $30 for fun stuff<br>→ <span class="highlight">$20 goes straight to savings</span><br><br>Even small amounts add up huge over time!',
+     voice:'The 50 30 20 rule says: 50% of your money for needs, 30% for wants, and 20% for savings. Even small amounts add up over time.'}
+   ]},
+
+  {id:'interest', icon:'📈', title:'Interest: Money Making Money', desc:'Simple vs compound interest explained', badge:'Key Concept',
+   slides:[
+    {title:'What is Interest?',
+     text:'Here\'s something cool: your money can <b>make babies</b>. 💵➡️💵💵<br><br>When you put money in the bank, they <b>pay you</b> for letting them use it. That payment is called <span class="highlight">interest</span>.<br><br>But watch out! When YOU borrow money, <span class="warning">you pay THEM interest</span>. And they charge way more than they pay you.',
+     voice:'Here\'s something cool. Your money can make more money! When you put money in the bank, they pay you interest. But when you borrow, you pay them interest. And they charge way more.'},
+    {title:'Watch Your Money Grow',
+     text:'Let\'s watch <b>$100</b> grow at <b>5% interest per year</b>. Every year, the bank adds 5% on top of what\'s already there:',
+     anim:'compound-grow',
+     voice:'Watch 100 dollars grow at 5% compound interest. Every year, the bank adds 5% on top of everything, including last year\'s interest. See how it accelerates!'},
+    {title:'Pop Quiz: Interest',
+     text:'You put <b>$200</b> in the bank at <b>10% per year</b>. After 1 year, how much do you have?',
+     choices:['$200','$210','$220','$300'],
+     correctChoice:2,
+     feedback:['That\'s right! $200 × 10% = $20 interest. So $200 + $20 = <span class="highlight">$220</span>! Your money grew while you did nothing! 🎉','Not quite! $200 × 10% = $20 interest. So $200 + $20 = <span class="highlight">$220</span>. The bank gave you $20 just for keeping your money there!'],
+     voice:'You put 200 dollars in the bank at 10% per year. After one year, how much do you have?'},
+    {title:'Try It Yourself!', sim:'compound',
+     text:'Drag the sliders and watch compound interest go CRAZY over time. Try 40 years! 🚀',
+     voice:'Now play with these sliders yourself! See the difference between simple and compound interest. Try setting it to 40 years and watch compound interest take off like a rocket!'},
+    {title:'The Rule of 72',
+     text:'Secret trick: want to know how long to <b>double</b> your money?<br><br>Just do: <b>72 ÷ interest rate = years to double</b><br><br>📊 At 6% → 72÷6 = <span class="highlight">12 years</span> to double<br>📊 At 8% → 72÷8 = <span class="highlight">9 years</span> to double<br>📊 At 12% → 72÷12 = <span class="highlight">6 years</span> to double<br><br>$1,000 at 8% → $2,000 in 9 years → $4,000 in 18 → <span class="highlight">$8,000 in 27</span>! 🤯',
+     voice:'Secret trick! Divide 72 by the interest rate to find how many years to double your money. At 8%, it doubles every 9 years. 1000 becomes 2000, then 4000, then 8000!'}
+   ]},
+
+  {id:'credit-cards', icon:'💳', title:'Credit Cards: The Trap', desc:'How credit cards work and their dangers', badge:'Important!',
+   slides:[
+    {title:'What is a Credit Card?',
+     text:'A credit card lets you <b>borrow money instantly</b> to buy things.<br><br>It\'s NOT free money! You\'re taking a <b>short-term loan</b> every time you swipe.<br><br>If you pay it all back within ~30 days → <span class="highlight">no interest charged!</span><br>If you don\'t pay in full → <span class="warning">interest starts piling up at 15-25% per year!</span><br><br>That\'s WAY higher than what banks pay you on savings.',
+     voice:'A credit card lets you borrow money instantly. If you pay it back within 30 days, no interest. But if you don\'t, interest of 15 to 25% starts piling up. That\'s really expensive!'},
+    {title:'The Minimum Payment Trap',
+     text:'Credit card companies only require a <b>tiny minimum payment</b> each month (usually 2-3%).<br><br>This is a TRAP! 🪤<br><br>Example: You owe <b>$1,000</b> at <b>20% interest</b>:<br>→ Minimum payment: ~$25/month<br>→ Time to pay off: <span class="warning">5+ YEARS</span><br>→ Total paid: <span class="warning">$1,380</span> (you paid $380 in interest!)<br><br>If you paid $100/month instead → done in <b>11 months</b>, only $93 in interest.',
+     voice:'Credit card companies set tiny minimum payments on purpose. Paying minimums on a 1000 dollar balance at 20% takes over 5 years and costs you 380 dollars in interest!'},
+    {title:'Try It: Credit Card Payoff', sim:'creditcard',
+     voice:'Use this simulator to see how long it takes to pay off a credit card balance. Try changing the monthly payment and watch what happens to the total interest.'},
+    {title:'Credit Card Rules to Live By',
+     text:'✅ <b>Pay the FULL balance every month</b> — treat it like a debit card<br>✅ <b>Never buy what you can\'t afford</b> — if you can\'t pay cash, don\'t charge it<br>✅ <b>Track your spending</b> — apps make this easy<br>✅ <b>One card is enough</b> — more cards = more temptation<br><br><span class="highlight">A credit card is a tool. Used wisely, it builds your credit score. Used poorly, it builds debt.</span>',
+     voice:'Rules for credit cards: pay the full balance every month, never buy what you can\'t afford, track your spending, and remember: a credit card is a tool. Use it wisely.'}
+   ]},
+
+  {id:'investing', icon:'🚀', title:'Investing: Growing Your Money', desc:'Stocks, index funds, and starting early', badge:'Power Up',
+   slides:[
+    {title:'What is Investing?',
+     text:'Investing means <b>putting your money to work</b> so it grows over time.<br><br>Instead of just saving (1-2% interest), investing can earn <b>7-10% per year</b> on average.<br><br>Main types:<br>📊 <b>Stocks</b> — owning tiny pieces of companies<br>🏢 <b>Index Funds</b> — owning pieces of MANY companies at once<br>🏠 <b>Real Estate</b> — owning property<br>💰 <b>Bonds</b> — lending money to governments/companies',
+     voice:'Investing means putting your money to work. Instead of 1-2% from savings, investing can earn 7-10% per year. You can invest in stocks, index funds, real estate, or bonds.'},
+    {title:'The Power of Starting Early',
+     text:'Meet two friends:<br><br>🟢 <b>Alex</b> starts investing <b>$100/month at age 15</b>, stops at 25 (10 years, $12,000 invested)<br>🔴 <b>Jordan</b> starts investing <b>$100/month at age 25</b>, continues to 65 (40 years, $48,000 invested)<br><br>At age 65 (8% return):<br>→ Alex: <span class="highlight">$470,000</span> (invested only $12k!)<br>→ Jordan: <span class="highlight">$310,000</span> (invested $48k!)<br><br>Alex invested LESS money but ended up with MORE! That\'s <b>compound interest at work</b>.',
+     voice:'If you start investing 100 dollars a month at age 15 and stop at 25, you\'d have 470,000 dollars at 65. Someone who starts at 25 and invests for 40 years would only have 310,000. Starting early is incredibly powerful.'},
+    {title:'Try It: Investment Growth', sim:'invest',
+     voice:'Play with this investment simulator. Change the starting age, monthly amount, and return rate to see how your money grows over time.'},
+    {title:'The Golden Rules',
+     text:'📌 <b>Start early</b> — time is your biggest advantage<br>📌 <b>Be consistent</b> — invest regularly, even small amounts<br>📌 <b>Diversify</b> — don\'t put all eggs in one basket (use index funds!)<br>📌 <b>Be patient</b> — the market goes up AND down, that\'s normal<br>📌 <b>Don\'t panic sell</b> — downturns are temporary, growth is long-term<br><br><span class="highlight">The best time to start investing was yesterday. The second best time is today.</span>',
+     voice:'The golden rules: start early, be consistent, diversify, be patient, and don\'t panic sell. The best time to start investing was yesterday. The second best time is today.'}
+   ]},
+
+  {id:'debt', icon:'⚠️', title:'Debt & Loans', desc:'Good debt, bad debt, and how loans work', badge:'Watch Out',
+   slides:[
+    {title:'Not All Debt is Bad',
+     text:'Debt means <b>you owe money to someone</b>. But not all debt is the same:<br><br>✅ <b>Good debt</b> — helps you earn MORE in the future:<br>→ Student loans (education increases your earning power)<br>→ Mortgage (homes usually go up in value)<br>→ Business loan (if the business makes money)<br><br>❌ <b>Bad debt</b> — pays for things that LOSE value:<br>→ Credit card debt for shopping/eating out<br>→ Car loans for fancy cars you can\'t afford<br>→ Payday loans (extremely high interest)',
+     voice:'Not all debt is bad. Good debt helps you earn more in the future, like education or a home. Bad debt pays for things that lose value, like credit card shopping sprees.'},
+    {title:'How Loans Work',
+     text:'When you borrow money, you agree to pay it back <b>with interest</b>.<br><br>Key terms:<br>💵 <b>Principal</b> — the amount you borrow<br>📊 <b>Interest Rate</b> — the percentage cost per year<br>📅 <b>Term</b> — how long you have to pay it back<br>💰 <b>Monthly Payment</b> — what you pay each month<br><br>Example: Borrow $10,000 at 5% for 5 years:<br>→ Monthly payment: ~$189<br>→ Total paid: $11,323<br>→ <span class="warning">Interest cost: $1,323</span>',
+     voice:'When you borrow, you pay back the amount plus interest. A 10,000 dollar loan at 5% for 5 years costs 189 per month. You end up paying 1,323 dollars in interest.'},
+    {title:'Try It: Loan Calculator', sim:'loan',
+     voice:'Use this loan calculator to see how different interest rates and terms affect your monthly payment and total cost.'},
+    {title:'Staying Out of Bad Debt',
+     text:'🛡️ <b>Emergency fund first</b> — save 3-6 months of expenses before anything else<br>🛡️ <b>Live below your means</b> — spend less than you earn<br>🛡️ <b>Pay yourself first</b> — save/invest BEFORE spending<br>🛡️ <b>Avoid lifestyle inflation</b> — when you earn more, save more (don\'t just spend more)<br><br><span class="highlight">Wealth isn\'t about how much you earn. It\'s about how much you KEEP.</span>',
+     voice:'To stay out of bad debt: build an emergency fund, live below your means, pay yourself first, and avoid lifestyle inflation. Wealth isn\'t about how much you earn. It\'s about how much you keep.'}
+   ]}
+];
+
+var currentTopic = null, currentSlide = 0;
+
+// ── RENDER HOME ──
+function renderHome() {
+  var el = document.getElementById('topicList');
+  el.innerHTML = '';
+  TOPICS.forEach(function(t) {
+    var card = document.createElement('div');
+    card.className = 'topic-card';
+    card.onclick = function(){ openTopic(t.id); };
+    card.innerHTML = '<div class="topic-icon">'+t.icon+'</div>'
+      +'<div class="topic-info"><div class="topic-title">'+t.title+(t.badge?'<span class="topic-badge">'+t.badge+'</span>':'')+'</div>'
+      +'<div class="topic-desc">'+t.desc+'</div></div>';
+    el.appendChild(card);
+  });
+}
+
+// ── OPEN TOPIC ──
+function openTopic(id) {
+  currentTopic = TOPICS.find(function(t){return t.id===id;});
+  if(!currentTopic) return;
+  currentSlide = 0;
+  document.getElementById('lessonHeader').textContent = currentTopic.title;
+  renderSlide();
+  showScreen('lessonScreen');
+}
+
+function goHome() {
+  if(curAudio){curAudio.pause();curAudio=null;}
+  showScreen('homeScreen');
+}
+
+// ── RENDER SLIDE ──
+var chatQueue = [];
+var chatTimer = null;
+
+function renderSlide() {
+  var slide = currentTopic.slides[currentSlide];
+  var el = document.getElementById('lessonContent');
+  el.innerHTML = '';
+  clearTimeout(chatTimer);
+
+  // Progress dots
+  var dots = document.getElementById('progressDots');
+  dots.innerHTML = '';
+  currentTopic.slides.forEach(function(_,i){
+    var d = document.createElement('div');
+    d.className = 'dot' + (i===currentSlide?' active':'') + (i<currentSlide?' done':'');
+    dots.appendChild(d);
+  });
+
+  // Create chat container
+  var chatDiv = document.createElement('div');
+  chatDiv.className = 'tutor-chat';
+  chatDiv.id = 'chatArea';
+  el.appendChild(chatDiv);
+
+  // Build chat sequence: typing → bubble → maybe animation → maybe choices
+  var messages = [];
+
+  // Title as first message
+  messages.push({type:'bubble', text:'<b style="font-size:1.15em;color:var(--accent)">'+slide.title+'</b>'});
+
+  // Break text into conversational chunks if it has text
+  if(slide.text) {
+    var chunks = slide.text.split('<br><br>');
+    chunks.forEach(function(chunk) {
+      if(chunk.trim()) messages.push({type:'bubble', text:chunk.trim()});
+    });
+  }
+
+  // If there's an animation trigger
+  if(slide.anim) {
+    messages.push({type:'anim', anim:slide.anim});
+  }
+
+  // If there's a quiz/choice
+  if(slide.choices) {
+    messages.push({type:'choices', choices:slide.choices, correct:slide.correctChoice, feedback:slide.feedback});
+  }
+
+  // If there's a sim
+  if(slide.sim) {
+    messages.push({type:'bubble', text:'👇 <b>Try it yourself!</b> Drag the sliders below:'});
+    messages.push({type:'sim', sim:slide.sim});
+  }
+
+  // Nav buttons
+  document.getElementById('prevBtn').style.display = currentSlide > 0 ? '' : 'none';
+  document.getElementById('nextBtn').textContent = currentSlide < currentTopic.slides.length - 1 ? 'Next →' : '✓ Done';
+  document.getElementById('nextBtn').style.display = 'none'; // hide until chat done
+
+  // Start narration
+  if(slide.voice) speak(slide.voice);
+
+  // Play chat sequence
+  playChatSequence(messages, chatDiv, 0);
+}
+
+function playChatSequence(messages, container, idx) {
+  if(idx >= messages.length) {
+    // Show next button when all messages are displayed
+    document.getElementById('nextBtn').style.display = '';
+    return;
+  }
+
+  var msg = messages[idx];
+  var delay = idx === 0 ? 300 : 800;
+
+  chatTimer = setTimeout(function() {
+    switch(msg.type) {
+      case 'bubble': {
+        // Show typing indicator briefly
+        var typing = document.createElement('div');
+        typing.className = 'chat-bubble';
+        typing.innerHTML = '<div class="tutor-face">🦉</div><div class="bubble-content"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
+        container.appendChild(typing);
+        container.scrollIntoView({behavior:'smooth', block:'end'});
+
+        setTimeout(function() {
+          typing.remove();
+          var bubble = document.createElement('div');
+          bubble.className = 'chat-bubble';
+          bubble.innerHTML = '<div class="tutor-face">🦉</div><div class="bubble-content">'+msg.text+'</div>';
+          container.appendChild(bubble);
+          container.scrollIntoView({behavior:'smooth', block:'end'});
+          playChatSequence(messages, container, idx+1);
+        }, 600 + Math.min(msg.text.length * 8, 1500));
+        break;
+      }
+      case 'anim': {
+        var animDiv = document.createElement('div');
+        animDiv.className = 'anim-container';
+        animDiv.id = 'animArea';
+        container.appendChild(animDiv);
+        playAnimation(msg.anim, animDiv);
+        setTimeout(function(){ playChatSequence(messages, container, idx+1); }, 2500);
+        break;
+      }
+      case 'choices': {
+        var grid = document.createElement('div');
+        grid.className = 'choice-grid';
+        msg.choices.forEach(function(ch, ci) {
+          var btn = document.createElement('button');
+          btn.className = 'choice-btn';
+          btn.textContent = ch;
+          btn.onclick = function() {
+            grid.querySelectorAll('.choice-btn').forEach(function(b,bi) {
+              b.classList.add('disabled');
+              if(bi === msg.correct) b.classList.add('correct');
+              else if(bi === ci && ci !== msg.correct) b.classList.add('wrong');
+            });
+            // Show feedback
+            var fb = msg.feedback ? (ci === msg.correct ? msg.feedback[0] : msg.feedback[1]) : (ci === msg.correct ? 'That\'s right! 🎉' : 'Not quite, but now you know! 💡');
+            var fbBubble = document.createElement('div');
+            fbBubble.className = 'chat-bubble';
+            fbBubble.innerHTML = '<div class="tutor-face">'+(ci===msg.correct?'🦉':'🦉')+'</div><div class="bubble-content">'+fb+'</div>';
+            container.appendChild(fbBubble);
+            if(ci === msg.correct) speak(fb.replace(/<[^>]*>/g,''));
+            else speak(fb.replace(/<[^>]*>/g,''));
+            document.getElementById('nextBtn').style.display = '';
+            container.scrollIntoView({behavior:'smooth', block:'end'});
+          };
+          grid.appendChild(btn);
+        });
+        container.appendChild(grid);
+        container.scrollIntoView({behavior:'smooth', block:'end'});
+        // Don't auto-advance — wait for choice
+        break;
+      }
+      case 'sim': {
+        var simDiv = document.createElement('div');
+        simDiv.className = 'sim-box';
+        simDiv.id = 'sim-'+msg.sim;
+        container.appendChild(simDiv);
+        renderSim(msg.sim, simDiv);
+        container.scrollIntoView({behavior:'smooth', block:'end'});
+        playChatSequence(messages, container, idx+1);
+        break;
+      }
+    }
+  }, delay);
+}
+
+// ── ANIMATIONS ──
+function playAnimation(type, el) {
+  switch(type) {
+    case 'barter': { // coins dropping into a pile
+      el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; el.style.flexDirection = 'column';
+      var items = ['🐔','↔️','🍞','','🐄','↔️','👟','','then...','','🪙','↔️','✨ Anything!'];
+      var d = 0;
+      items.forEach(function(item) {
+        var sp = document.createElement('span');
+        sp.style.fontSize = item.length > 2 ? '1em' : '2em';
+        sp.style.display = 'inline-block';
+        sp.style.opacity = '0';
+        sp.style.animation = 'fadeIn 0.5s '+d+'s ease forwards';
+        if(item === '') { sp = document.createElement('br'); }
+        else sp.textContent = item;
+        el.appendChild(sp);
+        d += 0.3;
+      });
+      break;
+    }
+    case 'compound-grow': { // money bar growing with interest particles
+      var barWrap = document.createElement('div');
+      barWrap.style.cssText = 'position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:80px;height:100%;';
+      var bar = document.createElement('div');
+      bar.className = 'money-bar';
+      bar.style.height = '10%';
+      barWrap.appendChild(bar);
+      el.appendChild(barWrap);
+      var label = document.createElement('div');
+      label.className = 'bar-label';
+      label.style.bottom = '10%';
+      label.textContent = '$100';
+      barWrap.appendChild(label);
+      // Grow over time
+      var heights = [{h:'10%',t:'$100',d:0},{h:'15%',t:'$105',d:800},{h:'22%',t:'$110',d:1600},{h:'30%',t:'$116',d:2400},{h:'40%',t:'$122',d:3200},{h:'55%',t:'$128',d:4000},{h:'72%',t:'$134',d:4800},{h:'90%',t:'$141',d:5600}];
+      heights.forEach(function(step) {
+        setTimeout(function() {
+          bar.style.height = step.h;
+          label.textContent = step.t;
+          label.style.bottom = step.h;
+          // Spawn interest particle
+          var p = document.createElement('div');
+          p.className = 'interest-particle';
+          p.textContent = '+$';
+          p.style.left = (Math.random()*60+20)+'%';
+          p.style.bottom = step.h;
+          p.style.color = 'var(--gold)';
+          el.appendChild(p);
+          setTimeout(function(){p.remove();},2000);
+        }, step.d);
+      });
+      break;
+    }
+    case 'needs-wants': { // split screen needs vs wants
+      el.style.display = 'flex'; el.style.gap = '10px'; el.style.padding = '14px'; el.style.minHeight = '320px';
+      var left = document.createElement('div');
+      left.style.cssText = 'flex:1;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:14px;padding:12px;text-align:center;';
+      left.innerHTML = '<div style="font-size:1.2em;font-weight:900;color:var(--green);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid rgba(52,211,153,0.2)">✅ NEEDS</div>';
+      var needs = ['🍎 Food & water','🏠 A place to live','👕 Basic clothes','💊 Medicine & health','📚 School supplies','🚌 Transportation','💡 Electricity & heat','🧼 Hygiene (soap, etc)'];
+      needs.forEach(function(n,i){
+        var s = document.createElement('div');
+        s.style.cssText = 'opacity:0;animation:fadeIn 0.4s '+(i*0.3+0.3)+'s ease forwards;font-size:0.9em;margin:6px 0;text-align:left;padding-left:8px;';
+        s.textContent = n;
+        left.appendChild(s);
+      });
+
+      var right = document.createElement('div');
+      right.style.cssText = 'flex:1;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:12px;text-align:center;';
+      right.innerHTML = '<div style="font-size:1.2em;font-weight:900;color:var(--gold);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid rgba(251,191,36,0.2)">🎮 WANTS</div>';
+      var wants = ['🎮 Video games','👟 Designer shoes','🎵 Music streaming','🍕 Eating out','📱 Latest phone','🎬 Movies & Netflix','🧁 Snacks & candy','✈️ Vacations'];
+      wants.forEach(function(w,i){
+        var s = document.createElement('div');
+        s.style.cssText = 'opacity:0;animation:fadeIn 0.4s '+(i*0.3+0.3)+'s ease forwards;font-size:0.9em;margin:6px 0;text-align:left;padding-left:8px;';
+        s.textContent = w;
+        right.appendChild(s);
+      });
+
+      el.appendChild(left); el.appendChild(right);
+
+      // Add bottom note — outside the animation container
+      var note = document.createElement('div');
+      note.style.cssText = 'text-align:center;font-size:0.8em;color:var(--text2);margin-top:10px;opacity:0;animation:fadeIn 0.4s 3s ease forwards;padding:8px;';
+      note.textContent = '💡 Cover needs FIRST, then enjoy wants with what\'s left!';
+      // Append after the anim container, not inside it
+      el.parentNode.insertBefore(note, el.nextSibling);
+      break;
+    }
+    case 'credit-trap': { // debt growing animation
+      var barWrap = document.createElement('div');
+      barWrap.style.cssText = 'position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:80px;height:100%;';
+      var bar = document.createElement('div');
+      bar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,var(--red),#dc2626);border-radius:8px 8px 0 0;transition:height 0.8s ease;height:15%;';
+      barWrap.appendChild(bar);
+      el.appendChild(barWrap);
+      var label = document.createElement('div');
+      label.className = 'bar-label'; label.style.bottom = '15%'; label.textContent = '$1,000';
+      barWrap.appendChild(label);
+      var steps = [{h:'15%',t:'$1,000',d:0},{h:'25%',t:'$1,200',d:1000},{h:'38%',t:'$1,440',d:2000},{h:'55%',t:'$1,728',d:3000},{h:'75%',t:'$2,074',d:4000},{h:'95%',t:'$2,488 😱',d:5000}];
+      steps.forEach(function(s){
+        setTimeout(function(){bar.style.height=s.h;label.textContent=s.t;label.style.bottom=s.h;},s.d);
+      });
+      var warn = document.createElement('div');
+      warn.style.cssText = 'position:absolute;top:8px;width:100%;text-align:center;font-size:0.8em;color:var(--red);opacity:0;animation:fadeIn 0.5s 5.5s ease forwards;';
+      warn.textContent = '💳 20% interest compounds!';
+      el.appendChild(warn);
+      break;
+    }
+  }
+}
+
+function nextSlide() {
+  if(currentSlide < currentTopic.slides.length - 1) { currentSlide++; renderSlide(); }
+  else goHome();
+}
+function prevSlide() {
+  if(currentSlide > 0) { currentSlide--; renderSlide(); }
+}
+function speakCurrentSlide() {
+  var slide = currentTopic.slides[currentSlide];
+  if(slide.voice) speak(slide.voice);
+}
+
+// ── INTERACTIVE SIMS ──
+function renderSim(type, el) {
+  switch(type) {
+    case 'savings': renderSavingsSim(el); break;
+    case 'compound': renderCompoundSim(el); break;
+    case 'creditcard': renderCreditCardSim(el); break;
+    case 'invest': renderInvestSim(el); break;
+    case 'loan': renderLoanSim(el); break;
+  }
+}
+
+function renderSavingsSim(el) {
+  el.innerHTML = '<div class="sim-title">💰 Savings Calculator</div>'
+    +'<div class="sim-row"><span class="sim-label">Save per week:</span><input type="range" class="sim-slider" id="savWeekly" min="5" max="100" value="20" oninput="updateSavings()"><span class="sim-value" id="savWeeklyVal">$20</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Weeks:</span><input type="range" class="sim-slider" id="savWeeks" min="4" max="260" value="52" oninput="updateSavings()"><span class="sim-value" id="savWeeksVal">52</span></div>'
+    +'<div class="sim-result"><div class="big-num" id="savTotal">$1,040</div><div class="sub-text" id="savSub">After 1 year</div></div>';
+  updateSavings();
+}
+function updateSavings() {
+  var w=+document.getElementById('savWeekly').value, wk=+document.getElementById('savWeeks').value;
+  document.getElementById('savWeeklyVal').textContent='$'+w;
+  document.getElementById('savWeeksVal').textContent=wk;
+  var total=w*wk;
+  document.getElementById('savTotal').textContent='$'+total.toLocaleString();
+  var mo=Math.round(wk/4.33);
+  document.getElementById('savSub').textContent='After '+mo+' month'+(mo!==1?'s':'');
+}
+
+function renderCompoundSim(el) {
+  el.innerHTML = '<div class="sim-title">📊 Simple vs Compound Interest</div>'
+    +'<div class="sim-row"><span class="sim-label">Start amount:</span><input type="range" class="sim-slider" id="ciPrincipal" min="100" max="5000" step="100" value="1000" oninput="updateCompound()"><span class="sim-value" id="ciPrincipalVal">$1,000</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Interest rate:</span><input type="range" class="sim-slider" id="ciRate" min="1" max="15" value="7" oninput="updateCompound()"><span class="sim-value" id="ciRateVal">7%</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Years:</span><input type="range" class="sim-slider" id="ciYears" min="1" max="40" value="20" oninput="updateCompound()"><span class="sim-value" id="ciYearsVal">20</span></div>'
+    +'<div class="sim-compare"><div><div class="label">Simple Interest</div><div class="val" id="ciSimple" style="color:var(--text2)">$2,400</div></div><div><div class="label">Compound Interest</div><div class="val" id="ciCompound" style="color:var(--green)">$3,870</div></div></div>'
+    +'<div class="sim-result"><div class="sub-text">Compound earned <b id="ciDiff" style="color:var(--gold)">$1,470</b> MORE!</div></div>';
+  updateCompound();
+}
+function updateCompound() {
+  var p=+document.getElementById('ciPrincipal').value, r=+document.getElementById('ciRate').value/100, y=+document.getElementById('ciYears').value;
+  document.getElementById('ciPrincipalVal').textContent='$'+p.toLocaleString();
+  document.getElementById('ciRateVal').textContent=Math.round(r*100)+'%';
+  document.getElementById('ciYearsVal').textContent=y;
+  var simple=Math.round(p*(1+r*y));
+  var compound=Math.round(p*Math.pow(1+r,y));
+  document.getElementById('ciSimple').textContent='$'+simple.toLocaleString();
+  document.getElementById('ciCompound').textContent='$'+compound.toLocaleString();
+  document.getElementById('ciDiff').textContent='$'+(compound-simple).toLocaleString();
+}
+
+function renderCreditCardSim(el) {
+  el.innerHTML = '<div class="sim-title">💳 Credit Card Payoff</div>'
+    +'<div class="sim-row"><span class="sim-label">Balance owed:</span><input type="range" class="sim-slider" id="ccBal" min="200" max="10000" step="100" value="2000" oninput="updateCC()"><span class="sim-value" id="ccBalVal">$2,000</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Interest rate:</span><input type="range" class="sim-slider" id="ccRate" min="10" max="30" value="20" oninput="updateCC()"><span class="sim-value" id="ccRateVal">20%</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Monthly payment:</span><input type="range" class="sim-slider" id="ccPay" min="25" max="500" step="5" value="50" oninput="updateCC()"><span class="sim-value" id="ccPayVal">$50</span></div>'
+    +'<div class="sim-compare"><div><div class="label">Time to pay off</div><div class="val" id="ccMonths" style="color:var(--red)">--</div></div><div><div class="label">Total interest paid</div><div class="val" id="ccInterest" style="color:var(--red)">--</div></div></div>'
+    +'<div class="sim-result"><div class="sub-text">Total you\'ll pay: <b id="ccTotal" style="color:var(--red)">--</b></div></div>';
+  updateCC();
+}
+function updateCC() {
+  var bal=+document.getElementById('ccBal').value, rate=+document.getElementById('ccRate').value/100/12, pay=+document.getElementById('ccPay').value;
+  document.getElementById('ccBalVal').textContent='$'+bal.toLocaleString();
+  document.getElementById('ccRateVal').textContent=Math.round(rate*1200)+'%';
+  document.getElementById('ccPayVal').textContent='$'+pay;
+  // Ensure payment covers at least interest
+  var minPay = Math.ceil(bal * rate) + 1;
+  if(pay < minPay) { document.getElementById('ccMonths').textContent='NEVER!'; document.getElementById('ccMonths').style.color='var(--red)'; document.getElementById('ccInterest').textContent='∞'; document.getElementById('ccTotal').textContent='Payment too low!'; return; }
+  var months=0, totalPaid=0, b=bal;
+  while(b>0 && months<600) { var interest=b*rate; b=b+interest-pay; if(b<0)b=0; totalPaid+=pay; months++; }
+  var totalInterest = Math.round(totalPaid - bal);
+  document.getElementById('ccMonths').textContent=months<600?months+' months':'NEVER!';
+  document.getElementById('ccMonths').style.color=months>36?'var(--red)':'var(--green)';
+  document.getElementById('ccInterest').textContent='$'+totalInterest.toLocaleString();
+  document.getElementById('ccTotal').textContent='$'+Math.round(totalPaid).toLocaleString();
+}
+
+function renderInvestSim(el) {
+  el.innerHTML = '<div class="sim-title">🚀 Investment Growth</div>'
+    +'<div class="sim-row"><span class="sim-label">Monthly invest:</span><input type="range" class="sim-slider" id="invMonthly" min="25" max="500" step="25" value="100" oninput="updateInvest()"><span class="sim-value" id="invMonthlyVal">$100</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Annual return:</span><input type="range" class="sim-slider" id="invRate" min="3" max="12" value="8" oninput="updateInvest()"><span class="sim-value" id="invRateVal">8%</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Years:</span><input type="range" class="sim-slider" id="invYears" min="5" max="45" value="30" oninput="updateInvest()"><span class="sim-value" id="invYearsVal">30</span></div>'
+    +'<div class="sim-compare"><div><div class="label">You invested</div><div class="val" id="invPut" style="color:var(--text2)">--</div></div><div><div class="label">Growth earned</div><div class="val" id="invGrowth" style="color:var(--green)">--</div></div></div>'
+    +'<div class="sim-result"><div class="big-num" id="invTotal">--</div><div class="sub-text" id="invSub"></div></div>';
+  updateInvest();
+}
+function updateInvest() {
+  var m=+document.getElementById('invMonthly').value, r=+document.getElementById('invRate').value/100/12, y=+document.getElementById('invYears').value;
+  document.getElementById('invMonthlyVal').textContent='$'+m;
+  document.getElementById('invRateVal').textContent=Math.round(r*1200)+'%';
+  document.getElementById('invYearsVal').textContent=y;
+  var n=y*12, total=0;
+  if(r>0) total = m * ((Math.pow(1+r,n)-1)/r);
+  else total = m * n;
+  var invested = m * n;
+  total = Math.round(total);
+  document.getElementById('invPut').textContent='$'+invested.toLocaleString();
+  document.getElementById('invGrowth').textContent='$'+(total-invested).toLocaleString();
+  document.getElementById('invTotal').textContent='$'+total.toLocaleString();
+  document.getElementById('invSub').textContent='Your money grew '+(invested>0?Math.round(total/invested*10)/10:'0')+'x!';
+}
+
+function renderLoanSim(el) {
+  el.innerHTML = '<div class="sim-title">🏦 Loan Calculator</div>'
+    +'<div class="sim-row"><span class="sim-label">Loan amount:</span><input type="range" class="sim-slider" id="lnAmt" min="1000" max="50000" step="500" value="10000" oninput="updateLoan()"><span class="sim-value" id="lnAmtVal">$10,000</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Interest rate:</span><input type="range" class="sim-slider" id="lnRate" min="2" max="25" value="6" oninput="updateLoan()"><span class="sim-value" id="lnRateVal">6%</span></div>'
+    +'<div class="sim-row"><span class="sim-label">Term (years):</span><input type="range" class="sim-slider" id="lnTerm" min="1" max="30" value="5" oninput="updateLoan()"><span class="sim-value" id="lnTermVal">5</span></div>'
+    +'<div class="sim-compare"><div><div class="label">Monthly payment</div><div class="val" id="lnMonthly" style="color:var(--accent)">--</div></div><div><div class="label">Total interest</div><div class="val" id="lnInterest" style="color:var(--red)">--</div></div></div>'
+    +'<div class="sim-result"><div class="sub-text">Total you\'ll pay: <b id="lnTotal">--</b></div></div>';
+  updateLoan();
+}
+function updateLoan() {
+  var p=+document.getElementById('lnAmt').value, r=+document.getElementById('lnRate').value/100/12, n=+document.getElementById('lnTerm').value*12;
+  document.getElementById('lnAmtVal').textContent='$'+p.toLocaleString();
+  document.getElementById('lnRateVal').textContent=Math.round(r*1200)+'%';
+  document.getElementById('lnTermVal').textContent=Math.round(n/12);
+  var monthly = r>0 ? p*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1) : p/n;
+  var total = Math.round(monthly * n);
+  document.getElementById('lnMonthly').textContent='$'+Math.round(monthly).toLocaleString();
+  document.getElementById('lnInterest').textContent='$'+(total-p).toLocaleString();
+  document.getElementById('lnTotal').textContent='$'+total.toLocaleString();
+}
+
+// ── SCREEN NAV ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+}
+
+// ── INIT ──
+renderHome();
+</script>
+</body>
+</html>
