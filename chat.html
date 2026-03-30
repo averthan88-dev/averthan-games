@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Averthan Games - Community Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: #0a0a1a;
+  color: #e0e0e0;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+/* Stars background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(ellipse at 20% 50%, rgba(108,92,231,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(253,121,168,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(162,155,254,0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+.stars {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+.star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle var(--dur) ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0%{opacity:0.2;} 100%{opacity:1;} }
+
+h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
+
+/* Layout */
+.app { display: flex; height: 100vh; position: relative; z-index: 1; }
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+  z-index: 10;
+}
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-header .logo {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.main-menu-btn {
+  background: rgba(108,92,231,0.2);
+  border: 1px solid rgba(108,92,231,0.3);
+  color: #a29bfe;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.main-menu-btn:hover { background: rgba(108,92,231,0.35); }
+
+.sidebar-section { padding: 12px 16px; }
+.sidebar-section h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.room-list { flex: 1; overflow-y: auto; }
+.room-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+  border-left: 3px solid transparent;
+}
+.room-item:hover { background: rgba(255,255,255,0.04); }
+.room-item.active {
+  background: rgba(108,92,231,0.12);
+  border-left-color: #6c5ce7;
+}
+.room-item .room-name { font-weight: 600; font-size: 0.9rem; }
+.room-item .room-count {
+  background: rgba(108,92,231,0.25);
+  color: #a29bfe;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.create-room-btn {
+  width: calc(100% - 32px);
+  margin: 8px 16px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(108,92,231,0.3), rgba(253,121,168,0.2));
+  border: 1px solid rgba(108,92,231,0.3);
+  color: #e0e0e0;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.create-room-btn:hover { background: linear-gradient(135deg, rgba(108,92,231,0.45), rgba(253,121,168,0.3)); }
+
+/* Members panel */
+.members-panel {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.member-item {
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+.member-item .member-name { display: flex; align-items: center; gap: 8px; }
+.member-item .online-dot {
+  width: 8px; height: 8px;
+  background: #00e676;
+  border-radius: 50%;
+  display: inline-block;
+}
+.kick-btn {
+  background: rgba(253,121,168,0.2);
+  border: none;
+  color: #fd79a8;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+}
+.kick-btn:hover { background: rgba(253,121,168,0.4); }
+
+/* Main chat area */
+.chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.chat-header {
+  padding: 14px 20px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chat-header-left { display: flex; align-items: center; gap: 12px; }
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px;
+}
+.chat-header h2 { font-size: 1.1rem; }
+.chat-header .room-info { font-size: 0.8rem; color: #888; }
+.user-info {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.85rem; color: #a29bfe;
+}
+.change-name-btn {
+  background: none;
+  border: 1px solid rgba(162,155,254,0.3);
+  color: #a29bfe;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+}
+.change-name-btn:hover { background: rgba(162,155,254,0.15); }
+
+/* Messages */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scroll-behavior: smooth;
+}
+.messages-container::-webkit-scrollbar { width: 6px; }
+.messages-container::-webkit-scrollbar-track { background: transparent; }
+.messages-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.message {
+  max-width: 70%;
+  animation: msgIn 0.3s ease;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.message.own { align-self: flex-end; }
+.message.other { align-self: flex-start; }
+.message .bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.message.own .bubble {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.message.other .bubble {
+  background: rgba(255,255,255,0.07);
+  border-bottom-left-radius: 4px;
+}
+.message .meta {
+  font-size: 0.7rem;
+  color: #777;
+  margin-bottom: 2px;
+  padding: 0 4px;
+}
+.message.own .meta { text-align: right; }
+.message .meta .msg-user { font-weight: 700; color: #a29bfe; }
+.message .meta .msg-time { margin-left: 8px; }
+
+.system-msg {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  padding: 4px 0;
+  font-style: italic;
+}
+
+/* Input bar */
+.input-bar {
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.03);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  gap: 10px;
+}
+.input-bar input {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e0e0e0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input-bar input:focus { border-color: rgba(108,92,231,0.5); }
+.input-bar input::placeholder { color: #555; }
+.send-btn {
+  background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+  border: none;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.send-btn:hover { opacity: 0.9; }
+.send-btn:active { transform: scale(0.95); }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: #14142a;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 28px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+}
+.modal h3 {
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.modal p { font-size: 0.85rem; color: #999; margin-bottom: 16px; }
+.modal input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #e0e0e0;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  margin-bottom: 12px;
+}
+.modal input:focus { border-color: rgba(108,92,231,0.5); }
+.modal-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.modal-btn:hover { opacity: 0.9; }
+.modal-cancel {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #888;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.modal-error { color: #fd79a8; font-size: 0.8rem; margin-bottom: 8px; }
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; height: 100%;
+    transform: translateX(-100%);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.show { display: block; }
+  .hamburger { display: block; }
+  .message { max-width: 85%; }
+}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="main-menu-btn">← Main Menu</a>
+      <span class="logo">Chat</span>
+    </div>
+
+    <div class="sidebar-section">
+      <h4>Rooms</h4>
+    </div>
+    <div class="room-list" id="roomList"></div>
+    <button class="create-room-btn" id="createRoomBtn">+ Create Room</button>
+
+    <div class="members-panel">
+      <div class="sidebar-section">
+        <h4>Online Members</h4>
+      </div>
+      <div id="membersList"></div>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Chat Area -->
+  <div class="chat-area">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <button class="hamburger" id="hamburgerBtn">☰</button>
+        <div>
+          <h2 id="roomTitle">Lobby</h2>
+          <div class="room-info" id="roomInfo">0 members</div>
+        </div>
+      </div>
+      <div class="user-info">
+        <span id="userDisplay"></span>
+        <button class="change-name-btn" id="changeNameBtn">Change</button>
+      </div>
+    </div>
+
+    <div class="messages-container" id="messagesContainer"></div>
+
+    <div class="input-bar">
+      <input type="text" id="msgInput" placeholder="Type a message..." maxlength="500" autocomplete="off">
+      <button class="send-btn" id="sendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Username Modal -->
+<div class="modal-overlay" id="usernameModal" style="display:none;">
+  <div class="modal">
+    <h3>Welcome to Averthan Chat</h3>
+    <p>Choose a username to get started</p>
+    <div class="modal-error" id="usernameError"></div>
+    <input type="text" id="usernameInput" placeholder="Enter username..." maxlength="20" autocomplete="off">
+    <button class="modal-btn" id="usernameSubmit">Join Chat</button>
+  </div>
+</div>
+
+<!-- Create Room Modal -->
+<div class="modal-overlay" id="createRoomModal" style="display:none;">
+  <div class="modal">
+    <h3>Create a Room</h3>
+    <p>Give your room a name</p>
+    <div class="modal-error" id="roomError"></div>
+    <input type="text" id="roomNameInput" placeholder="Room name..." maxlength="30" autocomplete="off">
+    <button class="modal-btn" id="roomCreateSubmit">Create</button>
+    <button class="modal-cancel" id="roomCreateCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- Change Name Modal -->
+<div class="modal-overlay" id="changeNameModal" style="display:none;">
+  <div class="modal">
+    <h3>Change Username</h3>
+    <div class="modal-error" id="changeNameError"></div>
+    <input type="text" id="changeNameInput" placeholder="New username..." maxlength="20" autocomplete="off">
+    <button class="modal-btn" id="changeNameSubmit">Update</button>
+    <button class="modal-cancel" id="changeNameCancel">Cancel</button>
+  </div>
+</div>
+
+<script>
+// Firebase init
+firebase.initializeApp({
+  apiKey: 'AIzaSyCjzWs1UtPNgDkym3-OU9O6IvhctiwPjbQ',
+  authDomain: 'averthan-games.firebaseapp.com',
+  databaseURL: 'https://averthan-games-default-rtdb.firebaseio.com',
+  projectId: 'averthan-games',
+  storageBucket: 'averthan-games.firebasestorage.app',
+  messagingSenderId: '706796605337',
+  appId: '1:706796605337:web:0d38c4464af37758488d08'
+});
+
+const db = firebase.database();
+const LOBBY_ID = 'lobby';
+
+// Stars
+(function() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + 1;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${Math.random()*3+2}s;animation-delay:${Math.random()*3}s`;
+    c.appendChild(s);
+  }
+})();
+
+// Cookie helpers
+function setCookie(name, value, days) {
+  const d = new Date(); d.setTime(d.getTime() + days*86400000);
+  document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+}
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '=([^;]*)');
+  return v ? decodeURIComponent(v[2]) : null;
+}
+
+// User management
+let currentUser = { userId: null, username: null };
+let currentRoomId = LOBBY_ID;
+let messageListener = null;
+let membersListener = null;
+let roomsListener = null;
+let roomOwnerCache = {};
+
+function generateUserId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'u-' + Array.from({length:16}, ()=>Math.floor(Math.random()*16).toString(16)).join('');
+}
+
+function validateUsername(name) {
+  name = name.trim();
+  if (name.length < 2 || name.length > 20) return false;
+  return /^[a-zA-Z0-9 ]+$/.test(name);
+}
+
+function saveUser(userId, username) {
+  localStorage.setItem('averthan_userId', userId);
+  localStorage.setItem('averthan_username', username);
+  setCookie('averthan_userId', userId, 30);
+  setCookie('averthan_username', username, 30);
+}
+
+function loadUser() {
+  let userId = localStorage.getItem('averthan_userId') || getCookie('averthan_userId');
+  let username = localStorage.getItem('averthan_username') || getCookie('averthan_username');
+  if (userId && username) {
+    currentUser = { userId, username };
+    saveUser(userId, username); // sync both stores
+    return true;
+  }
+  return false;
+}
+
+// UI elements
+const usernameModal = document.getElementById('usernameModal');
+const usernameInput = document.getElementById('usernameInput');
+const usernameSubmit = document.getElementById('usernameSubmit');
+const usernameError = document.getElementById('usernameError');
+const createRoomModal = document.getElementById('createRoomModal');
+const roomNameInput = document.getElementById('roomNameInput');
+const roomCreateSubmit = document.getElementById('roomCreateSubmit');
+const roomCreateCancel = document.getElementById('roomCreateCancel');
+const roomError = document.getElementById('roomError');
+const changeNameModal = document.getElementById('changeNameModal');
+const changeNameInput = document.getElementById('changeNameInput');
+const changeNameSubmit = document.getElementById('changeNameSubmit');
+const changeNameCancel = document.getElementById('changeNameCancel');
+const changeNameError = document.getElementById('changeNameError');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const messagesContainer = document.getElementById('messagesContainer');
+const roomList = document.getElementById('roomList');
+const membersList = document.getElementById('membersList');
+const roomTitle = document.getElementById('roomTitle');
+const roomInfo = document.getElementById('roomInfo');
+const userDisplay = document.getElementById('userDisplay');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+// Sidebar toggle
+document.getElementById('hamburgerBtn').onclick = () => {
+  sidebar.classList.toggle('open');
+  sidebarOverlay.classList.toggle('show');
+};
+sidebarOverlay.onclick = () => {
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('show');
+};
+
+// Username modal
+function showUsernameModal() {
+  usernameModal.style.display = 'flex';
+  usernameInput.focus();
+}
+
+function submitUsername() {
+  const name = usernameInput.value.trim();
+  if (!validateUsername(name)) {
+    usernameError.textContent = '2-20 characters, letters, numbers & spaces only';
+    return;
+  }
+  usernameError.textContent = '';
+  currentUser.userId = generateUserId();
+  currentUser.username = name;
+  saveUser(currentUser.userId, currentUser.username);
+  usernameModal.style.display = 'none';
+  initChat();
+}
+usernameSubmit.onclick = submitUsername;
+usernameInput.onkeydown = e => { if (e.key === 'Enter') submitUsername(); };
+
+// Change name
+document.getElementById('changeNameBtn').onclick = () => {
+  changeNameInput.value = currentUser.username;
+  changeNameModal.style.display = 'flex';
+  changeNameInput.focus();
+};
+changeNameCancel.onclick = () => { changeNameModal.style.display = 'none'; };
+function submitChangeName() {
+  const name = changeNameInput.value.trim();
+  if (!validateUsername(name)) {
+    changeNameError.textContent = '2-20 characters, letters, numbers & spaces only';
+    return;
+  }
+  changeNameError.textContent = '';
+  currentUser.username = name;
+  saveUser(currentUser.userId, currentUser.username);
+  userDisplay.textContent = name;
+  // Update in current room members
+  db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}/name`).set(name);
+  changeNameModal.style.display = 'none';
+}
+changeNameSubmit.onclick = submitChangeName;
+changeNameInput.onkeydown = e => { if (e.key === 'Enter') submitChangeName(); };
+
+// Create room
+document.getElementById('createRoomBtn').onclick = () => {
+  roomNameInput.value = '';
+  roomError.textContent = '';
+  createRoomModal.style.display = 'flex';
+  roomNameInput.focus();
+};
+roomCreateCancel.onclick = () => { createRoomModal.style.display = 'none'; };
+function submitCreateRoom() {
+  const name = roomNameInput.value.trim();
+  if (name.length < 2 || name.length > 30) {
+    roomError.textContent = 'Room name must be 2-30 characters';
+    return;
+  }
+  roomError.textContent = '';
+  const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+  db.ref(`rooms/${roomId}`).set({
+    name: name,
+    ownerId: currentUser.userId,
+    ownerName: currentUser.username,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    createRoomModal.style.display = 'none';
+    joinRoom(roomId, name);
+  });
+}
+roomCreateSubmit.onclick = submitCreateRoom;
+roomNameInput.onkeydown = e => { if (e.key === 'Enter') submitCreateRoom(); };
+
+// Ensure lobby exists
+function ensureLobby() {
+  db.ref(`rooms/${LOBBY_ID}`).once('value', snap => {
+    if (!snap.exists()) {
+      db.ref(`rooms/${LOBBY_ID}`).set({
+        name: 'Lobby',
+        ownerId: 'system',
+        ownerName: 'System',
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+  });
+}
+
+// Room list
+function listenRooms() {
+  if (roomsListener) db.ref('rooms').off('value', roomsListener);
+  roomsListener = db.ref('rooms').on('value', snap => {
+    const rooms = snap.val() || {};
+    roomList.innerHTML = '';
+    for (const [id, room] of Object.entries(rooms)) {
+      if (!room.name) continue;
+      roomOwnerCache[id] = room.ownerId;
+      const memberCount = room.members ? Object.keys(room.members).length : 0;
+      const div = document.createElement('div');
+      div.className = 'room-item' + (id === currentRoomId ? ' active' : '');
+      div.innerHTML = `<span class="room-name">${escapeHtml(room.name)}</span><span class="room-count">${memberCount}</span>`;
+      div.onclick = () => joinRoom(id, room.name);
+      roomList.appendChild(div);
+    }
+  });
+}
+
+// Join room
+function joinRoom(roomId, roomName) {
+  // Leave current room
+  leaveCurrentRoom();
+
+  currentRoomId = roomId;
+  roomTitle.textContent = roomName || roomId;
+  messagesContainer.innerHTML = '';
+
+  // Close mobile sidebar
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('show');
+
+  // Add self to members
+  db.ref(`rooms/${roomId}/members/${currentUser.userId}`).set({
+    name: currentUser.username,
+    joinedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  // Also set onDisconnect to remove member
+  db.ref(`rooms/${roomId}/members/${currentUser.userId}`).onDisconnect().remove();
+
+  // Listen for messages
+  listenMessages(roomId);
+  // Listen for members
+  listenMembers(roomId);
+  // Listen for being kicked
+  listenKicked(roomId);
+
+  // Update active room in list
+  document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+}
+
+function leaveCurrentRoom() {
+  if (currentRoomId) {
+    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).remove();
+    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).onDisconnect().cancel();
+    if (messageListener) {
+      db.ref(`rooms/${currentRoomId}/messages`).off('child_added', messageListener);
+      messageListener = null;
+    }
+    if (membersListener) {
+      db.ref(`rooms/${currentRoomId}/members`).off('value', membersListener);
+      membersListener = null;
+    }
+  }
+}
+
+// Listen messages
+function listenMessages(roomId) {
+  messagesContainer.innerHTML = '';
+  const ref = db.ref(`rooms/${roomId}/messages`).orderByChild('timestamp').limitToLast(100);
+  messageListener = ref.on('child_added', snap => {
+    const msg = snap.val();
+    if (!msg) return;
+    appendMessage(msg);
+  });
+}
+
+function appendMessage(msg) {
+  const isOwn = msg.userId === currentUser.userId;
+  const div = document.createElement('div');
+  div.className = 'message ' + (isOwn ? 'own' : 'other');
+  const time = msg.timestamp ? new Date(msg.timestamp) : new Date();
+  const hh = String(time.getHours()).padStart(2,'0');
+  const mm = String(time.getMinutes()).padStart(2,'0');
+  div.innerHTML = `
+    <div class="meta"><span class="msg-user">${escapeHtml(msg.username)}</span><span class="msg-time">${hh}:${mm}</span></div>
+    <div class="bubble">${escapeHtml(msg.text)}</div>
+  `;
+  messagesContainer.appendChild(div);
+  // Auto-scroll
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Listen members
+function listenMembers(roomId) {
+  membersListener = db.ref(`rooms/${roomId}/members`).on('value', snap => {
+    const members = snap.val() || {};
+    const count = Object.keys(members).length;
+    roomInfo.textContent = count + ' member' + (count !== 1 ? 's' : '');
+    membersList.innerHTML = '';
+    const isOwner = roomOwnerCache[roomId] === currentUser.userId;
+    for (const [uid, m] of Object.entries(members)) {
+      const div = document.createElement('div');
+      div.className = 'member-item';
+      let kickHtml = '';
+      if (isOwner && uid !== currentUser.userId && roomId !== LOBBY_ID) {
+        kickHtml = `<button class="kick-btn" data-uid="${uid}">Kick</button>`;
+      }
+      div.innerHTML = `<span class="member-name"><span class="online-dot"></span>${escapeHtml(m.name || 'Unknown')}</span>${kickHtml}`;
+      membersList.appendChild(div);
+    }
+    // Kick handlers
+    membersList.querySelectorAll('.kick-btn').forEach(btn => {
+      btn.onclick = () => {
+        const uid = btn.dataset.uid;
+        db.ref(`rooms/${roomId}/kicked/${uid}`).set(true);
+        db.ref(`rooms/${roomId}/members/${uid}`).remove();
+      };
+    });
+  });
+}
+
+// Listen for being kicked
+function listenKicked(roomId) {
+  if (roomId === LOBBY_ID) return;
+  db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).on('value', snap => {
+    if (snap.val()) {
+      // Remove kick flag
+      db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).remove();
+      // Go back to lobby
+      joinRoom(LOBBY_ID, 'Lobby');
+      appendSystemMessage('You were kicked from the room.');
+    }
+  });
+}
+
+function appendSystemMessage(text) {
+  const div = document.createElement('div');
+  div.className = 'system-msg';
+  div.textContent = text;
+  messagesContainer.appendChild(div);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Send message
+function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text) return;
+  msgInput.value = '';
+  db.ref(`rooms/${currentRoomId}/messages`).push({
+    userId: currentUser.userId,
+    username: currentUser.username,
+    text: text,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  });
+}
+sendBtn.onclick = sendMessage;
+msgInput.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+
+// Cleanup on leave
+window.addEventListener('beforeunload', () => {
+  if (currentRoomId && currentUser.userId) {
+    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).remove();
+  }
+});
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Init
+function initChat() {
+  userDisplay.textContent = currentUser.username;
+  ensureLobby();
+  listenRooms();
+  // Small delay to ensure lobby exists
+  setTimeout(() => joinRoom(LOBBY_ID, 'Lobby'), 500);
+}
+
+// Startup
+if (loadUser()) {
+  initChat();
+} else {
+  showUsernameModal();
+}
+</script>
+</body>
+</html>
