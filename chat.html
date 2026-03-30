@@ -823,6 +823,33 @@ function ensureLobby() {
   });
 }
 
+// Daily cleanup - first visitor of the day triggers it
+function dailyCleanup() {
+  db.ref('meta/lastCleanup').once('value', snap => {
+    const last = snap.val() || 0;
+    const now = Date.now();
+    const hoursSince = (now - last) / (1000 * 60 * 60);
+    if (hoursSince >= 24) {
+      // Claim the cleanup (prevent multiple clients from running it)
+      db.ref('meta/lastCleanup').set(now);
+      console.log('Running daily cleanup...');
+      // Remove all rooms (including lobby messages)
+      db.ref('rooms').remove().then(() => {
+        // Remove all invites
+        db.ref('invites').remove();
+        // Recreate lobby
+        db.ref(`rooms/${LOBBY_ID}`).set({
+          name: 'Lobby',
+          ownerId: 'system',
+          ownerName: 'System',
+          createdAt: now
+        });
+        console.log('Daily cleanup complete.');
+      });
+    }
+  });
+}
+
 // Room list
 function listenRooms() {
   if (roomsListener) db.ref('rooms').off('value', roomsListener);
@@ -1131,11 +1158,12 @@ function escapeHtml(str) {
 // Init
 function initChat() {
   userDisplay.textContent = currentUser.username;
+  dailyCleanup();
   ensureLobby();
   listenRooms();
   listenInvites();
-  // Small delay to ensure lobby exists
-  setTimeout(() => joinRoom(LOBBY_ID, 'Lobby'), 500);
+  // Small delay to ensure lobby exists and cleanup finishes
+  setTimeout(() => joinRoom(LOBBY_ID, 'Lobby'), 800);
 }
 
 // Startup
