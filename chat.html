@@ -170,6 +170,12 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 .ban-btn:hover { background: rgba(255,50,50,0.4); }
 .invite-btn { background: rgba(108,92,231,0.2); color: #a29bfe; }
 .invite-btn:hover { background: rgba(108,92,231,0.4); }
+.delete-room-btn {
+  background: none; border: none; color: rgba(255,255,255,0.2);
+  font-size: 0.7rem; cursor: pointer; padding: 0 4px; margin-left: auto;
+  font-family: 'Nunito', sans-serif; line-height: 1;
+}
+.delete-room-btn:hover { color: #fd79a8; }
 .member-actions { display: flex; gap: 3px; flex-shrink: 0; }
 .invite-toast {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
@@ -861,10 +867,22 @@ function listenRooms() {
       roomOwnerCache[id] = room.ownerId;
       _roomNameCache[id] = room.name;
       const memberCount = room.members ? Object.keys(room.members).length : 0;
+      const isMyRoom = room.ownerId === currentUser.userId && id !== LOBBY_ID;
       const div = document.createElement('div');
       div.className = 'room-item' + (id === currentRoomId ? ' active' : '');
-      div.innerHTML = `<span class="room-name">${escapeHtml(room.name)}</span><span class="room-count">${memberCount}</span>`;
-      div.onclick = () => joinRoom(id, room.name);
+      div.innerHTML = `<span class="room-name">${escapeHtml(room.name)}</span><span class="room-count">${memberCount}</span>${isMyRoom ? '<button class="delete-room-btn" data-rid="'+id+'" title="Delete room">✕</button>' : ''}`;
+      div.querySelector('.room-name').onclick = () => joinRoom(id, room.name);
+      div.querySelector('.room-count').onclick = () => joinRoom(id, room.name);
+      if (isMyRoom) {
+        div.querySelector('.delete-room-btn').onclick = (e) => {
+          e.stopPropagation();
+          if (confirm('Delete "' + room.name + '"? All messages will be lost.')) {
+            // If currently in this room, go back to lobby
+            if (currentRoomId === id) joinRoom(LOBBY_ID, 'Lobby');
+            db.ref('rooms/' + id).remove();
+          }
+        };
+      }
       roomList.appendChild(div);
     }
   });
