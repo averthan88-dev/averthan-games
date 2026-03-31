@@ -844,6 +844,14 @@ function submitCreateRoom() {
     roomError.textContent = 'Room name must be 2-30 characters';
     return;
   }
+  // Check for duplicate room name
+  const nameLower = name.toLowerCase();
+  for (const rn of Object.values(_roomNameCache)) {
+    if (rn.toLowerCase() === nameLower) {
+      roomError.textContent = 'A room with that name already exists';
+      return;
+    }
+  }
   roomError.textContent = '';
   const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
   db.ref(`rooms/${roomId}`).set({
