@@ -844,24 +844,35 @@ function submitCreateRoom() {
     roomError.textContent = 'Room name must be 2-30 characters';
     return;
   }
-  // Check for duplicate room name
-  const nameLower = name.toLowerCase();
-  for (const rn of Object.values(_roomNameCache)) {
-    if (rn.toLowerCase() === nameLower) {
+  roomError.textContent = '';
+  roomCreateSubmit.disabled = true;
+  // Check all rooms in Firebase for duplicate name
+  db.ref('rooms').once('value', snap => {
+    const rooms = snap.val() || {};
+    const nameLower = name.toLowerCase();
+    let duplicate = false;
+    for (const [id, room] of Object.entries(rooms)) {
+      if (room.name && room.name.toLowerCase() === nameLower) {
+        duplicate = true;
+        break;
+      }
+    }
+    if (duplicate) {
       roomError.textContent = 'A room with that name already exists';
+      roomCreateSubmit.disabled = false;
       return;
     }
-  }
-  roomError.textContent = '';
-  const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
-  db.ref(`rooms/${roomId}`).set({
-    name: name,
-    ownerId: currentUser.userId,
-    ownerName: currentUser.username,
-    createdAt: firebase.database.ServerValue.TIMESTAMP
-  }).then(() => {
-    createRoomModal.style.display = 'none';
-    joinRoom(roomId, name);
+    const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+    db.ref(`rooms/${roomId}`).set({
+      name: name,
+      ownerId: currentUser.userId,
+      ownerName: currentUser.username,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      createRoomModal.style.display = 'none';
+      roomCreateSubmit.disabled = false;
+      joinRoom(roomId, name);
+    });
   });
 }
 roomCreateSubmit.onclick = submitCreateRoom;
