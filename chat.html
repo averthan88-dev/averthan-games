@@ -895,6 +895,9 @@ function listenRooms() {
   roomsListener = db.ref('rooms').on('value', snap => {
     const rooms = snap.val() || {};
     roomList.innerHTML = '';
+    // Reset caches so deleted rooms are removed
+    roomOwnerCache = {};
+    _roomNameCache = {};
     for (const [id, room] of Object.entries(rooms)) {
       if (!room.name) continue;
       roomOwnerCache[id] = room.ownerId;
@@ -981,6 +984,10 @@ function leaveCurrentRoom() {
       db.ref(`rooms/${currentRoomId}/members`).off('value', membersListener);
       membersListener = null;
     }
+    if (lobbyMembersListener) {
+      db.ref(`rooms/${LOBBY_ID}/members`).off('value', lobbyMembersListener);
+      lobbyMembersListener = null;
+    }
   }
 }
 
@@ -1012,81 +1019,134 @@ function appendMessage(msg) {
 }
 
 // Listen members
+let lobbyMembersListener = null;
+
 function listenMembers(roomId) {
+  // Clean up previous lobby listener
+  if (lobbyMembersListener) {
+    db.ref(`rooms/${LOBBY_ID}/members`).off('value', lobbyMembersListener);
+    lobbyMembersListener = null;
+  }
+
   membersListener = db.ref(`rooms/${roomId}/members`).on('value', snap => {
     const members = snap.val() || {};
     const count = Object.keys(members).length;
     roomInfo.textContent = count + ' member' + (count !== 1 ? 's' : '');
-    membersList.innerHTML = '';
+
     const isOwner = roomOwnerCache[roomId] === currentUser.userId;
     const isInLobby = roomId === LOBBY_ID;
-    // Check if current user owns any custom rooms (for invite buttons)
-    const myRooms = [];
+
     if (isInLobby) {
-      for (const [rid, oid] of Object.entries(roomOwnerCache)) {
-        if (oid === currentUser.userId && rid !== LOBBY_ID) myRooms.push(rid);
+      // In lobby: show all lobby users, with invite button if I own rooms
+      renderMembersList(roomId, members, isOwner, null);
+    } else {
+      // In custom room: show room members + also fetch lobby users for inviting
+      lobbyMembersListener = db.ref(`rooms/${LOBBY_ID}/members`).on('value', lobbySnap => {
+        const lobbyMembers = lobbySnap.val() || {};
+        renderMembersList(roomId, members, isOwner, lobbyMembers);
+      });
+    }
+  });
+}
+
+function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
+  membersList.innerHTML = '';
+  const isInLobby = roomId === LOBBY_ID;
+
+  // Find rooms I own (for invite buttons)
+  const myRooms = [];
+  for (const [rid, oid] of Object.entries(roomOwnerCache)) {
+    if (oid === currentUser.userId && rid !== LOBBY_ID) myRooms.push(rid);
+  }
+
+  // Section: Current room members
+  if (!isInLobby) {
+    const header = document.createElement('div');
+    header.className = 'sidebar-section';
+    header.innerHTML = `<h4>${getRoomName(roomId)}</h4>`;
+    membersList.appendChild(header);
+  }
+
+  for (const [uid, m] of Object.entries(roomMembers)) {
+    const div = document.createElement('div');
+    div.className = 'member-item';
+    let actionsHtml = '';
+    const isMe = uid === currentUser.userId;
+    if (!isMe) {
+      if (isInLobby && myRooms.length > 0) {
+        actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button></div>`;
+      } else if (!isInLobby && isOwner) {
+        actionsHtml = `<div class="member-actions"><button class="kick-btn" data-uid="${uid}">Kick</button><button class="ban-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Ban</button></div>`;
       }
     }
-    for (const [uid, m] of Object.entries(members)) {
-      const div = document.createElement('div');
-      div.className = 'member-item';
-      let actionsHtml = '';
-      const isMe = uid === currentUser.userId;
-      if (!isMe) {
-        if (isInLobby && myRooms.length > 0) {
-          // In lobby: show invite button if I own a room
+    const youTag = isMe ? ' <span style="color:#a29bfe;font-size:0.7rem;">(you)</span>' : '';
+    div.innerHTML = `<span class="member-name"><span class="online-dot"></span>${escapeHtml(m.name || 'Unknown')}${youTag}</span>${actionsHtml}`;
+    membersList.appendChild(div);
+  }
+
+  // Section: Lobby users (only when in a custom room)
+  if (!isInLobby && lobbyMembers) {
+    // Filter out users already in current room
+    const lobbyOnly = {};
+    for (const [uid, m] of Object.entries(lobbyMembers)) {
+      if (!roomMembers[uid]) lobbyOnly[uid] = m;
+    }
+    if (Object.keys(lobbyOnly).length > 0) {
+      const header2 = document.createElement('div');
+      header2.className = 'sidebar-section';
+      header2.style.marginTop = '8px';
+      header2.innerHTML = `<h4>Lobby Users</h4>`;
+      membersList.appendChild(header2);
+
+      for (const [uid, m] of Object.entries(lobbyOnly)) {
+        const div = document.createElement('div');
+        div.className = 'member-item';
+        let actionsHtml = '';
+        if (isOwner) {
           actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button></div>`;
-        } else if (!isInLobby && isOwner) {
-          // In custom room as owner: show kick and ban
-          actionsHtml = `<div class="member-actions"><button class="kick-btn" data-uid="${uid}">Kick</button><button class="ban-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Ban</button></div>`;
         }
+        div.innerHTML = `<span class="member-name"><span class="online-dot" style="background:#ffaa00;"></span>${escapeHtml(m.name || 'Unknown')}</span>${actionsHtml}`;
+        membersList.appendChild(div);
       }
-      div.innerHTML = `<span class="member-name"><span class="online-dot"></span>${escapeHtml(m.name || 'Unknown')}</span>${actionsHtml}`;
-      membersList.appendChild(div);
     }
-    // Kick handlers
-    membersList.querySelectorAll('.kick-btn').forEach(btn => {
-      btn.onclick = () => {
-        const uid = btn.dataset.uid;
+  }
+
+  // Attach event handlers
+  membersList.querySelectorAll('.kick-btn').forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      db.ref(`rooms/${roomId}/kicked/${uid}`).set(true);
+      db.ref(`rooms/${roomId}/members/${uid}`).remove();
+      appendSystemMessage('User has been kicked.');
+    };
+  });
+  membersList.querySelectorAll('.ban-btn').forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const name = btn.dataset.name;
+      if (confirm(`Ban ${name} from this room permanently?`)) {
+        db.ref(`rooms/${roomId}/banned/${uid}`).set({name: name, bannedAt: Date.now()});
         db.ref(`rooms/${roomId}/kicked/${uid}`).set(true);
         db.ref(`rooms/${roomId}/members/${uid}`).remove();
-        appendSystemMessage('User has been kicked.');
-      };
-    });
-    // Ban handlers (room-level ban + kick)
-    membersList.querySelectorAll('.ban-btn').forEach(btn => {
-      btn.onclick = () => {
-        const uid = btn.dataset.uid;
-        const name = btn.dataset.name;
-        if (confirm(`Ban ${name} from this room permanently?`)) {
-          db.ref(`rooms/${roomId}/banned/${uid}`).set({name: name, bannedAt: Date.now()});
-          db.ref(`rooms/${roomId}/kicked/${uid}`).set(true);
-          db.ref(`rooms/${roomId}/members/${uid}`).remove();
-          appendSystemMessage(`${name} has been banned from this room.`);
-        }
-      };
-    });
-    // Invite handlers
-    membersList.querySelectorAll('.invite-btn').forEach(btn => {
-      btn.onclick = () => {
-        const uid = btn.dataset.uid;
-        const name = btn.dataset.name;
-        if (myRooms.length === 1) {
-          // Only one room, invite directly
-          sendInvite(uid, name, myRooms[0]);
-        } else {
-          // Multiple rooms, pick one
-          const roomNames = myRooms.map(rid => {
-            const rdata = roomOwnerCache[rid] ? rid : rid;
-            return rid;
-          });
-          // Simple: just use first room for now, or show picker
-          const pick = prompt('Which room? Enter room number:\\n' + myRooms.map((rid,i)=>`${i+1}. ${getRoomName(rid)}`).join('\\n'));
-          const idx = parseInt(pick) - 1;
-          if (idx >= 0 && idx < myRooms.length) sendInvite(uid, name, myRooms[idx]);
-        }
-      };
-    });
+        appendSystemMessage(`${name} has been banned from this room.`);
+      }
+    };
+  });
+  membersList.querySelectorAll('.invite-btn').forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const name = btn.dataset.name;
+      if (myRooms.length === 1) {
+        sendInvite(uid, name, myRooms[0]);
+      } else if (myRooms.length > 1) {
+        const pick = prompt('Which room? Enter number:\\n' + myRooms.map((rid,i)=>`${i+1}. ${getRoomName(rid)}`).join('\\n'));
+        const idx = parseInt(pick) - 1;
+        if (idx >= 0 && idx < myRooms.length) sendInvite(uid, name, myRooms[idx]);
+      } else if (!isInLobby) {
+        // We're in a custom room - invite to this room
+        sendInvite(uid, name, roomId);
+      }
+    };
   });
 }
 
