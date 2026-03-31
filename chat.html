@@ -464,7 +464,12 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
           <div class="room-info" id="roomInfo">0 members</div>
         </div>
       </div>
-      <div class="user-info">
+      <div class="user-info" style="display:flex;align-items:center;gap:8px;">
+        <button id="leaveRoomBtn" style="
+          display:none;padding:5px 12px;border-radius:8px;border:1px solid rgba(253,121,168,0.4);
+          background:rgba(253,121,168,0.15);color:#fd79a8;font-size:0.75rem;font-weight:700;
+          cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap;
+        ">Leave Room</button>
         <span id="userDisplay"></span>
         <button class="change-name-btn" id="changeNameBtn">Change</button>
       </div>
@@ -756,8 +761,14 @@ const membersList = document.getElementById('membersList');
 const roomTitle = document.getElementById('roomTitle');
 const roomInfo = document.getElementById('roomInfo');
 const userDisplay = document.getElementById('userDisplay');
+const leaveRoomBtn = document.getElementById('leaveRoomBtn');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+// Leave room button
+leaveRoomBtn.onclick = () => {
+  leaveRoom();
+};
 
 // Sidebar toggle
 document.getElementById('hamburgerBtn').onclick = () => {
@@ -940,26 +951,36 @@ function joinRoom(roomId, roomName) {
   _doJoinRoom(roomId, roomName);
 }
 
+// Track which rooms user is a member of (so they can switch freely)
+let userRooms = new Set();
+
 function _doJoinRoom(roomId, roomName) {
-  // Leave current room
-  leaveCurrentRoom();
+  // Detach current listeners but DON'T remove membership from rooms we belong to
+  detachRoomListeners();
 
   currentRoomId = roomId;
   roomTitle.textContent = roomName || roomId;
   messagesContainer.innerHTML = '';
 
+  // Show/hide Leave Room button
+  leaveRoomBtn.style.display = (roomId !== LOBBY_ID) ? 'inline-block' : 'none';
+
   // Close mobile sidebar
   sidebar.classList.remove('open');
   sidebarOverlay.classList.remove('show');
 
-  // Add self to members
+  // Add self to members of this room
   db.ref(`rooms/${roomId}/members/${currentUser.userId}`).set({
     name: currentUser.username,
     joinedAt: firebase.database.ServerValue.TIMESTAMP
   });
-
-  // Also set onDisconnect to remove member
   db.ref(`rooms/${roomId}/members/${currentUser.userId}`).onDisconnect().remove();
+  userRooms.add(roomId);
+
+  // Always keep presence in lobby too (so others can see you)
+  if (roomId !== LOBBY_ID) {
+    db.ref(`rooms/${LOBBY_ID}/members/${currentUser.userId}`).remove();
+  }
 
   // Listen for messages
   listenMessages(roomId);
@@ -972,10 +993,8 @@ function _doJoinRoom(roomId, roomName) {
   document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
 }
 
-function leaveCurrentRoom() {
+function detachRoomListeners() {
   if (currentRoomId) {
-    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).remove();
-    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).onDisconnect().cancel();
     if (messageListener) {
       db.ref(`rooms/${currentRoomId}/messages`).off('child_added', messageListener);
       messageListener = null;
@@ -988,6 +1007,24 @@ function leaveCurrentRoom() {
       db.ref(`rooms/${LOBBY_ID}/members`).off('value', lobbyMembersListener);
       lobbyMembersListener = null;
     }
+  }
+}
+
+function leaveCurrentRoom() {
+  if (currentRoomId) {
+    // Remove membership from the room we're leaving
+    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).remove();
+    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).onDisconnect().cancel();
+    userRooms.delete(currentRoomId);
+    detachRoomListeners();
+  }
+}
+
+// Permanently leave a custom room (go back to lobby)
+function leaveRoom() {
+  if (currentRoomId && currentRoomId !== LOBBY_ID) {
+    leaveCurrentRoom();
+    joinRoom(LOBBY_ID, 'Lobby');
   }
 }
 
@@ -1185,30 +1222,27 @@ function showInviteToast(inv, key) {
     <div style="font-size:13px;"><strong>${escapeHtml(inv.fromName)}</strong> invited you to</div>
     <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#a29bfe;margin:4px 0;">${escapeHtml(inv.roomName)}</div>
     <div class="invite-actions">
-      <button class="invite-accept" onclick="acceptInvite('${key}','${escapeHtml(inv.roomName)}')">Join</button>
-      <button class="invite-decline" onclick="declineInvite('${key}')">Decline</button>
+      <button class="invite-accept" id="inv-accept">Join</button>
+      <button class="invite-decline" id="inv-decline">Decline</button>
     </div>`;
   document.body.appendChild(toast);
+  document.getElementById('inv-accept').onclick = () => {
+    toast.remove();
+    db.ref('invites/' + currentUser.userId + '/' + key).remove();
+    db.ref('rooms/' + key + '/banned/' + currentUser.userId).once('value', snap => {
+      if (snap.val()) {
+        appendSystemMessage('You are banned from that room.');
+      } else {
+        joinRoom(key, inv.roomName);
+      }
+    });
+  };
+  document.getElementById('inv-decline').onclick = () => {
+    toast.remove();
+    db.ref('invites/' + currentUser.userId + '/' + key).remove();
+  };
   // Auto-dismiss after 15s
   setTimeout(() => { if (toast.parentNode) toast.remove(); }, 15000);
-}
-
-function acceptInvite(roomId, roomName) {
-  document.querySelectorAll('.invite-toast').forEach(el => el.remove());
-  db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
-  // Check if banned from this room
-  db.ref(`rooms/${roomId}/banned/${currentUser.userId}`).once('value', snap => {
-    if (snap.val()) {
-      appendSystemMessage('You are banned from that room.');
-    } else {
-      joinRoom(roomId, roomName);
-    }
-  });
-}
-
-function declineInvite(roomId) {
-  document.querySelectorAll('.invite-toast').forEach(el => el.remove());
-  db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
 }
 
 // Listen for being kicked
@@ -1253,10 +1287,12 @@ function sendMessage() {
 sendBtn.onclick = sendMessage;
 msgInput.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
-// Cleanup on leave
+// Cleanup on leave - remove from all rooms
 window.addEventListener('beforeunload', () => {
-  if (currentRoomId && currentUser.userId) {
-    db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}`).remove();
+  if (currentUser.userId) {
+    userRooms.forEach(rid => {
+      db.ref(`rooms/${rid}/members/${currentUser.userId}`).remove();
+    });
   }
 });
 
