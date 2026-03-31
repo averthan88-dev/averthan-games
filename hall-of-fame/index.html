@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hall of Fame - Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Nunito',sans-serif; background:#0a0a1a; color:#fff; min-height:100vh; overflow-x:hidden; }
+
+.stars { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.star { position:absolute; background:#fff; border-radius:50%; animation:twinkle var(--duration) ease-in-out infinite; }
+@keyframes twinkle { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+
+.orb { position:fixed; border-radius:50%; filter:blur(80px); opacity:0.3; pointer-events:none; z-index:0; }
+.orb-1 { width:400px; height:400px; background:#6c5ce7; top:-100px; right:-100px; animation:float1 8s ease-in-out infinite; }
+.orb-2 { width:300px; height:300px; background:#fdcb6e; bottom:-50px; left:-50px; animation:float2 10s ease-in-out infinite; }
+@keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,50px)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-40px)} }
+
+.container { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:30px 20px 60px; }
+
+.home-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:rgba(255,255,255,0.6); font-weight:700; font-size:14px; margin-bottom:20px; transition:color .2s; }
+.home-btn:hover { color:#fff; }
+
+.header { text-align:center; margin-bottom:40px; }
+.title { font-family:'Fredoka One',cursive; font-size:2.8em; background:linear-gradient(135deg,#fdcb6e,#e17055,#fd79a8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:6px; }
+.subtitle { color:rgba(255,255,255,0.5); font-weight:600; letter-spacing:2px; text-transform:uppercase; }
+
+/* Tabs */
+.tabs { display:flex; gap:8px; margin-bottom:30px; flex-wrap:wrap; justify-content:center; }
+.tab { padding:10px 20px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); cursor:pointer; font-weight:700; font-size:0.9em; transition:all .2s; color:rgba(255,255,255,0.6); }
+.tab:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.tab.active { background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; border-color:transparent; }
+
+/* Player card */
+.player-card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:24px; margin-bottom:30px; text-align:center; }
+.player-name { font-family:'Fredoka One',cursive; font-size:1.6em; margin-bottom:4px; }
+.player-stats { color:rgba(255,255,255,0.5); font-size:0.9em; }
+.player-games { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px; }
+.player-game { background:rgba(255,255,255,0.08); border-radius:10px; padding:8px 14px; font-size:0.85em; }
+.player-game .pg-name { font-weight:700; color:#a29bfe; }
+.player-game .pg-score { color:#fdcb6e; font-weight:800; }
+
+/* Leaderboard */
+.game-section { margin-bottom:30px; }
+.game-title { font-family:'Fredoka One',cursive; font-size:1.3em; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.game-icon { font-size:1.4em; }
+
+.lb-table { width:100%; border-collapse:collapse; }
+.lb-table th { text-align:left; padding:10px 14px; color:rgba(255,255,255,0.4); font-size:0.8em; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,0.1); }
+.lb-table td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.lb-table tr:hover td { background:rgba(255,255,255,0.03); }
+
+.rank { font-weight:800; width:40px; }
+.rank-1 { color:#FFD700; font-size:1.2em; }
+.rank-2 { color:#C0C0C0; font-size:1.1em; }
+.rank-3 { color:#CD7F32; font-size:1.05em; }
+
+.lb-name { font-weight:700; }
+.lb-name.is-you { color:#a29bfe; }
+.lb-score { font-weight:800; color:#fdcb6e; text-align:right; }
+.lb-date { color:rgba(255,255,255,0.3); font-size:0.8em; text-align:right; }
+
+.no-scores { text-align:center; color:rgba(255,255,255,0.3); padding:30px; font-style:italic; }
+
+.loading { text-align:center; padding:60px; color:rgba(255,255,255,0.4); }
+.loading .spinner { font-size:2em; animation:spin 1s linear infinite; display:inline-block; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* All players tab */
+.all-players { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:14px; }
+.ap-card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:16px; cursor:pointer; transition:all .2s; }
+.ap-card:hover { background:rgba(108,92,231,0.15); border-color:rgba(108,92,231,0.4); transform:translateY(-2px); }
+.ap-name { font-weight:800; font-size:1.1em; margin-bottom:4px; }
+.ap-info { color:rgba(255,255,255,0.4); font-size:0.85em; }
+
+@media (max-width:600px) {
+    .title { font-size:2em; }
+    .container { padding:20px 14px 40px; }
+    .tabs { gap:6px; }
+    .tab { padding:8px 14px; font-size:0.8em; }
+}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="container">
+    <a href="../index.html" class="home-btn">← Back to Games</a>
+    
+    <div class="header">
+        <div class="title">🏆 Hall of Fame</div>
+        <div class="subtitle">Legends of Averthan</div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+    <div id="content"><div class="loading"><span class="spinner">🎮</span><br>Loading scores...</div></div>
+</div>
+
+<script src="../av-scores.js"></script>
+<script>
+const GAMES = [
+    { id: 'dash-runner', name: 'Dash Runner', icon: '🦊' },
+    { id: 'whack-a-mole', name: 'Whack-a-Mole', icon: '🔨' },
+    { id: '2048', name: '2048', icon: '🔢' },
+    { id: 'typing-racer', name: 'Typing Racer', icon: '⌨️' },
+    { id: 'trivia-blitz', name: 'Trivia Blitz', icon: '🧠' },
+    { id: 'times-table-racer', name: 'Times Table Racer', icon: '🏎️' },
+    { id: 'memory-match', name: 'Memory Match', icon: '🃏' },
+    { id: 'simon-says', name: 'Simon Says', icon: '🎵' },
+    { id: 'snake', name: 'Snake', icon: '🐍' },
+    { id: 'fruit-slicer', name: 'Fruit Slicer', icon: '🍉' },
+    { id: 'maze-runner', name: 'Maze Runner', icon: '🏃' },
+    { id: 'cookie-clicker', name: 'Cookie Clicker', icon: '🍪' },
+    { id: 'wordle-junior', name: 'Wordle Junior', icon: '🔤' },
+    { id: 'space-blaster', name: 'Space Blaster', icon: '🚀' },
+    { id: 'chess', name: 'Chess vs Kit', icon: '♟️' },
+];
+
+const tabsEl = document.getElementById('tabs');
+const contentEl = document.getElementById('content');
+const myName = localStorage.getItem('av_username') || 'Anonymous';
+
+let currentTab = 'overview';
+let allData = {};
+
+// Stars
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;--duration:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s;`;
+    starsEl.appendChild(s);
+}
+
+function buildTabs() {
+    const tabs = [
+        { id: 'overview', label: '🏠 Overview' },
+        { id: 'my-stats', label: '👤 My Stats' },
+        { id: 'all-players', label: '👥 All Players' },
+    ];
+    GAMES.forEach(g => tabs.push({ id: g.id, label: `${g.icon} ${g.name}` }));
+
+    tabsEl.innerHTML = tabs.map(t => 
+        `<div class="tab ${t.id === currentTab ? 'active' : ''}" onclick="switchTab('${t.id}')">${t.label}</div>`
+    ).join('');
+}
+
+async function loadAllData() {
+    try {
+        await new Promise(resolve => {
+            const check = setInterval(() => {
+                if (typeof avGetScores === 'function') { clearInterval(check); resolve(); }
+            }, 100);
+            setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+        });
+
+        // Load all games in parallel
+        const results = await Promise.all(
+            GAMES.map(async g => {
+                const scores = await avGetScores(g.id, 50);
+                return { gameId: g.id, scores };
+            })
+        );
+        results.forEach(r => { allData[r.gameId] = r.scores; });
+    } catch(e) {
+        console.error('Failed to load data:', e);
+    }
+}
+
+function timeAgo(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    return days + 'd ago';
+}
+
+function fmtScore(n) {
+    if (n >= 1e12) return (n/1e12).toFixed(1) + 'T';
+    if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+    if (n >= 1000) return n.toLocaleString();
+    return String(n);
+}
+
+function renderOverview() {
+    let html = '';
+    
+    // Top players across all games
+    const playerTotals = {};
+    for (const [gameId, scores] of Object.entries(allData)) {
+        scores.forEach((s, i) => {
+            if (!playerTotals[s.name]) playerTotals[s.name] = { games: 0, golds: 0, total: 0, gameList: [] };
+            playerTotals[s.name].games++;
+            playerTotals[s.name].total += s.score;
+            if (i === 0) playerTotals[s.name].golds++;
+            const game = GAMES.find(g => g.id === gameId);
+            playerTotals[s.name].gameList.push({ icon: game?.icon || '🎮', name: game?.name || gameId, score: s.score });
+        });
+    }
+
+    const topPlayers = Object.entries(playerTotals)
+        .sort((a, b) => b[1].golds - a[1].golds || b[1].games - a[1].games)
+        .slice(0, 5);
+
+    if (topPlayers.length > 0) {
+        html += '<div class="game-section"><div class="game-title"><span class="game-icon">👑</span> Top Players</div>';
+        html += '<table class="lb-table"><tr><th>#</th><th>Player</th><th style="text-align:center">🥇</th><th style="text-align:center">Games</th></tr>';
+        topPlayers.forEach(([name, info], i) => {
+            const rankCls = i < 3 ? `rank-${i+1}` : '';
+            const isMy = name === myName ? ' is-you' : '';
+            html += `<tr><td class="rank ${rankCls}">${i+1}</td><td class="lb-name${isMy}">${name}</td><td style="text-align:center">${info.golds}</td><td style="text-align:center">${info.games}</td></tr>`;
+        });
+        html += '</table></div>';
+    }
+
+    // Per-game #1 holders
+    html += '<div class="game-section"><div class="game-title"><span class="game-icon">🏆</span> Current Champions</div>';
+    const hasChamps = GAMES.some(g => allData[g.id]?.length > 0);
+    if (hasChamps) {
+        html += '<table class="lb-table"><tr><th>Game</th><th>Champion</th><th style="text-align:right">Score</th></tr>';
+        GAMES.forEach(g => {
+            const scores = allData[g.id] || [];
+            if (scores.length > 0) {
+                const top = scores[0];
+                const isMy = top.name === myName ? ' is-you' : '';
+                html += `<tr style="cursor:pointer" onclick="switchTab('${g.id}')"><td>${g.icon} ${g.name}</td><td class="lb-name${isMy}">👑 ${top.name}</td><td class="lb-score">${fmtScore(top.score)}</td></tr>`;
+            } else {
+                html += `<tr style="cursor:pointer;opacity:0.4" onclick="switchTab('${g.id}')"><td>${g.icon} ${g.name}</td><td colspan="2" style="color:rgba(255,255,255,0.3)">No scores yet — be the first!</td></tr>`;
+            }
+        });
+        html += '</table>';
+    } else {
+        html += '<div class="no-scores">No scores yet! Play some games to see champions here.</div>';
+    }
+    html += '</div>';
+
+    contentEl.innerHTML = html;
+}
+
+function renderMyStats() {
+    let html = `<div class="player-card"><div class="player-name">${myName}</div>`;
+    
+    const myGames = [];
+    let totalScore = 0;
+    let golds = 0;
+    
+    for (const [gameId, scores] of Object.entries(allData)) {
+        const myEntry = scores.find(s => s.name === myName);
+        if (myEntry) {
+            const game = GAMES.find(g => g.id === gameId);
+            const rank = scores.indexOf(myEntry) + 1;
+            if (rank === 1) golds++;
+            totalScore += myEntry.score;
+            myGames.push({ game, score: myEntry.score, rank });
+        }
+    }
+    
+    html += `<div class="player-stats">${myGames.length} games played • ${golds} 🥇 gold medals • ${fmtScore(totalScore)} total score</div>`;
+    
+    if (myGames.length > 0) {
+        html += '<div class="player-games">';
+        myGames.sort((a, b) => b.score - a.score);
+        myGames.forEach(g => {
+            const medal = g.rank === 1 ? '🥇' : g.rank === 2 ? '🥈' : g.rank === 3 ? '🥉' : `#${g.rank}`;
+            html += `<div class="player-game"><span class="pg-name">${g.game.icon} ${g.game.name}</span> <span class="pg-score">${fmtScore(g.score)}</span> <span style="opacity:0.5">${medal}</span></div>`;
+        });
+        html += '</div>';
+    } else {
+        html += '<div style="margin-top:16px;color:rgba(255,255,255,0.4)">Play some games to see your stats here!</div>';
+    }
+    
+    html += '</div>';
+    contentEl.innerHTML = html;
+}
+
+function renderAllPlayers() {
+    const players = {};
+    for (const [gameId, scores] of Object.entries(allData)) {
+        scores.forEach((s, i) => {
+            if (!players[s.name]) players[s.name] = { games: [], golds: 0, total: 0 };
+            players[s.name].games.push(gameId);
+            players[s.name].total += s.score;
+            if (i === 0) players[s.name].golds++;
+        });
+    }
+
+    const sorted = Object.entries(players).sort((a, b) => b[1].golds - a[1].golds || b[1].total - a[1].total);
+    
+    if (sorted.length === 0) {
+        contentEl.innerHTML = '<div class="no-scores">No players yet! Be the first to play.</div>';
+        return;
+    }
+
+    let html = '<div class="all-players">';
+    sorted.forEach(([name, info]) => {
+        const isMy = name === myName ? ' style="border-color:#6c5ce7"' : '';
+        html += `<div class="ap-card"${isMy}><div class="ap-name">${name === myName ? '⭐ ' : ''}${name}</div><div class="ap-info">${info.games.length} games • ${info.golds} 🥇 • ${fmtScore(info.total)} total</div></div>`;
+    });
+    html += '</div>';
+    contentEl.innerHTML = html;
+}
+
+function renderGameBoard(gameId) {
+    const game = GAMES.find(g => g.id === gameId);
+    const scores = allData[gameId] || [];
+    
+    let html = `<div class="game-section"><div class="game-title"><span class="game-icon">${game.icon}</span> ${game.name} — Leaderboard</div>`;
+    
+    if (scores.length === 0) {
+        html += '<div class="no-scores">No scores yet! Be the first to play and claim the #1 spot! 🏆</div>';
+    } else {
+        html += '<table class="lb-table"><tr><th>#</th><th>Player</th><th style="text-align:right">Score</th><th style="text-align:right">When</th></tr>';
+        scores.slice(0, 20).forEach((s, i) => {
+            const rankCls = i < 3 ? `rank-${i+1}` : '';
+            const medal = i === 0 ? ' 👑' : '';
+            const isMy = s.name === myName ? ' is-you' : '';
+            html += `<tr><td class="rank ${rankCls}">${i+1}</td><td class="lb-name${isMy}">${s.name}${medal}</td><td class="lb-score">${fmtScore(s.score)}</td><td class="lb-date">${timeAgo(s.updatedAt)}</td></tr>`;
+        });
+        html += '</table>';
+    }
+    
+    html += '</div>';
+    contentEl.innerHTML = html;
+}
+
+function switchTab(tabId) {
+    currentTab = tabId;
+    buildTabs();
+    
+    if (tabId === 'overview') renderOverview();
+    else if (tabId === 'my-stats') renderMyStats();
+    else if (tabId === 'all-players') renderAllPlayers();
+    else renderGameBoard(tabId);
+}
+
+// Init
+async function init() {
+    buildTabs();
+    await loadAllData();
+    renderOverview();
+}
+init();
+</script>
+</body>
+</html>

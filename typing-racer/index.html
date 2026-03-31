@@ -625,6 +625,7 @@ function gameOver(){
   document.getElementById('finalWPM').textContent=wpm;
   document.getElementById('finalWords').textContent=wordsTyped;
   document.getElementById('finalCombo').textContent=maxCombo;
+  if(typeof avReportScore==='function')avReportScore('typing-racer',score);
 
   const hsKey='typingRacer_hs_'+difficulty;
   const prevHS=parseInt(localStorage.getItem(hsKey)||'0');
@@ -702,5 +703,6 @@ function spawnParticles(x,y,color){
   }
 }
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

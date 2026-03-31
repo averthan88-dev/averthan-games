@@ -602,6 +602,7 @@ document.getElementById('result-score').textContent=score;
 const prev=parseInt(localStorage.getItem('triviaBlitzHigh'))||0;
 if(score>prev){
 localStorage.setItem('triviaBlitzHigh',score);
+                if (typeof avReportScore === 'function') avReportScore('trivia-blitz', score);
 document.getElementById('new-high').style.display='inline-block';
 }else{
 document.getElementById('new-high').style.display='none';
@@ -627,5 +628,6 @@ bd.innerHTML=html;
 // ===== INIT =====
 showMenu();
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

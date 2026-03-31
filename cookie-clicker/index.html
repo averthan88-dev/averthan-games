@@ -118,7 +118,8 @@ function loadState() {
   try { const s = JSON.parse(localStorage.getItem('averthan_cookie')); if(s && s.cookies!==undefined) return s; } catch(e){}
   return defaultState();
 }
-function saveState() { localStorage.setItem('averthan_cookie', JSON.stringify(state)); }
+function saveState() { localStorage.setItem('averthan_cookie', JSON.stringify(state));
+                if (typeof avReportScore === 'function') avReportScore('cookie-clicker', Math.floor(state.totalCookies)); }
 
 function calcCPS() {
   let total = 0;
@@ -347,5 +348,6 @@ function animate() {
 // Init
 calcCPS(); calcClickPower(); renderShop(); updateDisplay(); scheduleGolden(); animate();
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

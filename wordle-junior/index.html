@@ -897,6 +897,7 @@ function launchConfetti() {
 }
 
 function showResult(won) {
+    if(won && typeof avReportScore==='function')avReportScore('wordle-junior',streak);
   const modal = document.getElementById('resultModal');
   const content = document.getElementById('resultContent');
   const modeLabel = mode === 'easy' ? 'Easy' : 'Normal';
@@ -976,5 +977,6 @@ if (!localStorage.getItem('wordle-jr-seen-help')) {
   setTimeout(showHelp, 500);
 }
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

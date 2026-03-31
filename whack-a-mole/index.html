@@ -499,6 +499,7 @@ function getHighScore() {
 }
 function setHighScore(s) {
   localStorage.setItem('wam_high_' + difficulty, s);
+                if (typeof avReportScore === 'function') avReportScore('whack-a-mole', score);
 }
 
 // ============ SPAWN MOLES ============
@@ -749,5 +750,6 @@ const style = document.createElement('style');
 style.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }`;
 document.head.appendChild(style);
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

@@ -383,6 +383,7 @@ async function handleWrong() {
 }
 
 async function endGame() {
+    if(typeof avReportScore==='function')avReportScore('simon-says',score);
   playing = false;
   setButtons(false);
   saveHighScore();
@@ -470,5 +471,6 @@ function spawnConfetti() {
 
 updateHighScore();
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

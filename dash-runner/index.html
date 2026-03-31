@@ -701,6 +701,8 @@ function die() {
   if (score > highScore) {
     highScore = score;
     localStorage.setItem('dashRunnerHigh', highScore);
+                // Report to Hall of Fame
+if (typeof avReportScore === 'function') avReportScore('dash-runner', score);
   }
   spawnParticles(fox.x + fox.w/2, fox.y + fox.h/2, '#fd79a8', 30, 8);
   spawnParticles(fox.x + fox.w/2, fox.y + fox.h/2, '#e17055', 20, 6);
@@ -873,5 +875,6 @@ function loop() {
 }
 loop();
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

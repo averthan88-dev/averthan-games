@@ -287,7 +287,8 @@ let currentSpeed = 'normal';
 function getHS() { return highScores[currentSpeed + '_' + wallsMode] || 0; }
 function setHS(v) {
   const k = currentSpeed + '_' + wallsMode;
-  if (v > (highScores[k]||0)) { highScores[k] = v; localStorage.setItem('snake_hs', JSON.stringify(highScores)); }
+  if (v > (highScores[k]||0)) { highScores[k] = v; localStorage.setItem('snake_hs', JSON.stringify(highScores));
+                if (typeof avReportScore === 'function') avReportScore('snake', score); }
 }
 function updateScoreUI() {
   document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
@@ -745,5 +746,6 @@ gameState = 'menu';
 updateScoreUI();
 requestAnimationFrame(gameLoop);
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

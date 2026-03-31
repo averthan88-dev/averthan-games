@@ -91,7 +91,8 @@ function sndStar(){playTone(880,.15,'triangle',.2);setTimeout(()=>playTone(1100,
 function sndWin(){playTone(523,.2,'sine',.2);setTimeout(()=>playTone(659,.2,'sine',.2),150);setTimeout(()=>playTone(784,.3,'sine',.2),300);}
 
 function loadBest(){try{const d=JSON.parse(localStorage.getItem('maze_best'));if(d)bestTimes=d;}catch(e){}}
-function saveBest(){localStorage.setItem('maze_best',JSON.stringify(bestTimes));}
+function saveBest(){localStorage.setItem('maze_best',JSON.stringify(bestTimes));
+                if (typeof avReportScore === 'function') avReportScore('maze-runner', bestTime);}
 loadBest();
 
 function setDiff(d){
@@ -388,5 +389,6 @@ window.addEventListener('resize',resize);
 newMaze();
 requestAnimationFrame(draw);
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>

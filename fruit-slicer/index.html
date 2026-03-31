@@ -388,6 +388,7 @@ document.getElementById('hud').style.display='none';
 updateMenuHighscores();
 }
 function gameOver(){
+  if(typeof avReportScore==='function')avReportScore('fruit-slicer',score);
 gameState='over';
 const key='fruitSlicer_high_'+mode;
 const high=Math.max(score,parseInt(localStorage.getItem(key)||'0'));
@@ -536,5 +537,6 @@ requestAnimationFrame(loop);
 }
 loop();
 </script>
+<script src="../av-scores.js"></script>
 </body>
 </html>
