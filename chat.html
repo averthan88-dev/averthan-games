@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Averthan Games - Community Chat</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -862,16 +865,27 @@ function submitCreateRoom() {
       roomCreateSubmit.disabled = false;
       return;
     }
-    const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
-    db.ref(`rooms/${roomId}`).set({
-      name: name,
-      ownerId: currentUser.userId,
-      ownerName: currentUser.username,
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      createRoomModal.style.display = 'none';
-      roomCreateSubmit.disabled = false;
-      joinRoom(roomId, name);
+    // Double-check with a fresh read right before creating (race condition guard)
+    db.ref('rooms').once('value', snap2 => {
+      const rooms2 = snap2.val() || {};
+      for (const [id2, room2] of Object.entries(rooms2)) {
+        if (room2.name && room2.name.toLowerCase() === nameLower) {
+          roomError.textContent = 'A room with that name already exists';
+          roomCreateSubmit.disabled = false;
+          return;
+        }
+      }
+      const roomId = 'room_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+      db.ref(`rooms/${roomId}`).set({
+        name: name,
+        ownerId: currentUser.userId,
+        ownerName: currentUser.username,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      }).then(() => {
+        createRoomModal.style.display = 'none';
+        roomCreateSubmit.disabled = false;
+        joinRoom(roomId, name);
+      });
     });
   });
 }
