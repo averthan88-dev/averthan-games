@@ -551,7 +551,9 @@ function getCookie(name) {
 }
 
 // Moderation system
-const _PF=JSON.parse(atob('WyJmdWNrIiwgInNoaXQiLCAiYXNzIiwgImJpdGNoIiwgImRhbW4iLCAiaGVsbCIsICJkaWNrIiwgInB1c3N5IiwgImNvY2siLCAiY3VudCIsICJiYXN0YXJkIiwgInNsdXQiLCAid2hvcmUiLCAibmlnZ2VyIiwgIm5pZ2dhIiwgImZhZ2dvdCIsICJmYWciLCAicmV0YXJkIiwgInJldGFyZGVkIiwgInBlbmlzIiwgInZhZ2luYSIsICJib29iIiwgImJvb2JzIiwgInRpdHMiLCAidGl0dHkiLCAiZGlsZG8iLCAiYmxvd2pvYiIsICJoYW5kam9iIiwgImFuYWwiLCAiYW51cyIsICJidXR0IiwgImJ1dHRob2xlIiwgImFzc2hvbGUiLCAiYXJzZWhvbGUiLCAiYm9sbG9ja3MiLCAid2Fua2VyIiwgInR3YXQiLCAicHJpY2siLCAibW90aGVyZnVja2VyIiwgImZ1Y2tlciIsICJmdWNraW5nIiwgInNoaXR0eSIsICJidWxsc2hpdCIsICJnb2RkYW1uIiwgImphY2thc3MiLCAiZHVtYmFzcyIsICJiYWRhc3MiLCAic21hcnRhc3MiLCAiZmF0YXNzIiwgImxtYW8iLCAic3RmdSIsICJ3dGYiLCAia3lzIiwgImtpbGwgeW91cnNlbGYiLCAiZGllIiwgInJhcGUiLCAicmFwaXN0IiwgIm1vbGVzdCIsICJwZWRvIiwgInBlZG9waGlsZSIsICJuYXppIiwgImhpdGxlciIsICJwb3JuIiwgInBvcm5vIiwgInBvcm5vZ3JhcGh5IiwgInNleCIsICJzZXh5IiwgIm51ZGUiLCAibmFrZWQiLCAiaG9ybnkiLCAiZXJlY3Rpb24iLCAib3JnYXNtIiwgImN1bSIsICJzZW1lbiIsICJzcGVybSIsICJoZW50YWkiLCAieHh4IiwgImNvY2FpbmUiLCAiaGVyb2luIiwgIm1ldGgiLCAid2VlZCIsICJkcnVncyIsICJtYXJpanVhbmEiLCAic3VpY2lkIiwgInNob290IiwgImd1biIsICJib21iIiwgInRlcnJvcmlzdCIsICJtdXJkZXIiXQ=='));
+const _PF=JSON.parse(atob('WyJmdWNrIiwgInNoaXQiLCAiYml0Y2giLCAiZGFtbiIsICJkaWNrIiwgInB1c3N5IiwgImNvY2siLCAiY3VudCIsICJiYXN0YXJkIiwgInNsdXQiLCAid2hvcmUiLCAibmlnZ2VyIiwgIm5pZ2dhIiwgImZhZ2dvdCIsICJyZXRhcmQiLCAicmV0YXJkZWQiLCAiZGlsZG8iLCAiYmxvd2pvYiIsICJoYW5kam9iIiwgImJ1dHRob2xlIiwgImFzc2hvbGUiLCAiYXJzZWhvbGUiLCAiYm9sbG9ja3MiLCAid2Fua2VyIiwgInR3YXQiLCAicHJpY2siLCAibW90aGVyZnVja2VyIiwgImZ1Y2tlciIsICJmdWNraW5nIiwgInNoaXR0eSIsICJidWxsc2hpdCIsICJnb2RkYW1uIiwgImphY2thc3MiLCAiZHVtYmFzcyIsICJzdGZ1IiwgImt5cyIsICJraWxsIHlvdXJzZWxmIiwgInJhcGUiLCAicmFwaXN0IiwgIm1vbGVzdCIsICJwZWRvIiwgInBlZG9waGlsZSIsICJuYXppIiwgImhpdGxlciIsICJwb3JuIiwgInBvcm5vIiwgInBvcm5vZ3JhcGh5IiwgIm51ZGUiLCAibmFrZWQiLCAiaG9ybnkiLCAiZXJlY3Rpb24iLCAib3JnYXNtIiwgInNlbWVuIiwgInNwZXJtIiwgImhlbnRhaSIsICJ4eHgiLCAiY29jYWluZSIsICJoZXJvaW4iLCAibWV0aCIsICJtYXJpanVhbmEiLCAic3VpY2lkIiwgInRlcnJvcmlzdCJd'));
+// Build regex patterns with word boundaries
+const _PF_REGEX = _PF.map(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'));
 let _userIP = null;
 let _isBanned = false;
 
@@ -559,21 +561,23 @@ let _isBanned = false;
 fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{_userIP=d.ip;checkIPBan();}).catch(()=>{});
 
 function containsProfanity(text) {
-  const lower = text.toLowerCase().replace(/[^a-z ]/g,'');
-  // Also check with spaces removed for bypass attempts like "f u c k"
+  const lower = text.toLowerCase();
+  // Word boundary check - "hello" won't match "hell", "classic" won't match "ass"
+  for (const rx of _PF_REGEX) {
+    if (rx.test(lower)) return true;
+  }
+  // Check with spaces removed for bypass attempts like "f u c k"
   const nospace = lower.replace(/\s/g,'');
-  for (const w of _PF) {
-    if (lower.includes(w) || nospace.includes(w)) return true;
+  for (const rx of _PF_REGEX) {
+    if (rx.test(nospace)) return true;
   }
   // Check l33tspeak: a=@/4, e=3, i=1/!, o=0, s=$, t=7
   const deleet = text.toLowerCase()
     .replace(/@/g,'a').replace(/4/g,'a')
     .replace(/3/g,'e').replace(/1/g,'i').replace(/!/g,'i')
-    .replace(/0/g,'o').replace(/\$/g,'s').replace(/7/g,'t')
-    .replace(/[^a-z ]/g,'');
-  const deleetnospace = deleet.replace(/\s/g,'');
-  for (const w of _PF) {
-    if (deleet.includes(w) || deleetnospace.includes(w)) return true;
+    .replace(/0/g,'o').replace(/\$/g,'s').replace(/7/g,'t');
+  for (const rx of _PF_REGEX) {
+    if (rx.test(deleet)) return true;
   }
   return false;
 }
