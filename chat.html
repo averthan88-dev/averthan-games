@@ -630,11 +630,24 @@ function showBanScreen() {
 }
 
 function checkBanOnLoad() {
-  // Check banned cookie
+  // Check banned cookie - but verify against Firebase first
   if (document.cookie.split(';').some(c=>c.trim().startsWith('av_banned='))) {
-    _isBanned = true;
-    showBanScreen();
-    return true;
+    // Verify the ban still exists in Firebase before blocking
+    const uid = localStorage.getItem('averthan_userId') || localStorage.getItem('av_userId');
+    if (uid) {
+      db.ref('bans/users/' + uid).once('value', snap => {
+        if (snap.val()) {
+          _isBanned = true;
+          showBanScreen();
+        } else {
+          // Ban was cleared from Firebase - remove local cookie
+          document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+        }
+      });
+    } else {
+      // No userId stored, can't verify - clear the cookie (benefit of the doubt)
+      document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+    }
   }
   return false;
 }
@@ -660,12 +673,14 @@ function checkUserBan(userId) {
       showBanScreen();
       return true;
     }
+    // If not banned in Firebase, clear any stale local cookie
+    document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
     return false;
   });
 }
 
-// Check ban immediately
-if (checkBanOnLoad()) throw new Error('banned');
+// Check ban on load (async now - won't block page)
+checkBanOnLoad();
 
 // User management
 let currentUser = { userId: null, username: null };
