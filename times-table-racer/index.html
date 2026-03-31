@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Times Table Racer | Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#fff;font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden}
+h1,h2,h3,.title-text{font-family:'Fredoka One',cursive}
+.home-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(108,92,231,.3);border:2px solid #6c5ce7;color:#fff;padding:8px 18px;border-radius:30px;font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;transition:all .3s}
+.home-btn:hover{background:#6c5ce7;transform:scale(1.05)}
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;width:100%}
+.screen.active{display:flex}
+.game-title{font-size:clamp(2rem,6vw,3.5rem);background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:10px}
+.subtitle{color:#a29bfe;font-size:clamp(.9rem,2.5vw,1.2rem);margin-bottom:30px;text-align:center}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:30px;max-width:500px;width:100%}
+.btn{padding:14px 32px;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all .2s;color:#fff}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:linear-gradient(135deg,#6c5ce7,#a29bfe)}
+.btn-success{background:linear-gradient(135deg,#00cec9,#55efc4)}
+.btn-danger{background:linear-gradient(135deg,#fd79a8,#e84393)}
+.difficulty-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0}
+.diff-btn{padding:16px 10px;border:2px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s;text-align:center}
+.diff-btn:hover,.diff-btn.selected{border-color:#6c5ce7;background:rgba(108,92,231,.2)}
+.diff-btn .label{display:block;font-size:12px;color:#a29bfe;margin-top:4px;font-weight:400}
+.color-picker{display:flex;gap:14px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.color-opt{width:60px;height:60px;border-radius:14px;cursor:pointer;border:3px solid transparent;transition:all .3s;position:relative}
+.color-opt:hover{transform:scale(1.1)}
+.color-opt.selected{border-color:#fff;box-shadow:0 0 20px rgba(255,255,255,.3)}
+.color-opt .car-preview{font-size:28px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.race-container{width:100%;max-width:800px;padding:10px}
+.race-hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.hud-item{background:rgba(255,255,255,.07);padding:8px 16px;border-radius:10px;font-weight:700;font-size:14px}
+.hud-item span{color:#00cec9}
+.streak-indicator{color:#fd79a8;font-weight:800}
+.track-area{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px}
+.lane{display:flex;align-items:center;margin:8px 0;height:44px;position:relative}
+.lane-bg{position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(255,255,255,.03);border-radius:10px;overflow:hidden}
+.lane-bg .road-marks{position:absolute;top:50%;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.1) 0,rgba(255,255,255,.1) 20px,transparent 20px,transparent 40px)}
+.car-wrapper{position:absolute;left:0;top:50%;transform:translateY(-50%);transition:left .4s ease-out;z-index:2;display:flex;align-items:center}
+.car-wrapper.boost{animation:boostPulse .3s ease-in-out}
+@keyframes boostPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(2) drop-shadow(0 0 10px #00cec9)}}
+.car-emoji{font-size:28px}
+.car-name{font-size:11px;font-weight:700;white-space:nowrap;margin-left:4px;opacity:.7}
+.player-name{color:#00cec9;opacity:1!important}
+.finish-line{position:absolute;right:0;top:0;bottom:0;width:20px;background:repeating-linear-gradient(180deg,#fff 0,#fff 5px,#333 5px,#333 10px);border-radius:0 10px 10px 0;opacity:.3}
+.progress-bar-container{width:100%;height:8px;background:rgba(255,255,255,.1);border-radius:4px;margin-bottom:16px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#6c5ce7,#00cec9);border-radius:4px;transition:width .4s;width:0}
+.question-area{background:rgba(108,92,231,.1);border:2px solid rgba(108,92,231,.3);border-radius:20px;padding:24px;text-align:center}
+.question-text{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,5vw,2.8rem);margin-bottom:20px;min-height:60px;display:flex;align-items:center;justify-content:center}
+.answer-input{width:160px;padding:14px;font-size:24px;text-align:center;border:2px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(255,255,255,.08);color:#fff;font-family:'Nunito',sans-serif;font-weight:700;outline:none;transition:border-color .3s}
+.answer-input:focus{border-color:#6c5ce7}
+.answer-input.correct{border-color:#00cec9;background:rgba(0,206,201,.1)}
+.answer-input.wrong{border-color:#fd79a8;background:rgba(253,121,168,.1)}
+.submit-btn{margin-top:12px;padding:12px 40px}
+.feedback{font-size:18px;font-weight:700;height:30px;margin-top:8px}
+.feedback.correct-fb{color:#00cec9}
+.feedback.wrong-fb{color:#fd79a8}
+.results-card{text-align:center}
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:8px;margin:20px 0;height:200px}
+.podium-place{display:flex;flex-direction:column;align-items:center;border-radius:12px 12px 0 0;padding:10px 14px;min-width:80px}
+.podium-place.p1{background:linear-gradient(180deg,rgba(255,215,0,.3),rgba(255,215,0,.1));height:100%;border:1px solid rgba(255,215,0,.3)}
+.podium-place.p2{background:linear-gradient(180deg,rgba(192,192,192,.3),rgba(192,192,192,.1));height:75%;border:1px solid rgba(192,192,192,.3)}
+.podium-place.p3{background:linear-gradient(180deg,rgba(205,127,50,.3),rgba(205,127,50,.1));height:55%;border:1px solid rgba(205,127,50,.3)}
+.podium-place.p4{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.05));height:40%;border:1px solid rgba(255,255,255,.1)}
+.podium-rank{font-family:'Fredoka One',cursive;font-size:24px}
+.podium-name{font-size:12px;font-weight:700;margin-top:4px}
+.podium-car{font-size:24px}
+.stat-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.stat-row:last-child{border:none}
+.stat-label{color:#a29bfe}
+.stat-value{font-weight:700}
+.pb-badge{background:linear-gradient(135deg,#fd79a8,#e84393);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-top:8px;animation:pbPulse 1s infinite}
+@keyframes pbPulse{0%,100%{opacity:1}50%{opacity:.6}}
+.countdown-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,26,.9);display:flex;align-items:center;justify-content:center;z-index:50;font-family:'Fredoka One',cursive;font-size:100px}
+.countdown-overlay .cd-text{animation:cdPop .8s ease-out}
+@keyframes cdPop{0%{transform:scale(3);opacity:0}50%{transform:scale(1);opacity:1}100%{transform:scale(.9);opacity:.8}}
+.stall-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(253,121,168,.05);border-radius:20px;pointer-events:none;animation:stallFlash .4s}
+@keyframes stallFlash{0%,100%{opacity:0}50%{opacity:1}}
+@media(max-width:600px){
+.difficulty-grid{grid-template-columns:1fr}
+.race-hud{font-size:12px}
+.hud-item{padding:6px 10px;font-size:12px}
+.car-emoji{font-size:22px}
+.lane{height:36px}
+.question-text{font-size:1.6rem}
+.podium-place{min-width:60px;padding:8px 10px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="home-btn">🏠 Home</a>
+
+<!-- MENU SCREEN -->
+<div id="menu-screen" class="screen active">
+<div class="game-title">🏎️ Times Table Racer</div>
+<div class="subtitle">Answer fast, race to the finish!</div>
+<div class="card">
+<h3 style="text-align:center;margin-bottom:6px">Choose Difficulty</h3>
+<div class="difficulty-grid">
+<button class="diff-btn selected" data-diff="easy">🟢 Easy<span class="label">×1 to ×5</span></button>
+<button class="diff-btn" data-diff="medium">🟡 Medium<span class="label">×1 to ×10</span></button>
+<button class="diff-btn" data-diff="hard">🔴 Hard<span class="label">×1–12 + mixed</span></button>
+</div>
+<h3 style="text-align:center;margin:16px 0 6px">Pick Your Car</h3>
+<div class="color-picker">
+<div class="color-opt selected" data-color="red" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><span class="car-preview">🏎️</span></div>
+<div class="color-opt" data-color="blue" style="background:linear-gradient(135deg,#3498db,#2980b9)"><span class="car-preview">🚙</span></div>
+<div class="color-opt" data-color="green" style="background:linear-gradient(135deg,#2ecc71,#27ae60)"><span class="car-preview">🚗</span></div>
+<div class="color-opt" data-color="purple" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)"><span class="car-preview">🏁</span></div>
+</div>
+<div id="best-time-display" style="text-align:center;margin:10px 0;font-size:14px;color:#a29bfe"></div>
+<button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="startCountdown()">🏁 Start Race!</button>
+</div>
+</div>
+
+<!-- COUNTDOWN OVERLAY -->
+<div id="countdown-overlay" class="countdown-overlay" style="display:none">
+<div class="cd-text" id="cd-text"></div>
+</div>
+
+<!-- RACE SCREEN -->
+<div id="race-screen" class="screen">
+<div class="race-container">
+<div class="race-hud">
+<div class="hud-item">⏱️ <span id="timer">0.0s</span></div>
+<div class="hud-item">📝 <span id="q-counter">0/20</span></div>
+<div class="hud-item">✅ <span id="accuracy">100%</span></div>
+<div class="hud-item streak-indicator" id="streak-display"></div>
+</div>
+<div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill"></div></div>
+<div class="track-area" id="track-area"></div>
+<div class="question-area" id="question-area">
+<div class="question-text" id="question-text"></div>
+<input type="number" class="answer-input" id="answer-input" autocomplete="off" inputmode="numeric">
+<br>
+<button class="btn btn-success submit-btn" id="submit-btn" onclick="submitAnswer()">GO! 🚀</button>
+<div class="feedback" id="feedback"></div>
+</div>
+</div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results-screen" class="screen">
+<div class="card results-card" style="max-width:520px">
+<h2 style="margin-bottom:4px">🏁 Race Complete!</h2>
+<div id="podium-area"></div>
+<div id="stats-area" style="margin:16px 0"></div>
+<div id="pb-area"></div>
+<div style="display:flex;gap:10px;margin-top:20px;justify-content:center;flex-wrap:wrap">
+<button class="btn btn-primary" onclick="startCountdown()">🔄 Race Again</button>
+<button class="btn btn-danger" onclick="showScreen('menu-screen')">📋 Menu</button>
+</div>
+</div>
+</div>
+
+<script>
+// ====== STATE ======
+let difficulty='easy', carColor='red', carEmojis={red:'🏎️',blue:'🚙',green:'🚗',purple:'🏁'};
+let questions=[], currentQ=0, correctCount=0, streak=0, maxStreak=0;
+let raceStartTime=0, raceTimer=null, raceElapsed=0;
+let playerProgress=0, aiCars=[], totalQuestions=20;
+let stalled=false, audioCtx=null;
+
+const aiNames=['Turbo Tom','Speed Sally','Rapid Rex'];
+const aiEmojis=['🚕','🚐','🛻'];
+
+// ====== AUDIO ======
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function playSound(type){
+try{
+const ctx=getAudio(),now=ctx.currentTime;
+const osc=ctx.createOscillator(),gain=ctx.createGain();
+osc.connect(gain);gain.connect(ctx.destination);
+if(type==='correct'){osc.type='sine';osc.frequency.setValueAtTime(880,now);osc.frequency.setValueAtTime(1100,now+.08);gain.gain.setValueAtTime(.15,now);gain.gain.exponentialRampToValueAtTime(.001,now+.25);osc.start(now);osc.stop(now+.25)}
+else if(type==='wrong'){osc.type='sawtooth';osc.frequency.setValueAtTime(200,now);osc.frequency.setValueAtTime(150,now+.15);gain.gain.setValueAtTime(.12,now);gain.gain.exponentialRampToValueAtTime(.001,now+.3);osc.start(now);osc.stop(now+.3)}
+else if(type==='rev'){osc.type='sawtooth';osc.frequency.setValueAtTime(80,now);osc.frequency.linearRampToValueAtTime(300,now+.4);gain.gain.setValueAtTime(.08,now);gain.gain.exponentialRampToValueAtTime(.001,now+.5);osc.start(now);osc.stop(now+.5)}
+else if(type==='finish'){const o2=ctx.createOscillator(),g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);osc.type='sine';o2.type='sine';osc.frequency.setValueAtTime(523,now);o2.frequency.setValueAtTime(659,now);[gain,g2].forEach(g=>{g.gain.setValueAtTime(.12,now);g.gain.exponentialRampToValueAtTime(.001,now+.8)});osc.start(now);o2.start(now+.15);osc.stop(now+.8);o2.stop(now+.95)}
+else if(type==='boost'){osc.type='sine';osc.frequency.setValueAtTime(600,now);osc.frequency.linearRampToValueAtTime(1200,now+.2);gain.gain.setValueAtTime(.1,now);gain.gain.exponentialRampToValueAtTime(.001,now+.3);osc.start(now);osc.stop(now+.3)}
+else if(type==='countdown'){osc.type='sine';osc.frequency.setValueAtTime(440,now);gain.gain.setValueAtTime(.12,now);gain.gain.exponentialRampToValueAtTime(.001,now+.2);osc.start(now);osc.stop(now+.2)}
+else if(type==='go'){osc.type='sine';osc.frequency.setValueAtTime(880,now);gain.gain.setValueAtTime(.15,now);gain.gain.exponentialRampToValueAtTime(.001,now+.4);osc.start(now);osc.stop(now+.4)}
+}catch(e){}
+}
+
+// ====== SCREENS ======
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+
+// ====== MENU ======
+document.querySelectorAll('.diff-btn').forEach(b=>{
+b.onclick=()=>{document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');difficulty=b.dataset.diff;showBestTime()}
+});
+document.querySelectorAll('.color-opt').forEach(b=>{
+b.onclick=()=>{document.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');carColor=b.dataset.color}
+});
+
+function showBestTime(){
+const key='ttr_pb_'+difficulty;
+const pb=localStorage.getItem(key);
+document.getElementById('best-time-display').innerHTML=pb?`⚡ Best time (${difficulty}): <strong>${pb}s</strong>`:'';
+}
+showBestTime();
+
+// ====== QUESTIONS ======
+function generateQuestions(){
+questions=[];
+for(let i=0;i<totalQuestions;i++){
+let a,b,op='×',answer;
+if(difficulty==='easy'){a=Math.ceil(Math.random()*5);b=Math.ceil(Math.random()*5);answer=a*b}
+else if(difficulty==='medium'){a=Math.ceil(Math.random()*10);b=Math.ceil(Math.random()*10);answer=a*b}
+else{
+const ops=['×','×','×','+','-'];
+op=ops[Math.floor(Math.random()*ops.length)];
+a=Math.ceil(Math.random()*12);b=Math.ceil(Math.random()*12);
+if(op==='×')answer=a*b;
+else if(op==='+')answer=a+b;
+else{if(a<b)[a,b]=[b,a];answer=a-b}
+}
+questions.push({a,b,op,answer,text:`${a} ${op} ${b} = ?`});
+}
+}
+
+// ====== COUNTDOWN ======
+function startCountdown(){
+showScreen('race-screen');
+const overlay=document.getElementById('countdown-overlay');
+overlay.style.display='flex';
+const cdText=document.getElementById('cd-text');
+let count=3;
+cdText.textContent=count;cdText.style.color='#fd79a8';
+playSound('countdown');
+const iv=setInterval(()=>{
+count--;
+if(count>0){cdText.textContent=count;cdText.style.color=count===2?'#a29bfe':'#00cec9';playSound('countdown');cdText.style.animation='none';void cdText.offsetWidth;cdText.style.animation='cdPop .8s ease-out'}
+else if(count===0){cdText.textContent='GO!';cdText.style.color='#55efc4';playSound('go');cdText.style.animation='none';void cdText.offsetWidth;cdText.style.animation='cdPop .8s ease-out'}
+else{clearInterval(iv);overlay.style.display='none';initRace()}
+},900);
+}
+
+// ====== RACE INIT ======
+function initRace(){
+generateQuestions();
+currentQ=0;correctCount=0;streak=0;maxStreak=0;playerProgress=0;stalled=false;
+aiCars=[
+{name:aiNames[0],emoji:aiEmojis[0],progress:0,speed:getAiSpeed(0)},
+{name:aiNames[1],emoji:aiEmojis[1],progress:0,speed:getAiSpeed(1)},
+{name:aiNames[2],emoji:aiEmojis[2],progress:0,speed:getAiSpeed(2)}
+];
+buildTrack();
+raceStartTime=performance.now();raceElapsed=0;
+raceTimer=setInterval(updateTimer,100);
+updateHUD();showQuestion();
+aiTick();
+document.getElementById('answer-input').focus();
+playSound('rev');
+}
+
+function getAiSpeed(idx){
+const base=difficulty==='easy'?1800:difficulty==='medium'?1500:1300;
+return base+Math.random()*800+(idx*200);
+}
+
+// ====== TRACK ======
+function buildTrack(){
+const ta=document.getElementById('track-area');
+let html='';
+// Player lane
+html+=`<div class="lane"><div class="lane-bg"><div class="road-marks"></div></div><div class="car-wrapper" id="player-car" style="left:0%"><span class="car-emoji">${carEmojis[carColor]}</span><span class="car-name player-name">You</span></div><div class="finish-line"></div></div>`;
+// AI lanes
+aiCars.forEach((ai,i)=>{
+html+=`<div class="lane"><div class="lane-bg"><div class="road-marks"></div></div><div class="car-wrapper" id="ai-car-${i}" style="left:0%"><span class="car-emoji">${ai.emoji}</span><span class="car-name">${ai.name}</span></div><div class="finish-line"></div></div>`;
+});
+ta.innerHTML=html;
+}
+
+function updateCarPositions(){
+const maxLeft=82;
+const pc=document.getElementById('player-car');
+if(pc)pc.style.left=(playerProgress/totalQuestions)*maxLeft+'%';
+aiCars.forEach((ai,i)=>{
+const el=document.getElementById('ai-car-'+i);
+if(el)el.style.left=Math.min((ai.progress/totalQuestions)*maxLeft,maxLeft)+'%';
+});
+document.getElementById('progress-fill').style.width=(playerProgress/totalQuestions)*100+'%';
+}
+
+// ====== AI ======
+let aiInterval=null;
+function aiTick(){
+if(aiInterval)clearInterval(aiInterval);
+aiInterval=setInterval(()=>{
+let allDone=true;
+aiCars.forEach(ai=>{
+if(ai.progress<totalQuestions){
+ai.progress+=Math.random()<(1000/ai.speed)?1:0;
+if(ai.progress>totalQuestions)ai.progress=totalQuestions;
+if(ai.progress<totalQuestions)allDone=false;
+}
+});
+updateCarPositions();
+if(allDone&&currentQ>=totalQuestions)endRace();
+},500);
+}
+
+// ====== TIMER ======
+function updateTimer(){
+raceElapsed=(performance.now()-raceStartTime)/1000;
+document.getElementById('timer').textContent=raceElapsed.toFixed(1)+'s';
+}
+
+// ====== HUD ======
+function updateHUD(){
+document.getElementById('q-counter').textContent=currentQ+'/'+totalQuestions;
+const acc=currentQ>0?Math.round(correctCount/currentQ*100):100;
+document.getElementById('accuracy').textContent=acc+'%';
+const sd=document.getElementById('streak-display');
+if(streak>=3)sd.textContent='🔥 Streak: '+streak+'!';
+else if(streak>0)sd.textContent='⚡ '+streak;
+else sd.textContent='';
+}
+
+// ====== QUESTION ======
+function showQuestion(){
+if(currentQ>=totalQuestions){endRace();return}
+const q=questions[currentQ];
+document.getElementById('question-text').textContent=q.text;
+const inp=document.getElementById('answer-input');
+inp.value='';inp.className='answer-input';inp.disabled=false;
+document.getElementById('feedback').textContent='';
+document.getElementById('feedback').className='feedback';
+inp.focus();
+}
+
+// ====== SUBMIT ======
+function submitAnswer(){
+if(stalled||currentQ>=totalQuestions)return;
+const inp=document.getElementById('answer-input');
+const val=parseInt(inp.value);
+if(isNaN(val))return;
+const q=questions[currentQ];
+const fb=document.getElementById('feedback');
+if(val===q.answer){
+correctCount++;streak++;if(streak>maxStreak)maxStreak=streak;
+playerProgress++;
+inp.className='answer-input correct';
+fb.textContent='✅ Correct!';fb.className='feedback correct-fb';
+playSound('correct');
+if(streak>=3){
+playSound('boost');
+const pc=document.getElementById('player-car');
+if(pc){pc.classList.add('boost');setTimeout(()=>pc.classList.remove('boost'),400)}
+}
+updateCarPositions();
+currentQ++;updateHUD();
+setTimeout(showQuestion,350);
+}else{
+streak=0;
+inp.className='answer-input wrong';
+fb.textContent='❌ It was '+q.answer;fb.className='feedback wrong-fb';
+playSound('wrong');
+stalled=true;
+const qa=document.getElementById('question-area');
+const so=document.createElement('div');so.className='stall-overlay';qa.appendChild(so);
+setTimeout(()=>{so.remove()},400);
+currentQ++;updateHUD();
+setTimeout(()=>{stalled=false;showQuestion()},800);
+}
+}
+
+// Enter key
+document.getElementById('answer-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitAnswer()});
+
+// ====== END RACE ======
+function endRace(){
+if(raceTimer){clearInterval(raceTimer);raceTimer=null}
+if(aiInterval){clearInterval(aiInterval);aiInterval=null}
+playSound('finish');
+// Ensure AI finishes
+aiCars.forEach(ai=>{if(ai.progress<totalQuestions)ai.progress=totalQuestions});
+updateCarPositions();
+
+const finalTime=raceElapsed.toFixed(1);
+const acc=currentQ>0?Math.round(correctCount/currentQ*100):0;
+
+// Determine positions
+let racers=[{name:'You',emoji:carEmojis[carColor],time:parseFloat(finalTime),isPlayer:true}];
+aiCars.forEach(ai=>{
+const aiTime=(ai.speed*totalQuestions/1000)*(0.8+Math.random()*0.4);
+racers.push({name:ai.name,emoji:ai.emoji,time:parseFloat(aiTime.toFixed(1)),isPlayer:false});
+});
+racers.sort((a,b)=>a.time-b.time);
+const playerPos=racers.findIndex(r=>r.isPlayer)+1;
+
+// Podium
+const classes=['p1','p2','p3','p4'];
+const medals=['🥇','🥈','🥉','4th'];
+let podiumHtml='<div class="podium">';
+// Show in podium order: 2nd, 1st, 3rd (visual)
+const podiumOrder=[1,0,2,3];
+podiumOrder.forEach(idx=>{
+if(idx<racers.length){
+const r=racers[idx];
+podiumHtml+=`<div class="podium-place ${classes[idx]}"><div class="podium-rank">${medals[idx]}</div><div class="podium-car">${r.emoji}</div><div class="podium-name" style="${r.isPlayer?'color:#00cec9':''}">${r.name}</div></div>`;
+}
+});
+podiumHtml+='</div>';
+document.getElementById('podium-area').innerHTML=podiumHtml;
+
+// Stats
+document.getElementById('stats-area').innerHTML=`
+<div class="stat-row"><span class="stat-label">🏆 Position</span><span class="stat-value">${medals[playerPos-1]} (${playerPos}${['st','nd','rd','th'][Math.min(playerPos-1,3)]})</span></div>
+<div class="stat-row"><span class="stat-label">⏱️ Time</span><span class="stat-value">${finalTime}s</span></div>
+<div class="stat-row"><span class="stat-label">✅ Accuracy</span><span class="stat-value">${acc}%</span></div>
+<div class="stat-row"><span class="stat-label">✔️ Correct</span><span class="stat-value">${correctCount}/${totalQuestions}</span></div>
+<div class="stat-row"><span class="stat-label">🔥 Best Streak</span><span class="stat-value">${maxStreak}</span></div>
+<div class="stat-row"><span class="stat-label">⚡ Difficulty</span><span class="stat-value">${difficulty.charAt(0).toUpperCase()+difficulty.slice(1)}</span></div>
+`;
+
+// Personal best
+const key='ttr_pb_'+difficulty;
+const prev=localStorage.getItem(key);
+let isPB=false;
+if(!prev||parseFloat(finalTime)<parseFloat(prev)){
+localStorage.setItem(key,finalTime);isPB=true;
+}
+document.getElementById('pb-area').innerHTML=isPB?'<div class="pb-badge">🎉 NEW PERSONAL BEST!</div>':'<div style="font-size:13px;color:#a29bfe;margin-top:4px">Best: '+localStorage.getItem(key)+'s</div>';
+
+showScreen('results-screen');
+}
+</script>
+</body>
+</html>

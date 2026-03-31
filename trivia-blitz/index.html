@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia Quiz Blitz — Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#fff;font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden}
+h1,h2,h3,.btn,.lifeline-btn,.cat-chip{font-family:'Fredoka One',cursive}
+.screen{display:none;flex-direction:column;align-items:center;padding:20px;max-width:700px;margin:0 auto;min-height:100vh}
+.screen.active{display:flex}
+.home-btn{position:fixed;top:16px;left:16px;background:rgba(108,92,231,.3);border:2px solid #6c5ce7;color:#a29bfe;padding:8px 16px;border-radius:20px;font-family:'Fredoka One',cursive;font-size:.9rem;cursor:pointer;z-index:100;text-decoration:none;transition:all .3s}
+.home-btn:hover{background:#6c5ce7;color:#fff}
+.title{font-size:2.5rem;background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00cec9,#fd79a8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin:30px 0 10px}
+.subtitle{color:#a29bfe;font-size:1.1rem;text-align:center;margin-bottom:30px}
+.btn{background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;padding:14px 40px;border-radius:30px;font-size:1.2rem;cursor:pointer;transition:all .3s;box-shadow:0 4px 20px rgba(108,92,231,.4)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(108,92,231,.6)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:linear-gradient(135deg,#00cec9,#00b894);box-shadow:0 4px 20px rgba(0,206,201,.4)}
+.btn-secondary:hover{box-shadow:0 6px 25px rgba(0,206,201,.6)}
+/* Category Selection */
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;margin:20px 0}
+.cat-chip{padding:14px;border-radius:16px;cursor:pointer;text-align:center;font-size:1rem;border:2px solid transparent;transition:all .3s;user-select:none}
+.cat-chip.selected{border-color:#00cec9;box-shadow:0 0 15px rgba(0,206,201,.4)}
+.cat-chip .emoji{font-size:2rem;display:block;margin-bottom:4px}
+.cat-actions{display:flex;gap:12px;margin:10px 0 20px}
+.cat-actions button{background:rgba(108,92,231,.2);border:1px solid #6c5ce7;color:#a29bfe;padding:8px 16px;border-radius:16px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;transition:all .3s}
+.cat-actions button:hover{background:#6c5ce7;color:#fff}
+/* Quiz Screen */
+.quiz-header{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.score-display{font-family:'Fredoka One',cursive;font-size:1.3rem;color:#00cec9}
+.streak-display{font-family:'Fredoka One',cursive;font-size:1rem;color:#fd79a8}
+.q-counter{font-size:.9rem;color:#a29bfe}
+.timer-bar-wrap{width:100%;height:10px;background:rgba(255,255,255,.1);border-radius:5px;margin:10px 0;overflow:hidden}
+.timer-bar{height:100%;background:linear-gradient(90deg,#00cec9,#6c5ce7);border-radius:5px;transition:width .1s linear}
+.timer-bar.low{background:linear-gradient(90deg,#fd79a8,#e17055);animation:pulse-bar .5s infinite}
+@keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:.5}}
+.timer-text{font-family:'Fredoka One',cursive;font-size:1.1rem;text-align:center;margin-bottom:6px}
+.timer-text.low{color:#fd79a8;animation:pulse-text .5s infinite}
+@keyframes pulse-text{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.category-tag{display:inline-block;background:rgba(108,92,231,.3);color:#a29bfe;padding:4px 14px;border-radius:12px;font-size:.8rem;margin-bottom:12px}
+.question-text{font-size:1.3rem;font-weight:700;text-align:center;margin-bottom:20px;line-height:1.4}
+.answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px}
+.answer-btn{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);color:#fff;padding:14px;border-radius:14px;font-size:1rem;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;transition:all .3s;text-align:center}
+.answer-btn:hover:not(.disabled){background:rgba(108,92,231,.2);border-color:#6c5ce7;transform:translateY(-2px)}
+.answer-btn.correct{background:rgba(0,206,201,.3)!important;border-color:#00cec9!important;animation:flash-green .5s}
+.answer-btn.wrong{background:rgba(253,121,168,.3)!important;border-color:#fd79a8!important;animation:shake .5s}
+.answer-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.answer-btn.removed{opacity:.15;pointer-events:none;text-decoration:line-through}
+@keyframes flash-green{0%{box-shadow:0 0 30px rgba(0,206,201,.8)}100%{box-shadow:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.fun-fact-box{background:rgba(162,155,254,.1);border:1px solid rgba(162,155,254,.3);border-radius:14px;padding:14px;width:100%;margin:10px 0;text-align:center;font-size:.95rem;line-height:1.4}
+.fun-fact-box span{color:#00cec9;font-weight:700}
+.next-btn{margin-top:10px}
+/* Lifelines */
+.lifelines{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;justify-content:center}
+.lifeline-btn{background:rgba(253,121,168,.15);border:2px solid #fd79a8;color:#fd79a8;padding:8px 16px;border-radius:20px;font-size:.85rem;cursor:pointer;transition:all .3s}
+.lifeline-btn:hover:not(:disabled){background:#fd79a8;color:#fff}
+.lifeline-btn:disabled{opacity:.3;cursor:not-allowed}
+/* Results */
+.result-title{font-size:2rem;margin:20px 0 5px;text-align:center}
+.result-score{font-size:3rem;font-family:'Fredoka One',cursive;background:linear-gradient(135deg,#00cec9,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.result-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin:20px 0}
+.stat-card{background:rgba(255,255,255,.05);border-radius:14px;padding:16px;text-align:center}
+.stat-card .val{font-size:1.6rem;font-family:'Fredoka One',cursive;color:#00cec9}
+.stat-card .label{font-size:.8rem;color:#a29bfe;margin-top:4px}
+.cat-breakdown{width:100%;margin:10px 0}
+.cat-breakdown h3{font-size:1rem;color:#a29bfe;margin-bottom:8px}
+.cat-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.9rem}
+.high-score-badge{background:linear-gradient(135deg,#fd79a8,#e17055);padding:6px 18px;border-radius:20px;font-family:'Fredoka One',cursive;font-size:.9rem;margin:10px 0}
+/* Confetti */
+.confetti-piece{position:fixed;width:10px;height:10px;top:-10px;z-index:200;pointer-events:none;border-radius:2px}
+@keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+/* Responsive */
+@media(max-width:500px){
+.title{font-size:1.8rem}
+.answers-grid{grid-template-columns:1fr}
+.cat-grid{grid-template-columns:repeat(2,1fr)}
+.question-text{font-size:1.1rem}
+.result-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="home-btn">🏠 Home</a>
+
+<!-- MENU SCREEN -->
+<div id="menu-screen" class="screen active">
+<div class="title">⚡ Trivia Quiz Blitz</div>
+<div class="subtitle">Test your brain with 20 rapid-fire questions!</div>
+<div id="high-score-display" style="color:#fd79a8;font-family:'Fredoka One',cursive;margin-bottom:20px"></div>
+<h3 style="color:#a29bfe;margin-bottom:5px">Pick Your Categories</h3>
+<div class="cat-actions">
+<button onclick="selectAllCats()">Select All</button>
+<button onclick="deselectAllCats()">Deselect All</button>
+</div>
+<div class="cat-grid" id="cat-grid"></div>
+<button class="btn" id="start-btn" onclick="startGame()">🚀 Start Quiz!</button>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz-screen" class="screen">
+<div class="quiz-header">
+<div class="score-display" id="score-display">Score: 0</div>
+<div class="streak-display" id="streak-display"></div>
+<div class="q-counter" id="q-counter">1 / 20</div>
+</div>
+<div class="timer-text" id="timer-text">15</div>
+<div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+<div class="lifelines" id="lifelines">
+<button class="lifeline-btn" id="ll-5050" onclick="useFiftyFifty()">🎯 50/50</button>
+<button class="lifeline-btn" id="ll-skip" onclick="useSkip()">⏭️ Skip</button>
+<button class="lifeline-btn" id="ll-time" onclick="useExtraTime()">⏰ +10s</button>
+</div>
+<div class="category-tag" id="q-category"></div>
+<div class="question-text" id="q-text"></div>
+<div class="answers-grid" id="answers-grid"></div>
+<div class="fun-fact-box" id="fun-fact" style="display:none"></div>
+<button class="btn btn-secondary next-btn" id="next-btn" style="display:none" onclick="nextQuestion()">Next ➜</button>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results-screen" class="screen">
+<div class="title">🏆 Quiz Complete!</div>
+<div id="result-rank" class="result-title"></div>
+<div id="result-score" class="result-score"></div>
+<div id="new-high" class="high-score-badge" style="display:none">🌟 New High Score!</div>
+<div class="result-stats" id="result-stats"></div>
+<div class="cat-breakdown" id="cat-breakdown"></div>
+<div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;justify-content:center">
+<button class="btn" onclick="showMenu()">🔄 Play Again</button>
+<button class="btn btn-secondary" onclick="window.location.href='../index.html'">🏠 Home</button>
+</div>
+</div>
+
+<script>
+// ===== AUDIO =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio(){if(!audioCtx)audioCtx=new AudioCtx()}
+function playTone(freq,dur,type='sine',vol=.15){
+ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+o.type=type;o.frequency.value=freq;g.gain.value=vol;
+o.connect(g);g.connect(audioCtx.destination);
+o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);
+o.stop(audioCtx.currentTime+dur);
+}
+function sndCorrect(){playTone(880,.12);setTimeout(()=>playTone(1100,.15),100)}
+function sndWrong(){playTone(200,.3,'sawtooth',.1)}
+function sndTick(){playTone(600,.05,'square',.05)}
+function sndStreak(){playTone(660,.08);setTimeout(()=>playTone(880,.08),80);setTimeout(()=>playTone(1100,.12),160)}
+function sndGameOver(){playTone(440,.15);setTimeout(()=>playTone(550,.15),150);setTimeout(()=>playTone(660,.15),300);setTimeout(()=>playTone(880,.3),450)}
+
+// ===== CATEGORIES & QUESTIONS =====
+const CATEGORIES=[
+{id:'animals',name:'Animals',emoji:'🐾',color:'#00cec9'},
+{id:'space',name:'Space',emoji:'🚀',color:'#6c5ce7'},
+{id:'science',name:'Science',emoji:'🔬',color:'#a29bfe'},
+{id:'geography',name:'Geography',emoji:'🌍',color:'#00b894'},
+{id:'history',name:'History',emoji:'📜',color:'#fdcb6e'},
+{id:'movies',name:'Movies & TV',emoji:'🎬',color:'#fd79a8'},
+{id:'sports',name:'Sports',emoji:'⚽',color:'#e17055'},
+{id:'food',name:'Food',emoji:'🍕',color:'#fab1a0'}
+];
+
+const Q=[
+// ANIMALS (20)
+{cat:'animals',q:'What is the fastest land animal?',a:['Cheetah','Lion','Horse','Falcon'],c:0,f:'Cheetahs can reach speeds of 70 mph (112 km/h)!'},
+{cat:'animals',q:'How many legs does a spider have?',a:['8','6','10','4'],c:0,f:'Spiders are arachnids, not insects, which is why they have 8 legs.'},
+{cat:'animals',q:'What is a group of lions called?',a:['Pride','Pack','Herd','Flock'],c:0,f:'A pride usually has about 15 lions!'},
+{cat:'animals',q:'Which animal is the tallest in the world?',a:['Giraffe','Elephant','Whale','Ostrich'],c:0,f:'Giraffes can be up to 19 feet tall — that\'s like a 2-story building!'},
+{cat:'animals',q:'What do caterpillars turn into?',a:['Butterflies','Beetles','Bees','Spiders'],c:0,f:'The process is called metamorphosis and takes about 2 weeks!'},
+{cat:'animals',q:'Which ocean animal has 3 hearts?',a:['Octopus','Dolphin','Shark','Whale'],c:0,f:'Two hearts pump blood to the gills, one pumps it to the body!'},
+{cat:'animals',q:'What is a baby kangaroo called?',a:['Joey','Cub','Kit','Pup'],c:0,f:'Joeys are born only 1 inch long and grow in their mom\'s pouch!'},
+{cat:'animals',q:'Which bird can fly backwards?',a:['Hummingbird','Eagle','Penguin','Owl'],c:0,f:'Hummingbirds can flap their wings 80 times per second!'},
+{cat:'animals',q:'How many arms does a starfish usually have?',a:['5','4','6','8'],c:0,f:'If a starfish loses an arm, it can grow a new one!'},
+{cat:'animals',q:'What is the largest mammal on Earth?',a:['Blue whale','Elephant','Giraffe','Hippo'],c:0,f:'Blue whales can be 100 feet long and weigh as much as 33 elephants!'},
+{cat:'animals',q:'Which animal sleeps standing up?',a:['Horse','Cat','Dog','Rabbit'],c:0,f:'Horses can lock their legs in place so they don\'t fall over!'},
+{cat:'animals',q:'What do pandas mainly eat?',a:['Bamboo','Fish','Berries','Insects'],c:0,f:'Pandas eat up to 38 kg of bamboo every single day!'},
+{cat:'animals',q:'Which animal has black and white stripes?',a:['Zebra','Tiger','Leopard','Panda'],c:0,f:'Each zebra\'s stripe pattern is unique, like human fingerprints!'},
+{cat:'animals',q:'How many legs does a butterfly have?',a:['6','4','8','2'],c:0,f:'Butterflies taste with their feet!'},
+{cat:'animals',q:'What is the only mammal that can truly fly?',a:['Bat','Flying squirrel','Sugar glider','Pterodactyl'],c:0,f:'There are over 1,400 species of bats in the world!'},
+{cat:'animals',q:'What color is a polar bear\'s skin?',a:['Black','White','Pink','Brown'],c:0,f:'Their fur is actually transparent — it just looks white!'},
+{cat:'animals',q:'Which animal has the longest neck?',a:['Giraffe','Swan','Flamingo','Ostrich'],c:0,f:'A giraffe\'s neck can be over 6 feet long but has only 7 bones, same as humans!'},
+{cat:'animals',q:'Which sea creature is known for squirting ink?',a:['Squid','Jellyfish','Seahorse','Starfish'],c:0,f:'Squid squirt ink to confuse predators and escape!'},
+{cat:'animals',q:'What animal is known as man\'s best friend?',a:['Dog','Cat','Horse','Parrot'],c:0,f:'Dogs have been human companions for over 15,000 years!'},
+{cat:'animals',q:'Which reptile can change its color?',a:['Chameleon','Iguana','Gecko','Turtle'],c:0,f:'Chameleons change color based on mood, temperature, and communication!'},
+
+// SPACE (20)
+{cat:'space',q:'What planet is known as the Red Planet?',a:['Mars','Venus','Jupiter','Mercury'],c:0,f:'Mars looks red because of iron oxide (rust) on its surface!'},
+{cat:'space',q:'How many planets are in our solar system?',a:['8','9','7','10'],c:0,f:'Pluto was reclassified as a dwarf planet in 2006!'},
+{cat:'space',q:'What is the closest star to Earth?',a:['The Sun','Alpha Centauri','Sirius','Polaris'],c:0,f:'The Sun is about 93 million miles away from Earth!'},
+{cat:'space',q:'Which planet has the most moons?',a:['Saturn','Jupiter','Uranus','Neptune'],c:0,f:'Saturn has over 140 known moons!'},
+{cat:'space',q:'What is the largest planet in our solar system?',a:['Jupiter','Saturn','Neptune','Uranus'],c:0,f:'Jupiter is so big that over 1,300 Earths could fit inside it!'},
+{cat:'space',q:'What galaxy do we live in?',a:['Milky Way','Andromeda','Pinwheel','Sombrero'],c:0,f:'The Milky Way contains between 100-400 billion stars!'},
+{cat:'space',q:'Who was the first person to walk on the Moon?',a:['Neil Armstrong','Buzz Aldrin','Yuri Gagarin','John Glenn'],c:0,f:'Armstrong\'s famous first step was on July 20, 1969!'},
+{cat:'space',q:'Which planet is famous for its rings?',a:['Saturn','Jupiter','Uranus','Neptune'],c:0,f:'Saturn\'s rings are made mostly of ice and rock!'},
+{cat:'space',q:'What is the hottest planet in our solar system?',a:['Venus','Mercury','Mars','Jupiter'],c:0,f:'Venus is hotter than Mercury even though Mercury is closer to the Sun!'},
+{cat:'space',q:'How long does it take Earth to orbit the Sun?',a:['365 days','30 days','24 hours','7 days'],c:0,f:'That\'s why we have one year with about 365 days!'},
+{cat:'space',q:'What planet is known for its Great Red Spot?',a:['Jupiter','Mars','Saturn','Neptune'],c:0,f:'The Great Red Spot is a giant storm bigger than Earth!'},
+{cat:'space',q:'What is a shooting star actually?',a:['A meteor','A falling star','A comet','A satellite'],c:0,f:'Meteors are small pieces of space rock burning up in our atmosphere!'},
+{cat:'space',q:'Which planet spins on its side?',a:['Uranus','Neptune','Saturn','Venus'],c:0,f:'Scientists think a giant collision knocked Uranus on its side!'},
+{cat:'space',q:'What is the smallest planet in our solar system?',a:['Mercury','Mars','Venus','Pluto'],c:0,f:'Mercury is only slightly larger than Earth\'s Moon!'},
+{cat:'space',q:'What do astronauts wear in space?',a:['Space suit','Tuxedo','Wetsuit','Lab coat'],c:0,f:'A NASA space suit costs about $12 million to make!'},
+{cat:'space',q:'How many Earths could fit inside the Sun?',a:['1.3 million','100','10,000','500'],c:0,f:'The Sun makes up 99.86% of all the mass in our solar system!'},
+{cat:'space',q:'What is a group of stars that forms a pattern called?',a:['Constellation','Galaxy','Nebula','Solar system'],c:0,f:'There are 88 officially recognized constellations!'},
+{cat:'space',q:'Which planet is closest to the Sun?',a:['Mercury','Venus','Earth','Mars'],c:0,f:'A year on Mercury is only 88 Earth days!'},
+{cat:'space',q:'What force keeps us on the ground?',a:['Gravity','Magnetism','Friction','Wind'],c:0,f:'Without gravity, everything would float away into space!'},
+{cat:'space',q:'What is the name of NASA\'s most famous space telescope?',a:['Hubble','Webb','Kepler','Chandra'],c:0,f:'The Hubble Space Telescope has been in orbit since 1990!'},
+
+// SCIENCE (20)
+{cat:'science',q:'What gas do plants breathe in?',a:['Carbon dioxide','Oxygen','Nitrogen','Helium'],c:0,f:'Plants take in CO2 and release oxygen for us to breathe!'},
+{cat:'science',q:'What is H2O commonly known as?',a:['Water','Salt','Sugar','Air'],c:0,f:'Every molecule of water has 2 hydrogen atoms and 1 oxygen atom!'},
+{cat:'science',q:'What is the hardest natural substance on Earth?',a:['Diamond','Gold','Iron','Granite'],c:0,f:'Diamonds are made of carbon atoms squeezed under extreme pressure!'},
+{cat:'science',q:'How many bones are in the human body?',a:['206','150','300','100'],c:0,f:'Babies are born with about 270 bones that fuse together as they grow!'},
+{cat:'science',q:'What part of the plant makes food from sunlight?',a:['Leaves','Roots','Stem','Flower'],c:0,f:'This process is called photosynthesis!'},
+{cat:'science',q:'What are the three states of matter?',a:['Solid, liquid, gas','Hot, cold, warm','Big, medium, small','Light, dark, gray'],c:0,f:'There\'s actually a fourth state called plasma — found in lightning and stars!'},
+{cat:'science',q:'What is the center of an atom called?',a:['Nucleus','Core','Center','Middle'],c:0,f:'The nucleus contains protons and neutrons!'},
+{cat:'science',q:'Which organ pumps blood through your body?',a:['Heart','Brain','Lungs','Liver'],c:0,f:'Your heart beats about 100,000 times every day!'},
+{cat:'science',q:'What color do you get when you mix red and blue?',a:['Purple','Green','Orange','Brown'],c:0,f:'Purple was once the most expensive color to make, reserved for royalty!'},
+{cat:'science',q:'What is the boiling point of water in Celsius?',a:['100°C','50°C','200°C','0°C'],c:0,f:'Water freezes at 0°C and boils at 100°C at sea level!'},
+{cat:'science',q:'What type of animal is a frog?',a:['Amphibian','Reptile','Mammal','Fish'],c:0,f:'Frogs start life as tadpoles living in water!'},
+{cat:'science',q:'What is the largest organ in the human body?',a:['Skin','Liver','Brain','Heart'],c:0,f:'An adult\'s skin weighs about 8 pounds and covers 22 square feet!'},
+{cat:'science',q:'What makes a rainbow appear?',a:['Sunlight and rain','Wind and clouds','Thunder and lightning','Snow and ice'],c:0,f:'A rainbow has 7 colors: red, orange, yellow, green, blue, indigo, violet!'},
+{cat:'science',q:'How many teeth does an adult human have?',a:['32','28','24','36'],c:0,f:'Kids have only 20 baby teeth before their adult teeth come in!'},
+{cat:'science',q:'What is the speed of light?',a:['186,000 miles/sec','100,000 miles/sec','1,000 miles/sec','1 million miles/sec'],c:0,f:'Light can travel around the Earth 7.5 times in one second!'},
+{cat:'science',q:'Which gas do we breathe in to stay alive?',a:['Oxygen','Carbon dioxide','Nitrogen','Helium'],c:0,f:'The air is actually about 78% nitrogen and only 21% oxygen!'},
+{cat:'science',q:'What instrument measures temperature?',a:['Thermometer','Barometer','Ruler','Scale'],c:0,f:'The first thermometer was invented by Galileo around 1592!'},
+{cat:'science',q:'What is the chemical symbol for gold?',a:['Au','Go','Gd','Ag'],c:0,f:'Au comes from the Latin word "aurum" meaning shining dawn!'},
+{cat:'science',q:'What type of energy comes from the Sun?',a:['Solar energy','Wind energy','Water energy','Nuclear energy'],c:0,f:'The Sun produces enough energy in one second to power Earth for 500,000 years!'},
+{cat:'science',q:'What is the process of a liquid turning into a gas called?',a:['Evaporation','Condensation','Freezing','Melting'],c:0,f:'Evaporation is how puddles disappear on a sunny day!'},
+
+// GEOGRAPHY (20)
+{cat:'geography',q:'What is the largest continent?',a:['Asia','Africa','Europe','Antarctica'],c:0,f:'Asia covers about 30% of Earth\'s total land area!'},
+{cat:'geography',q:'What is the longest river in the world?',a:['Nile','Amazon','Mississippi','Yangtze'],c:0,f:'The Nile is about 4,130 miles (6,650 km) long!'},
+{cat:'geography',q:'How many continents are there?',a:['7','5','6','8'],c:0,f:'The 7 continents are Asia, Africa, North America, South America, Antarctica, Europe, and Australia!'},
+{cat:'geography',q:'What is the largest ocean on Earth?',a:['Pacific','Atlantic','Indian','Arctic'],c:0,f:'The Pacific Ocean covers more area than all the land on Earth combined!'},
+{cat:'geography',q:'Which country has the most people?',a:['India','China','USA','Indonesia'],c:0,f:'India recently passed China as the most populated country with over 1.4 billion people!'},
+{cat:'geography',q:'What is the capital of France?',a:['Paris','London','Rome','Berlin'],c:0,f:'The Eiffel Tower in Paris was built in 1889 and was supposed to be temporary!'},
+{cat:'geography',q:'Which is the largest desert in the world?',a:['Sahara','Gobi','Arabian','Kalahari'],c:0,f:'The Sahara is almost as big as the entire United States!'},
+{cat:'geography',q:'What mountain is the tallest in the world?',a:['Mount Everest','K2','Kilimanjaro','Denali'],c:0,f:'Mount Everest is 29,032 feet (8,849 m) tall and still growing!'},
+{cat:'geography',q:'What country is shaped like a boot?',a:['Italy','France','Spain','Greece'],c:0,f:'Italy is a peninsula surrounded by the Mediterranean Sea!'},
+{cat:'geography',q:'What is the smallest country in the world?',a:['Vatican City','Monaco','San Marino','Liechtenstein'],c:0,f:'Vatican City is only about 121 acres — smaller than most parks!'},
+{cat:'geography',q:'On which continent is Egypt?',a:['Africa','Asia','Europe','South America'],c:0,f:'Egypt is in the northeast corner of Africa, next to the Red Sea!'},
+{cat:'geography',q:'What is the largest country by area?',a:['Russia','Canada','China','USA'],c:0,f:'Russia spans 11 time zones — more than any other country!'},
+{cat:'geography',q:'Which river flows through London?',a:['Thames','Seine','Danube','Rhine'],c:0,f:'The River Thames is about 215 miles long!'},
+{cat:'geography',q:'What is the capital of Japan?',a:['Tokyo','Kyoto','Osaka','Beijing'],c:0,f:'Tokyo is one of the most populated cities in the world with 14 million people!'},
+{cat:'geography',q:'Which continent is the South Pole on?',a:['Antarctica','Arctic','Australia','Africa'],c:0,f:'Antarctica is the coldest, windiest, and driest continent on Earth!'},
+{cat:'geography',q:'What are the 5 Great Lakes located between?',a:['USA and Canada','USA and Mexico','France and Germany','China and Japan'],c:0,f:'The Great Lakes contain 20% of the world\'s fresh surface water!'},
+{cat:'geography',q:'What is the capital of Australia?',a:['Canberra','Sydney','Melbourne','Brisbane'],c:0,f:'Many people guess Sydney, but Canberra has been the capital since 1913!'},
+{cat:'geography',q:'Which country is famous for tulips and windmills?',a:['Netherlands','Belgium','Denmark','Sweden'],c:0,f:'The Netherlands exports about 2 billion tulip bulbs every year!'},
+{cat:'geography',q:'What is the deepest ocean trench?',a:['Mariana Trench','Tonga Trench','Java Trench','Puerto Rico Trench'],c:0,f:'The Mariana Trench is about 36,000 feet deep — deeper than Everest is tall!'},
+{cat:'geography',q:'What imaginary line divides the Earth into Northern and Southern hemispheres?',a:['Equator','Prime Meridian','Tropic of Cancer','Arctic Circle'],c:0,f:'The Equator is about 24,901 miles (40,075 km) around!'},
+
+// HISTORY (20)
+{cat:'history',q:'Who built the pyramids?',a:['Ancient Egyptians','Romans','Greeks','Vikings'],c:0,f:'The Great Pyramid of Giza was built over 4,500 years ago!'},
+{cat:'history',q:'What ancient civilization built the Colosseum?',a:['Romans','Greeks','Egyptians','Persians'],c:0,f:'The Colosseum could hold up to 80,000 spectators!'},
+{cat:'history',q:'In what year did the Titanic sink?',a:['1912','1920','1905','1898'],c:0,f:'The Titanic was thought to be unsinkable before its first voyage!'},
+{cat:'history',q:'Who was the first president of the United States?',a:['George Washington','Abraham Lincoln','Thomas Jefferson','John Adams'],c:0,f:'Washington served as president from 1789 to 1797!'},
+{cat:'history',q:'What did ancient Egyptians write on?',a:['Papyrus','Paper','Stone only','Wood'],c:0,f:'Papyrus was made from a river plant and is where the word "paper" comes from!'},
+{cat:'history',q:'Which explorer is credited with discovering America?',a:['Christopher Columbus','Marco Polo','Ferdinand Magellan','Leif Erikson'],c:0,f:'Columbus actually landed in the Caribbean in 1492, not mainland America!'},
+{cat:'history',q:'What was a knight\'s protective suit called?',a:['Armor','Uniform','Toga','Tunic'],c:0,f:'A full suit of armor could weigh between 45-55 pounds!'},
+{cat:'history',q:'Which ancient wonder was located in Egypt?',a:['Great Pyramid of Giza','Hanging Gardens','Colossus of Rhodes','Lighthouse of Alexandria'],c:0,f:'The Great Pyramid is the only ancient wonder still standing today!'},
+{cat:'history',q:'What did pirates use to find treasure?',a:['Maps','GPS','Compasses only','Telescopes'],c:0,f:'Most real pirates rarely buried their treasure — that\'s mostly from stories!'},
+{cat:'history',q:'What ancient civilization created the Olympic Games?',a:['Greeks','Romans','Egyptians','Chinese'],c:0,f:'The first Olympics were held in 776 BC in Olympia, Greece!'},
+{cat:'history',q:'Who painted the Mona Lisa?',a:['Leonardo da Vinci','Michelangelo','Picasso','Van Gogh'],c:0,f:'The Mona Lisa is behind bulletproof glass in the Louvre museum in Paris!'},
+{cat:'history',q:'What year did humans first land on the Moon?',a:['1969','1959','1975','1982'],c:0,f:'About 600 million people watched the Moon landing on TV!'},
+{cat:'history',q:'What ancient people sailed in longships?',a:['Vikings','Egyptians','Greeks','Chinese'],c:0,f:'Vikings explored as far as North America about 500 years before Columbus!'},
+{cat:'history',q:'Who invented the light bulb?',a:['Thomas Edison','Benjamin Franklin','Nikola Tesla','Alexander Graham Bell'],c:0,f:'Edison tested over 3,000 designs before finding one that worked!'},
+{cat:'history',q:'What was the name of the ship the Pilgrims sailed on?',a:['Mayflower','Santa Maria','Endeavour','Beagle'],c:0,f:'The Mayflower\'s voyage from England to America took 66 days in 1620!'},
+{cat:'history',q:'Which famous queen ruled ancient Egypt?',a:['Cleopatra','Victoria','Elizabeth','Nefertiti'],c:0,f:'Cleopatra could speak at least 9 different languages!'},
+{cat:'history',q:'What material did cave people use to make tools?',a:['Stone','Plastic','Metal','Glass'],c:0,f:'The Stone Age lasted for about 3.4 million years!'},
+{cat:'history',q:'Who wrote plays like Romeo and Juliet?',a:['William Shakespeare','Charles Dickens','Mark Twain','Jane Austen'],c:0,f:'Shakespeare invented over 1,700 words we still use today!'},
+{cat:'history',q:'What ancient structure is found in China?',a:['Great Wall','Colosseum','Parthenon','Stonehenge'],c:0,f:'The Great Wall of China is over 13,000 miles long!'},
+{cat:'history',q:'What did ancient Romans use to count?',a:['Roman numerals','Calculators','Arabic numbers','Tally sticks'],c:0,f:'In Roman numerals, the year 2024 is written as MMXXIV!'},
+
+// MOVIES & TV (20)
+{cat:'movies',q:'What is the name of the snowman in Frozen?',a:['Olaf','Sven','Kristoff','Hans'],c:0,f:'Olaf dreams of experiencing summer — and he finally does!'},
+{cat:'movies',q:'Who lives in a pineapple under the sea?',a:['SpongeBob','Patrick','Squidward','Sandy'],c:0,f:'SpongeBob SquarePants first aired in 1999!'},
+{cat:'movies',q:'In The Lion King, what is Simba\'s father\'s name?',a:['Mufasa','Scar','Rafiki','Zazu'],c:0,f:'Simba means "lion" in Swahili!'},
+{cat:'movies',q:'What kind of fish is Nemo?',a:['Clownfish','Goldfish','Swordfish','Angelfish'],c:0,f:'Clownfish really do live in sea anemones just like in the movie!'},
+{cat:'movies',q:'In Toy Story, what type of toy is Woody?',a:['Cowboy','Astronaut','Soldier','Robot'],c:0,f:'Toy Story (1995) was the first fully computer-animated feature film!'},
+{cat:'movies',q:'What is the name of Harry Potter\'s owl?',a:['Hedwig','Errol','Pigwidgeon','Scabbers'],c:0,f:'Hedwig is a snowy owl who delivers Harry\'s mail!'},
+{cat:'movies',q:'Which princess has really long golden hair?',a:['Rapunzel','Cinderella','Belle','Ariel'],c:0,f:'In the movie Tangled, Rapunzel\'s hair is 70 feet long!'},
+{cat:'movies',q:'What color is the Grinch?',a:['Green','Red','Blue','Purple'],c:0,f:'Dr. Seuss wrote "How the Grinch Stole Christmas" in 1957!'},
+{cat:'movies',q:'In Moana, what is the name of her rooster?',a:['Heihei','Pua','Maui','Tamatoa'],c:0,f:'Heihei was almost cut from the movie for being too dumb!'},
+{cat:'movies',q:'What is the name of the robot in WALL-E?',a:['WALL-E','EVE','AUTO','M-O'],c:0,f:'WALL-E stands for Waste Allocation Load Lifter: Earth-class!'},
+{cat:'movies',q:'In Shrek, what kind of creature is Shrek?',a:['Ogre','Troll','Giant','Goblin'],c:0,f:'Shrek means "fear" or "terror" in Yiddish!'},
+{cat:'movies',q:'What is the name of the main character in Up?',a:['Carl','Russell','Kevin','Dug'],c:0,f:'It took animators years to perfect the scene with 10,000 balloons!'},
+{cat:'movies',q:'Which Disney movie features a genie in a lamp?',a:['Aladdin','Cinderella','Mulan','Pocahontas'],c:0,f:'The Genie was voiced by the legendary Robin Williams!'},
+{cat:'movies',q:'What is Baby Yoda\'s real name in The Mandalorian?',a:['Grogu','Yoda Jr.','Din','Boba'],c:0,f:'Grogu is actually about 50 years old in the show!'},
+{cat:'movies',q:'In Encanto, what is special about Mirabel?',a:['She has no magical gift','She can fly','She is invisible','She can read minds'],c:0,f:'The song "We Don\'t Talk About Bruno" became a massive hit!'},
+{cat:'movies',q:'What kind of animal is Puss in Boots?',a:['Cat','Dog','Fox','Rabbit'],c:0,f:'Puss in Boots first appeared in the Shrek 2 movie!'},
+{cat:'movies',q:'In Despicable Me, what are the small yellow creatures called?',a:['Minions','Yellows','Helpers','Blobs'],c:0,f:'Minions speak a mix of many real languages called Minionese!'},
+{cat:'movies',q:'What studio made movies like Spirited Away and My Neighbor Totoro?',a:['Studio Ghibli','Pixar','Disney','DreamWorks'],c:0,f:'Studio Ghibli is a famous Japanese animation studio founded in 1985!'},
+{cat:'movies',q:'In Inside Out, which emotion is yellow and cheerful?',a:['Joy','Anger','Disgust','Fear'],c:0,f:'The movie takes place mostly inside the mind of a girl named Riley!'},
+{cat:'movies',q:'What is the name of the dragon in How to Train Your Dragon?',a:['Toothless','Stormfly','Hookfang','Meatlug'],c:0,f:'Toothless is a Night Fury, the rarest dragon species!'},
+
+// SPORTS (20)
+{cat:'sports',q:'How many players are on a soccer team on the field?',a:['11','9','10','12'],c:0,f:'Soccer (football) is the most popular sport in the world!'},
+{cat:'sports',q:'In basketball, how many points is a shot from behind the arc worth?',a:['3','2','4','1'],c:0,f:'The 3-point line was added to the NBA in 1979!'},
+{cat:'sports',q:'What sport uses a shuttlecock?',a:['Badminton','Tennis','Volleyball','Squash'],c:0,f:'A shuttlecock can travel over 200 mph when hit by top players!'},
+{cat:'sports',q:'How many rings are on the Olympic flag?',a:['5','4','6','7'],c:0,f:'The 5 rings represent the 5 continents participating in the Olympics!'},
+{cat:'sports',q:'In which sport do you perform a slam dunk?',a:['Basketball','Volleyball','Tennis','Football'],c:0,f:'The first slam dunk in a game was in the 1930s!'},
+{cat:'sports',q:'What sport is played at Wimbledon?',a:['Tennis','Cricket','Soccer','Rugby'],c:0,f:'Wimbledon is the oldest tennis tournament — it started in 1877!'},
+{cat:'sports',q:'How long is a marathon race?',a:['26.2 miles','20 miles','30 miles','13.1 miles'],c:0,f:'The marathon distance was standardized at the 1908 London Olympics!'},
+{cat:'sports',q:'What color is the center of an archery target?',a:['Gold/Yellow','Red','Blue','Black'],c:0,f:'Hitting the gold center is called a "bullseye" and scores 10 points!'},
+{cat:'sports',q:'What sport does Simone Biles compete in?',a:['Gymnastics','Swimming','Track','Figure skating'],c:0,f:'Simone Biles has won more World Championship medals than any gymnast ever!'},
+{cat:'sports',q:'In baseball, how many strikes make an out?',a:['3','2','4','5'],c:0,f:'Baseball has been played in America since the 1800s!'},
+{cat:'sports',q:'What is the most-watched sporting event in the world?',a:['FIFA World Cup','Super Bowl','Olympics','Cricket World Cup'],c:0,f:'Over 1.5 billion people watched the 2022 FIFA World Cup final!'},
+{cat:'sports',q:'In swimming, what stroke looks like a butterfly?',a:['Butterfly','Backstroke','Breaststroke','Freestyle'],c:0,f:'The butterfly stroke was developed in the 1930s as a variation of breaststroke!'},
+{cat:'sports',q:'What sport uses a puck?',a:['Ice hockey','Field hockey','Lacrosse','Cricket'],c:0,f:'Hockey pucks are frozen before games to reduce bouncing!'},
+{cat:'sports',q:'How many holes are in a standard round of golf?',a:['18','9','12','21'],c:0,f:'Golf was invented in Scotland in the 15th century!'},
+{cat:'sports',q:'What do you call it when a bowler knocks down all pins on the first roll?',a:['Strike','Spare','Turkey','Gutter'],c:0,f:'Three strikes in a row is called a "turkey" in bowling!'},
+{cat:'sports',q:'Which country invented the sport of cricket?',a:['England','India','Australia','South Africa'],c:0,f:'Cricket matches can last up to 5 days in Test cricket!'},
+{cat:'sports',q:'In the Tour de France, what color jersey does the leader wear?',a:['Yellow','Green','Red','Blue'],c:0,f:'The Tour de France covers about 2,200 miles over 3 weeks!'},
+{cat:'sports',q:'What sport combines skiing and shooting?',a:['Biathlon','Triathlon','Decathlon','Pentathlon'],c:0,f:'Biathlon originated from military training in Scandinavia!'},
+{cat:'sports',q:'How many players are on a volleyball team on the court?',a:['6','5','7','8'],c:0,f:'Volleyball was invented in 1895 in Massachusetts!'},
+{cat:'sports',q:'What color belt is the highest rank in most martial arts?',a:['Black','Red','White','Gold'],c:0,f:'It typically takes 3-5 years of training to earn a black belt!'},
+
+// FOOD (20)
+{cat:'food',q:'What fruit do you use to make guacamole?',a:['Avocado','Tomato','Mango','Banana'],c:0,f:'Avocados are actually berries — and they\'re a fruit, not a vegetable!'},
+{cat:'food',q:'What country did pizza originally come from?',a:['Italy','USA','France','Greece'],c:0,f:'The first modern pizza was made in Naples, Italy around 1860!'},
+{cat:'food',q:'What is the main ingredient in bread?',a:['Flour','Sugar','Butter','Eggs'],c:0,f:'Humans have been making bread for over 14,000 years!'},
+{cat:'food',q:'What gives chili peppers their spicy taste?',a:['Capsaicin','Acid','Sugar','Salt'],c:0,f:'Capsaicin tricks your brain into feeling heat — it\'s not actually burning you!'},
+{cat:'food',q:'What is sushi traditionally wrapped in?',a:['Seaweed','Rice paper','Lettuce','Banana leaf'],c:0,f:'The seaweed used is called nori, and sushi means "sour rice" in Japanese!'},
+{cat:'food',q:'Which fruit is known as the "king of fruits"?',a:['Durian','Mango','Pineapple','Watermelon'],c:0,f:'Durian smells so strong it\'s banned on public transport in some countries!'},
+{cat:'food',q:'What nut is used to make marzipan?',a:['Almond','Peanut','Walnut','Cashew'],c:0,f:'Marzipan has been a popular sweet treat since the Middle Ages!'},
+{cat:'food',q:'What is the most eaten food in the world?',a:['Rice','Bread','Pasta','Potatoes'],c:0,f:'Rice feeds more than half the world\'s population every day!'},
+{cat:'food',q:'What vegetable makes you cry when you cut it?',a:['Onion','Garlic','Pepper','Celery'],c:0,f:'Cutting onions releases a gas that irritates your eyes!'},
+{cat:'food',q:'What is tofu made from?',a:['Soybeans','Rice','Wheat','Corn'],c:0,f:'Tofu was invented in China over 2,000 years ago!'},
+{cat:'food',q:'What country are croissants from?',a:['France','Italy','Austria','Spain'],c:0,f:'Croissants were actually inspired by an Austrian pastry called kipferl!'},
+{cat:'food',q:'What fruit has its seeds on the outside?',a:['Strawberry','Raspberry','Blueberry','Cherry'],c:0,f:'A strawberry has about 200 seeds on its surface!'},
+{cat:'food',q:'What is the most popular ice cream flavor?',a:['Vanilla','Chocolate','Strawberry','Mint'],c:0,f:'About 1/3 of all ice cream sold is vanilla flavored!'},
+{cat:'food',q:'Which food is known as "brain food"?',a:['Fish','Candy','Chips','Soda'],c:0,f:'Fish contains omega-3 fatty acids that are great for brain health!'},
+{cat:'food',q:'What country did chocolate originally come from?',a:['Mexico','Switzerland','Belgium','France'],c:0,f:'The ancient Aztecs drank chocolate as a bitter, spicy drink!'},
+{cat:'food',q:'What is the most expensive spice in the world?',a:['Saffron','Vanilla','Cinnamon','Pepper'],c:0,f:'Saffron is made from tiny flower parts and can cost over $5,000 per pound!'},
+{cat:'food',q:'What makes popcorn pop?',a:['Water inside the kernel','Air inside','Heat alone','Oil'],c:0,f:'Each popcorn kernel has a tiny drop of water that turns to steam and pops!'},
+{cat:'food',q:'What type of food is a pretzel?',a:['Bread','Cookie','Cake','Candy'],c:0,f:'Pretzels were invented by monks in the early Middle Ages!'},
+{cat:'food',q:'What vitamin do you get from oranges?',a:['Vitamin C','Vitamin A','Vitamin D','Vitamin B'],c:0,f:'One orange provides about 100% of your daily vitamin C needs!'},
+{cat:'food',q:'What country is maple syrup most famous from?',a:['Canada','USA','Sweden','Russia'],c:0,f:'Canada produces about 71% of the world\'s maple syrup!'}
+];
+
+// ===== GAME STATE =====
+let selectedCats=new Set(CATEGORIES.map(c=>c.id));
+let gameQuestions=[];
+let currentQ=0;
+let score=0;
+let streak=0;
+let bestStreak=0;
+let correctCount=0;
+let timerInterval=null;
+let timeLeft=15;
+let answered=false;
+let lifelines={fiftyFifty:true,skip:true,extraTime:true};
+let catStats={};
+
+// ===== MENU =====
+function renderCatGrid(){
+const grid=document.getElementById('cat-grid');
+grid.innerHTML='';
+CATEGORIES.forEach(cat=>{
+const chip=document.createElement('div');
+chip.className='cat-chip'+(selectedCats.has(cat.id)?' selected':'');
+chip.style.background=`${cat.color}22`;
+chip.innerHTML=`<span class="emoji">${cat.emoji}</span>${cat.name}`;
+chip.onclick=()=>{
+if(selectedCats.has(cat.id))selectedCats.delete(cat.id);else selectedCats.add(cat.id);
+renderCatGrid();
+document.getElementById('start-btn').disabled=selectedCats.size===0;
+};
+grid.appendChild(chip);
+});
+}
+function selectAllCats(){selectedCats=new Set(CATEGORIES.map(c=>c.id));renderCatGrid()}
+function deselectAllCats(){selectedCats.clear();renderCatGrid();document.getElementById('start-btn').disabled=true}
+
+function showMenu(){
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById('menu-screen').classList.add('active');
+const hs=localStorage.getItem('triviaBlitzHigh');
+document.getElementById('high-score-display').textContent=hs?`🏆 High Score: ${hs}`:'';
+renderCatGrid();
+}
+
+// ===== START GAME =====
+function startGame(){
+ensureAudio();
+const pool=Q.filter(q=>selectedCats.has(q.cat));
+// Shuffle and pick 20
+const shuffled=[...pool].sort(()=>Math.random()-.5);
+gameQuestions=shuffled.slice(0,20);
+if(gameQuestions.length<20){
+// fill remaining with duplicates if needed
+while(gameQuestions.length<20&&pool.length>0){
+gameQuestions.push(pool[Math.floor(Math.random()*pool.length)]);
+}
+}
+currentQ=0;score=0;streak=0;bestStreak=0;correctCount=0;answered=false;
+lifelines={fiftyFifty:true,skip:true,extraTime:true};
+catStats={};
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById('quiz-screen').classList.add('active');
+document.getElementById('ll-5050').disabled=false;
+document.getElementById('ll-skip').disabled=false;
+document.getElementById('ll-time').disabled=false;
+showQuestion();
+}
+
+// ===== SHOW QUESTION =====
+function showQuestion(){
+if(currentQ>=gameQuestions.length){showResults();return}
+answered=false;
+const q=gameQuestions[currentQ];
+document.getElementById('q-counter').textContent=`${currentQ+1} / ${gameQuestions.length}`;
+document.getElementById('score-display').textContent=`Score: ${score}`;
+document.getElementById('streak-display').textContent=streak>1?`🔥 ${streak}x Streak`:'';
+const catObj=CATEGORIES.find(c=>c.id===q.cat);
+document.getElementById('q-category').textContent=`${catObj.emoji} ${catObj.name}`;
+document.getElementById('q-category').style.background=`${catObj.color}33`;
+document.getElementById('q-category').style.color=catObj.color;
+document.getElementById('q-text').textContent=q.q;
+document.getElementById('fun-fact').style.display='none';
+document.getElementById('next-btn').style.display='none';
+// Shuffle answers
+const indices=[0,1,2,3].sort(()=>Math.random()-.5);
+const grid=document.getElementById('answers-grid');
+grid.innerHTML='';
+const labels=['A','B','C','D'];
+indices.forEach((idx,i)=>{
+const btn=document.createElement('button');
+btn.className='answer-btn';
+btn.dataset.idx=idx;
+btn.textContent=`${labels[i]}. ${q.a[idx]}`;
+btn.onclick=()=>selectAnswer(idx,btn);
+grid.appendChild(btn);
+});
+startTimer(15);
+}
+
+function selectAnswer(idx,btn){
+if(answered)return;
+answered=true;
+clearInterval(timerInterval);
+const q=gameQuestions[currentQ];
+const isCorrect=idx===q.c;
+if(isCorrect){
+btn.classList.add('correct');
+streak++;
+if(streak>bestStreak)bestStreak=streak;
+const mult=Math.min(streak,5);
+const pts=100*mult;
+score+=pts;
+correctCount++;
+sndCorrect();
+if(streak>=3)sndStreak();
+spawnConfetti();
+}else{
+btn.classList.add('wrong');
+streak=0;
+sndWrong();
+// highlight correct
+document.querySelectorAll('.answer-btn').forEach(b=>{
+if(parseInt(b.dataset.idx)===q.c)b.classList.add('correct');
+});
+}
+// Track category stats
+if(!catStats[q.cat])catStats[q.cat]={correct:0,total:0};
+catStats[q.cat].total++;
+if(isCorrect)catStats[q.cat].correct++;
+// Disable all buttons
+document.querySelectorAll('.answer-btn').forEach(b=>b.style.pointerEvents='none');
+// Show fun fact
+const ff=document.getElementById('fun-fact');
+ff.innerHTML=`<span>💡 Fun Fact:</span> ${q.f}`;
+ff.style.display='block';
+document.getElementById('score-display').textContent=`Score: ${score}`;
+document.getElementById('streak-display').textContent=streak>1?`🔥 ${streak}x Streak`:'';
+document.getElementById('next-btn').style.display='inline-block';
+}
+
+// ===== TIMER =====
+function startTimer(seconds){
+timeLeft=seconds;
+const bar=document.getElementById('timer-bar');
+const txt=document.getElementById('timer-text');
+bar.style.width='100%';
+bar.classList.remove('low');
+txt.classList.remove('low');
+txt.textContent=timeLeft;
+clearInterval(timerInterval);
+const startTime=Date.now();
+const totalMs=seconds*1000;
+timerInterval=setInterval(()=>{
+const elapsed=Date.now()-startTime;
+const remaining=Math.max(0,totalMs-elapsed);
+timeLeft=Math.ceil(remaining/1000);
+const pct=(remaining/totalMs)*100;
+bar.style.width=pct+'%';
+txt.textContent=timeLeft;
+if(timeLeft<=5){bar.classList.add('low');txt.classList.add('low');if(timeLeft>0)sndTick()}
+else{bar.classList.remove('low');txt.classList.remove('low')}
+if(remaining<=0){
+clearInterval(timerInterval);
+if(!answered)timeUp();
+}
+},100);
+}
+
+function timeUp(){
+answered=true;
+const q=gameQuestions[currentQ];
+streak=0;
+sndWrong();
+document.querySelectorAll('.answer-btn').forEach(b=>{
+b.style.pointerEvents='none';
+if(parseInt(b.dataset.idx)===q.c)b.classList.add('correct');
+});
+if(!catStats[q.cat])catStats[q.cat]={correct:0,total:0};
+catStats[q.cat].total++;
+const ff=document.getElementById('fun-fact');
+ff.innerHTML=`<span>⏰ Time's up!</span> ${q.f}`;
+ff.style.display='block';
+document.getElementById('streak-display').textContent='';
+document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQuestion(){
+currentQ++;
+showQuestion();
+}
+
+// ===== LIFELINES =====
+function useFiftyFifty(){
+if(!lifelines.fiftyFifty||answered)return;
+lifelines.fiftyFifty=false;
+document.getElementById('ll-5050').disabled=true;
+const q=gameQuestions[currentQ];
+const wrongBtns=[...document.querySelectorAll('.answer-btn')].filter(b=>parseInt(b.dataset.idx)!==q.c);
+const toRemove=wrongBtns.sort(()=>Math.random()-.5).slice(0,2);
+toRemove.forEach(b=>b.classList.add('removed'));
+}
+function useSkip(){
+if(!lifelines.skip||answered)return;
+lifelines.skip=false;
+document.getElementById('ll-skip').disabled=true;
+clearInterval(timerInterval);
+if(!catStats[gameQuestions[currentQ].cat])catStats[gameQuestions[currentQ].cat]={correct:0,total:0};
+catStats[gameQuestions[currentQ].cat].total++;
+currentQ++;
+showQuestion();
+}
+function useExtraTime(){
+if(!lifelines.extraTime||answered)return;
+lifelines.extraTime=false;
+document.getElementById('ll-time').disabled=true;
+// Add 10 seconds
+const bar=document.getElementById('timer-bar');
+const currentPct=parseFloat(bar.style.width)||0;
+clearInterval(timerInterval);
+startTimer(timeLeft+10);
+}
+
+// ===== CONFETTI =====
+function spawnConfetti(){
+const colors=['#6c5ce7','#a29bfe','#00cec9','#fd79a8','#fdcb6e','#00b894'];
+for(let i=0;i<30;i++){
+const c=document.createElement('div');
+c.className='confetti-piece';
+c.style.left=Math.random()*100+'vw';
+c.style.background=colors[Math.floor(Math.random()*colors.length)];
+c.style.width=(Math.random()*8+5)+'px';
+c.style.height=(Math.random()*8+5)+'px';
+c.style.borderRadius=Math.random()>.5?'50%':'2px';
+c.style.animation=`confetti-fall ${Math.random()*2+1.5}s linear forwards`;
+c.style.animationDelay=Math.random()*.3+'s';
+document.body.appendChild(c);
+setTimeout(()=>c.remove(),3000);
+}
+}
+
+// ===== RESULTS =====
+function showResults(){
+clearInterval(timerInterval);
+sndGameOver();
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById('results-screen').classList.add('active');
+const accuracy=gameQuestions.length>0?Math.round((correctCount/gameQuestions.length)*100):0;
+let rank,rankColor;
+if(accuracy>=95){rank='🌟 Trivia Legend';rankColor='#fdcb6e'}
+else if(accuracy>=80){rank='🧠 Brain Master';rankColor='#00cec9'}
+else if(accuracy>=65){rank='📚 Quiz Whiz';rankColor='#6c5ce7'}
+else if(accuracy>=50){rank='🎯 Sharp Thinker';rankColor='#a29bfe'}
+else if(accuracy>=30){rank='🌱 Quiz Learner';rankColor='#00b894'}
+else{rank='🐣 Quiz Novice';rankColor='#fd79a8'}
+document.getElementById('result-rank').textContent=rank;
+document.getElementById('result-rank').style.color=rankColor;
+document.getElementById('result-score').textContent=score;
+// High score
+const prev=parseInt(localStorage.getItem('triviaBlitzHigh'))||0;
+if(score>prev){
+localStorage.setItem('triviaBlitzHigh',score);
+document.getElementById('new-high').style.display='inline-block';
+}else{
+document.getElementById('new-high').style.display='none';
+}
+// Stats
+document.getElementById('result-stats').innerHTML=`
+<div class="stat-card"><div class="val">${correctCount}/${gameQuestions.length}</div><div class="label">Correct</div></div>
+<div class="stat-card"><div class="val">${accuracy}%</div><div class="label">Accuracy</div></div>
+<div class="stat-card"><div class="val">${bestStreak}🔥</div><div class="label">Best Streak</div></div>
+<div class="stat-card"><div class="val">${score}</div><div class="label">Total Score</div></div>
+`;
+// Category breakdown
+const bd=document.getElementById('cat-breakdown');
+let html='<h3>📊 Category Breakdown</h3>';
+for(const catId in catStats){
+const cat=CATEGORIES.find(c=>c.id===catId);
+const s=catStats[catId];
+html+=`<div class="cat-row"><span>${cat.emoji} ${cat.name}</span><span>${s.correct}/${s.total}</span></div>`;
+}
+bd.innerHTML=html;
+}
+
+// ===== INIT =====
+showMenu();
+</script>
+</body>
+</html>

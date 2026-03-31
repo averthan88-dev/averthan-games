@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Maze Runner — Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a1a;color:#fff;font-family:'Nunito',sans-serif;overflow:hidden;height:100vh;width:100vw;display:flex;flex-direction:column;align-items:center;user-select:none;-webkit-user-select:none;}
+h1,h2,h3,.title{font-family:'Fredoka One',cursive;}
+.top-bar{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 16px;flex-shrink:0;z-index:10;}
+.top-bar a{color:#a29bfe;text-decoration:none;font-size:14px;display:flex;align-items:center;gap:4px;}
+.top-bar a:hover{color:#6c5ce7;}
+.title{font-size:clamp(18px,4vw,28px);background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;padding:4px 8px;flex-shrink:0;}
+.btn{background:linear-gradient(135deg,#6c5ce7,#a29bfe);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.btn:hover{transform:scale(1.05);box-shadow:0 0 12px #6c5ce755;}
+.btn.active{background:linear-gradient(135deg,#00cec9,#6c5ce7);}
+.btn.pink{background:linear-gradient(135deg,#fd79a8,#a29bfe);}
+.info-bar{display:flex;gap:16px;align-items:center;padding:4px 8px;font-size:14px;flex-shrink:0;flex-wrap:wrap;justify-content:center;}
+.info-bar span{display:flex;align-items:center;gap:4px;}
+.star-icon{color:#fdcb6e;}
+canvas{display:block;flex:1;max-width:100%;max-height:100%;}
+.canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;width:100%;min-height:0;}
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,26,.92);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.show{opacity:1;pointer-events:all;}
+.modal{background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #6c5ce7;border-radius:20px;padding:32px;text-align:center;max-width:360px;width:90%;}
+.modal h2{font-family:'Fredoka One',cursive;font-size:28px;margin-bottom:12px;background:linear-gradient(135deg,#6c5ce7,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.modal p{margin:8px 0;font-size:16px;}
+.modal .btn{margin-top:16px;padding:10px 28px;font-size:16px;}
+.diff-btns{display:flex;gap:6px;}
+@media(max-width:500px){.controls{gap:4px;}.btn{padding:5px 10px;font-size:12px;}.info-bar{font-size:12px;gap:8px;}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+<a href="../index.html">🏠 Home</a>
+<div class="title">🏃 Maze Runner</div>
+<div style="width:60px"></div>
+</div>
+<div class="controls">
+<div class="diff-btns">
+<button class="btn active" id="btnEasy" onclick="setDiff(0)">Easy</button>
+<button class="btn" id="btnMed" onclick="setDiff(1)">Medium</button>
+<button class="btn" id="btnHard" onclick="setDiff(2)">Hard</button>
+</div>
+<button class="btn pink" onclick="newMaze()">New Maze</button>
+<button class="btn" id="btnFog" onclick="toggleFog()">Fog: OFF</button>
+</div>
+<div class="info-bar">
+<span>⏱️ <span id="timer">0.0s</span></span>
+<span class="star-icon">⭐</span><span id="starCount">0/0</span>
+<span>💡 Hints: <span id="hintCount">3</span></span>
+<span>🏆 Best: <span id="bestTime">—</span></span>
+</div>
+<div class="canvas-wrap"><canvas id="C"></canvas></div>
+<div class="overlay" id="winOverlay">
+<div class="modal">
+<h2>🎉 Maze Complete!</h2>
+<p>⏱️ Time: <span id="winTime"></span></p>
+<p>⭐ Stars: <span id="winStars"></span></p>
+<p>🏆 Best: <span id="winBest"></span></p>
+<button class="btn pink" onclick="newMaze();hideWin();">Play Again</button>
+</div>
+</div>
+<script>
+const C=document.getElementById('C'),ctx=C.getContext('2d');
+const DIFFS=[{name:'easy',w:11,h:11},{name:'medium',w:21,h:21},{name:'hard',w:31,h:31}];
+let diff=0,maze,cols,rows,cellSize,player,target,stars=[],trail=[],solution=[];
+let timerStart=0,timerRunning=false,elapsed=0,won=false,hints=3,fogOn=false;
+let showHint=false,hintTimer=0;
+let bestTimes={easy:null,medium:null,hard:null};
+let starsCollected=0,totalStars=0;
+let audioCtx=null;
+// smooth movement
+let playerVisX=0,playerVisY=0,moveQueue=[];
+let animFrame=0;
+
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+function playTone(freq,dur,type='sine',vol=.15){
+  if(!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type;o.frequency.value=freq;g.gain.value=vol;
+  o.connect(g);g.connect(audioCtx.destination);
+  o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);
+  o.stop(audioCtx.currentTime+dur);
+}
+function sndMove(){playTone(440,.08,'sine',.06);}
+function sndStar(){playTone(880,.15,'triangle',.2);setTimeout(()=>playTone(1100,.15,'triangle',.15),80);}
+function sndWin(){playTone(523,.2,'sine',.2);setTimeout(()=>playTone(659,.2,'sine',.2),150);setTimeout(()=>playTone(784,.3,'sine',.2),300);}
+
+function loadBest(){try{const d=JSON.parse(localStorage.getItem('maze_best'));if(d)bestTimes=d;}catch(e){}}
+function saveBest(){localStorage.setItem('maze_best',JSON.stringify(bestTimes));}
+loadBest();
+
+function setDiff(d){
+  diff=d;
+  document.querySelectorAll('.diff-btns .btn').forEach((b,i)=>b.classList.toggle('active',i===d));
+  newMaze();
+}
+function toggleFog(){fogOn=!fogOn;document.getElementById('btnFog').textContent='Fog: '+(fogOn?'ON':'OFF');document.getElementById('btnFog').classList.toggle('active',fogOn);}
+
+function generateMaze(w,h){
+  const grid=[];
+  for(let y=0;y<h;y++){grid[y]=[];for(let x=0;x<w;x++)grid[y][x]={x,y,walls:{N:true,S:true,E:true,W:true},visited:false};}
+  const stack=[];
+  const start=grid[0][0];start.visited=true;stack.push(start);
+  const dirs=[{d:'N',dx:0,dy:-1,o:'S'},{d:'S',dx:0,dy:1,o:'N'},{d:'E',dx:1,dy:0,o:'W'},{d:'W',dx:-1,dy:0,o:'E'}];
+  while(stack.length){
+    const cur=stack[stack.length-1];
+    const nb=dirs.map(d=>({d,c:grid[cur.y+d.dy]?.[cur.x+d.dx]})).filter(n=>n.c&&!n.c.visited);
+    if(nb.length){
+      const pick=nb[Math.random()*nb.length|0];
+      cur.walls[pick.d.d]=false;
+      pick.c.walls[pick.d.o]=false;
+      pick.c.visited=true;
+      stack.push(pick.c);
+    }else stack.pop();
+  }
+  return grid;
+}
+
+function solveMaze(grid,sx,sy,ex,ey){
+  const h=grid.length,w=grid[0].length;
+  const visited=Array.from({length:h},()=>Array(w).fill(false));
+  const parent=Array.from({length:h},()=>Array(w).fill(null));
+  const q=[{x:sx,y:sy}];visited[sy][sx]=true;
+  const dirs=[{d:'N',dx:0,dy:-1},{d:'S',dx:0,dy:1},{d:'E',dx:1,dy:0},{d:'W',dx:-1,dy:0}];
+  while(q.length){
+    const c=q.shift();
+    if(c.x===ex&&c.y===ey){
+      const path=[];let cur=c;
+      while(cur){path.unshift({x:cur.x,y:cur.y});cur=parent[cur.y][cur.x];}
+      return path;
+    }
+    for(const d of dirs){
+      if(!grid[c.y][c.x].walls[d.d]){
+        const nx=c.x+d.dx,ny=c.y+d.dy;
+        if(nx>=0&&nx<w&&ny>=0&&ny<h&&!visited[ny][nx]){
+          visited[ny][nx]=true;parent[ny][nx]=c;q.push({x:nx,y:ny});
+        }
+      }
+    }
+  }
+  return[];
+}
+
+function placeStar(grid){
+  const h=grid.length,w=grid[0].length;
+  const numStars=3+Math.floor(Math.random()*3);
+  const placed=[];
+  for(let i=0;i<numStars;i++){
+    let tries=0;
+    while(tries<100){
+      const x=Math.random()*w|0,y=Math.random()*h|0;
+      if((x===0&&y===0)||(x===w-1&&y===h-1)){}
+      else if(!placed.some(s=>s.x===x&&s.y===y)){placed.push({x,y,collected:false});break;}
+      tries++;
+    }
+  }
+  return placed;
+}
+
+function newMaze(){
+  const d=DIFFS[diff];
+  cols=d.w;rows=d.h;
+  maze=generateMaze(cols,rows);
+  player={x:0,y:0};
+  target={x:cols-1,y:rows-1};
+  playerVisX=0;playerVisY=0;
+  trail=[];moveQueue=[];
+  stars=placeStar(maze);
+  starsCollected=0;totalStars=stars.length;
+  solution=solveMaze(maze,0,0,cols-1,rows-1);
+  hints=3;showHint=false;
+  won=false;timerStart=0;timerRunning=false;elapsed=0;
+  updateUI();
+  resize();
+}
+
+function updateUI(){
+  document.getElementById('timer').textContent=elapsed.toFixed(1)+'s';
+  document.getElementById('starCount').textContent=starsCollected+'/'+totalStars;
+  document.getElementById('hintCount').textContent=hints;
+  const bt=bestTimes[DIFFS[diff].name];
+  document.getElementById('bestTime').textContent=bt?bt.toFixed(1)+'s':'—';
+}
+
+function resize(){
+  const wrap=C.parentElement;
+  const maxW=wrap.clientWidth-8,maxH=wrap.clientHeight-8;
+  cellSize=Math.floor(Math.min(maxW/cols,maxH/rows));
+  if(cellSize<6)cellSize=6;
+  C.width=cols*cellSize;C.height=rows*cellSize;
+}
+
+function tryMove(dx,dy){
+  if(won)return;
+  initAudio();
+  const nx=player.x+dx,ny=player.y+dy;
+  if(nx<0||nx>=cols||ny<0||ny>=rows)return;
+  const cell=maze[player.y][player.x];
+  if(dx===1&&cell.walls.E)return;
+  if(dx===-1&&cell.walls.W)return;
+  if(dy===1&&cell.walls.S)return;
+  if(dy===-1&&cell.walls.N)return;
+  if(!timerRunning){timerRunning=true;timerStart=performance.now()-elapsed*1000;}
+  trail.push({x:player.x,y:player.y});
+  if(trail.length>500)trail.shift();
+  player.x=nx;player.y=ny;
+  sndMove();
+  // check star
+  for(const s of stars){
+    if(!s.collected&&s.x===nx&&s.y===ny){s.collected=true;starsCollected++;sndStar();}
+  }
+  // check win
+  if(nx===target.x&&ny===target.y){
+    won=true;timerRunning=false;
+    elapsed=(performance.now()-timerStart)/1000;
+    sndWin();
+    const key=DIFFS[diff].name;
+    if(!bestTimes[key]||elapsed<bestTimes[key]){bestTimes[key]=elapsed;saveBest();}
+    setTimeout(showWin,400);
+  }
+}
+
+function showWin(){
+  document.getElementById('winTime').textContent=elapsed.toFixed(2)+'s';
+  document.getElementById('winStars').textContent=starsCollected+'/'+totalStars;
+  const bt=bestTimes[DIFFS[diff].name];
+  document.getElementById('winBest').textContent=bt?bt.toFixed(2)+'s':'—';
+  document.getElementById('winOverlay').classList.add('show');
+}
+function hideWin(){document.getElementById('winOverlay').classList.remove('show');}
+
+// Input
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='arrowup'||k==='w'){e.preventDefault();tryMove(0,-1);}
+  else if(k==='arrowdown'||k==='s'){e.preventDefault();tryMove(0,1);}
+  else if(k==='arrowleft'||k==='a'){e.preventDefault();tryMove(-1,0);}
+  else if(k==='arrowright'||k==='d'){e.preventDefault();tryMove(1,0);}
+  else if(k==='h'){
+    if(hints>0&&!showHint&&!won){hints--;showHint=true;hintTimer=performance.now();updateUI();}
+  }
+});
+
+// Touch/swipe
+let touchSX=0,touchSY=0;
+C.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];touchSX=t.clientX;touchSY=t.clientY;},{passive:false});
+C.addEventListener('touchend',e=>{
+  e.preventDefault();
+  const t=e.changedTouches[0];
+  const dx=t.clientX-touchSX,dy=t.clientY-touchSY;
+  const adx=Math.abs(dx),ady=Math.abs(dy);
+  if(Math.max(adx,ady)<20)return;
+  if(adx>ady)tryMove(dx>0?1:-1,0);
+  else tryMove(0,dy>0?1:-1);
+},{passive:false});
+
+// Render
+let portalPhase=0;
+function draw(now){
+  requestAnimationFrame(draw);
+  if(!maze)return;
+  if(timerRunning)elapsed=(now-timerStart)/1000;
+  if(now%3<16)updateUI();
+
+  // smooth player movement
+  const spd=0.18;
+  playerVisX+=(player.x-playerVisX)*spd;
+  playerVisY+=(player.y-playerVisY)*spd;
+  if(Math.abs(player.x-playerVisX)<.01)playerVisX=player.x;
+  if(Math.abs(player.y-playerVisY)<.01)playerVisY=player.y;
+
+  const cs=cellSize;
+  ctx.fillStyle='#0a0a1a';
+  ctx.fillRect(0,0,C.width,C.height);
+
+  portalPhase+=0.03;
+  if(showHint&&now-hintTimer>1500)showHint=false;
+
+  // fog mask calculation
+  const fogRadius=3.5;
+
+  // draw trail
+  ctx.globalAlpha=0.15;
+  for(let i=0;i<trail.length;i++){
+    const t=trail[i];
+    if(fogOn){const dd=Math.hypot(t.x-playerVisX,t.y-playerVisY);if(dd>fogRadius)continue;}
+    const alpha=0.05+0.1*(i/trail.length);
+    ctx.fillStyle='rgba(162,155,254,'+alpha+')';
+    ctx.fillRect(t.x*cs+cs*.2,t.y*cs+cs*.2,cs*.6,cs*.6);
+  }
+  ctx.globalAlpha=1;
+
+  // hint path
+  if(showHint){
+    ctx.globalAlpha=0.35;
+    ctx.strokeStyle='#00cec9';ctx.lineWidth=cs*.3;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();
+    for(let i=0;i<solution.length;i++){
+      const p=solution[i];
+      if(i===0)ctx.moveTo(p.x*cs+cs/2,p.y*cs+cs/2);
+      else ctx.lineTo(p.x*cs+cs/2,p.y*cs+cs/2);
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  // draw maze walls
+  ctx.strokeStyle='#6c5ce7';
+  ctx.lineWidth=Math.max(1,cs*.08);
+  ctx.shadowColor='#6c5ce7';
+  ctx.shadowBlur=cs>12?4:2;
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      if(fogOn){const dd=Math.hypot(x-playerVisX,y-playerVisY);if(dd>fogRadius+1){continue;}}
+      const cell=maze[y][x];
+      const cx=x*cs,cy=y*cs;
+      if(cell.walls.N){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+cs,cy);ctx.stroke();}
+      if(cell.walls.S){ctx.beginPath();ctx.moveTo(cx,cy+cs);ctx.lineTo(cx+cs,cy+cs);ctx.stroke();}
+      if(cell.walls.W){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,cy+cs);ctx.stroke();}
+      if(cell.walls.E){ctx.beginPath();ctx.moveTo(cx+cs,cy);ctx.lineTo(cx+cs,cy+cs);ctx.stroke();}
+    }
+  }
+  ctx.shadowBlur=0;
+
+  // draw portal at exit
+  if(!fogOn||Math.hypot(target.x-playerVisX,target.y-playerVisY)<fogRadius+1){
+    const px=target.x*cs+cs/2,py=target.y*cs+cs/2;
+    const pr=cs*.35+Math.sin(portalPhase)*cs*.08;
+    const grd=ctx.createRadialGradient(px,py,0,px,py,pr*1.5);
+    grd.addColorStop(0,'rgba(0,206,201,.7)');
+    grd.addColorStop(.5,'rgba(108,92,231,.4)');
+    grd.addColorStop(1,'rgba(253,121,168,0)');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(px,py,pr*1.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#00cec9';ctx.beginPath();ctx.arc(px,py,pr*.5,0,Math.PI*2);ctx.fill();
+  }
+
+  // draw stars
+  for(const s of stars){
+    if(s.collected)continue;
+    if(fogOn){const dd=Math.hypot(s.x-playerVisX,s.y-playerVisY);if(dd>fogRadius)continue;}
+    const sx=s.x*cs+cs/2,sy=s.y*cs+cs/2;
+    const sr=cs*.25+Math.sin(portalPhase*2+s.x+s.y)*cs*.05;
+    ctx.fillStyle='#fdcb6e';ctx.shadowColor='#fdcb6e';ctx.shadowBlur=8;
+    drawStar5(sx,sy,sr,sr*.45);
+    ctx.shadowBlur=0;
+  }
+
+  // draw player orb
+  const ppx=playerVisX*cs+cs/2,ppy=playerVisY*cs+cs/2;
+  const orb=cs*.3;
+  const pg=ctx.createRadialGradient(ppx,ppy,0,ppx,ppy,orb*2);
+  pg.addColorStop(0,'rgba(162,155,254,.9)');
+  pg.addColorStop(.4,'rgba(108,92,231,.4)');
+  pg.addColorStop(1,'rgba(108,92,231,0)');
+  ctx.fillStyle=pg;ctx.beginPath();ctx.arc(ppx,ppy,orb*2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ppx,ppy,orb*.5,0,Math.PI*2);ctx.fill();
+
+  // fog overlay
+  if(fogOn){
+    ctx.save();
+    ctx.globalCompositeOperation='destination-in';
+    const fg=ctx.createRadialGradient(ppx,ppy,cs*fogRadius*.4,ppx,ppy,cs*fogRadius);
+    fg.addColorStop(0,'rgba(0,0,0,1)');
+    fg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=fg;
+    ctx.fillRect(0,0,C.width,C.height);
+    ctx.restore();
+  }
+}
+
+function drawStar5(cx,cy,ro,ri){
+  ctx.beginPath();
+  for(let i=0;i<10;i++){
+    const a=Math.PI/2*3+i*Math.PI/5;
+    const r=i%2===0?ro:ri;
+    const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.closePath();ctx.fill();
+}
+
+window.addEventListener('resize',resize);
+newMaze();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

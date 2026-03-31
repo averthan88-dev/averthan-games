@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Simon Says - Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a1a;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.home-btn {
+  position: fixed; top: 16px; left: 16px; z-index: 100;
+  background: rgba(108,92,231,0.25); border: 2px solid #6c5ce7;
+  color: #a29bfe; border-radius: 14px; padding: 10px 18px;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 15px;
+  cursor: pointer; text-decoration: none; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.home-btn:hover { background: #6c5ce7; color: #fff; }
+h1 {
+  font-family: 'Fredoka One', cursive; font-size: clamp(28px, 6vw, 44px);
+  margin-top: 60px;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe, #00cec9, #fd79a8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle { color: #a29bfe; font-size: 14px; margin-bottom: 10px; font-weight: 600; }
+
+/* Mode Selection */
+#mode-select {
+  display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; justify-content: center;
+}
+.mode-btn {
+  background: rgba(108,92,231,0.15); border: 2px solid #6c5ce7;
+  color: #a29bfe; border-radius: 12px; padding: 10px 22px;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 15px;
+  cursor: pointer; transition: all 0.2s;
+}
+.mode-btn:hover, .mode-btn.active {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: #fff; border-color: #a29bfe;
+}
+
+/* Info bar */
+.info-bar {
+  display: flex; gap: 24px; align-items: center; margin: 12px 0;
+  font-weight: 700; font-size: 16px;
+}
+.info-bar span { display: flex; align-items: center; gap: 6px; }
+.round-display {
+  font-family: 'Fredoka One', cursive; font-size: clamp(36px, 8vw, 56px);
+  color: #00cec9; margin: 4px 0;
+}
+.phase-indicator {
+  font-family: 'Fredoka One', cursive; font-size: clamp(18px, 4vw, 26px);
+  min-height: 36px; margin: 6px 0; transition: all 0.3s;
+}
+.phase-watch { color: #fd79a8; }
+.phase-turn { color: #00cec9; }
+.phase-idle { color: #a29bfe; }
+
+/* Lives */
+.lives { color: #fd79a8; }
+
+/* Simon Board */
+.board-wrapper {
+  position: relative; margin: 10px auto;
+  width: clamp(260px, 70vw, 380px); height: clamp(260px, 70vw, 380px);
+}
+.simon-btn {
+  position: absolute; width: 46%; height: 46%;
+  border: none; border-radius: 20px; cursor: pointer;
+  transition: filter 0.1s, transform 0.1s, box-shadow 0.1s;
+  filter: brightness(0.45);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+.simon-btn:active { transform: scale(0.95); }
+.simon-btn.lit {
+  filter: brightness(1.1);
+  transform: scale(1.06);
+  box-shadow: 0 0 40px 10px currentColor;
+}
+.simon-btn.disabled { pointer-events: none; }
+.btn-green  { background: #2ecc71; color: #2ecc71; top: 2%; left: 27%; border-radius: 20px 20px 6px 6px; }
+.btn-red    { background: #e74c3c; color: #e74c3c; top: 27%; right: 2%; border-radius: 6px 20px 20px 6px; }
+.btn-yellow { background: #f1c40f; color: #f1c40f; bottom: 2%; left: 27%; border-radius: 6px 6px 20px 20px; }
+.btn-blue   { background: #3498db; color: #3498db; top: 27%; left: 2%; border-radius: 20px 6px 6px 20px; }
+
+/* Center circle */
+.center-circle {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 28%; height: 28%; border-radius: 50%;
+  background: #0a0a1a; border: 3px solid #6c5ce7;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fredoka One', cursive; font-size: clamp(22px,5vw,34px);
+  color: #a29bfe; z-index: 2;
+}
+
+/* Start / Game Over */
+.start-btn {
+  background: linear-gradient(135deg, #6c5ce7, #00cec9);
+  color: #fff; border: none; border-radius: 16px;
+  padding: 14px 40px; font-family: 'Fredoka One', cursive;
+  font-size: 22px; cursor: pointer; margin: 14px 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(108,92,231,0.4);
+}
+.start-btn:hover { transform: scale(1.05); box-shadow: 0 6px 30px rgba(108,92,231,0.6); }
+.high-score { color: #fd79a8; font-weight: 700; font-size: 15px; margin: 4px 0; }
+.game-over-msg {
+  font-family: 'Fredoka One', cursive; font-size: 24px;
+  color: #e74c3c; margin: 8px 0; display: none;
+}
+
+/* Shake */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-12px); }
+  40% { transform: translateX(12px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(8px); }
+}
+.shake { animation: shake 0.4s ease; }
+
+/* Correct flash */
+@keyframes correctFlash {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 30px 8px #2ecc71; }
+}
+.correct-flash { animation: correctFlash 0.3s ease; }
+
+/* Wrong flash */
+@keyframes wrongFlash {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 40px 12px #e74c3c; }
+}
+.wrong-flash { animation: wrongFlash 0.4s ease; }
+
+/* Confetti */
+.confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+.confetti-piece {
+  position: absolute; width: 10px; height: 10px; top: -10px;
+  border-radius: 2px; animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .home-btn { padding: 8px 12px; font-size: 13px; top: 10px; left: 10px; }
+  .info-bar { gap: 14px; font-size: 14px; }
+  .mode-btn { padding: 8px 14px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="home-btn">🏠 Home</a>
+
+<h1>🧠 Simon Says</h1>
+<p class="subtitle">How long can you remember?</p>
+
+<div id="mode-select">
+  <button class="mode-btn active" data-mode="classic">🎯 Classic</button>
+  <button class="mode-btn" data-mode="relaxed">💖 Relaxed</button>
+  <button class="mode-btn" data-mode="endless">♾️ Endless</button>
+</div>
+
+<div class="info-bar">
+  <span>🏆 Best: <b id="high-score">0</b></span>
+  <span class="lives" id="lives-display" style="display:none">❤️ <b id="lives-count">3</b></span>
+</div>
+
+<div class="phase-indicator phase-idle" id="phase">Press Start!</div>
+<div class="round-display" id="round-display">0</div>
+
+<div class="board-wrapper" id="board">
+  <button class="simon-btn btn-green disabled" data-color="green"></button>
+  <button class="simon-btn btn-red disabled" data-color="red"></button>
+  <button class="simon-btn btn-yellow disabled" data-color="yellow"></button>
+  <button class="simon-btn btn-blue disabled" data-color="blue"></button>
+  <div class="center-circle" id="center-text">🧠</div>
+</div>
+
+<div class="game-over-msg" id="game-over-msg">Game Over!</div>
+<button class="start-btn" id="start-btn">▶ Start</button>
+<p class="high-score" id="score-msg"></p>
+
+<div class="confetti-container" id="confetti"></div>
+
+<script>
+const COLORS = ['green', 'red', 'blue', 'yellow'];
+const FREQS = { green: 392, red: 523.25, blue: 329.63, yellow: 261.63 };
+const SPEED_MAP = { 0: 500, 5: 400, 10: 300, 15: 220 };
+
+let audioCtx = null;
+let mode = 'classic';
+let sequence = [];
+let playerIndex = 0;
+let round = 0;
+let lives = 3;
+let bestStreak = 0;
+let playing = false;
+let inputLocked = true;
+
+const $ = id => document.getElementById(id);
+const btns = document.querySelectorAll('.simon-btn');
+const modeBtns = document.querySelectorAll('.mode-btn');
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playTone(color, duration = 300) {
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = FREQS[color];
+  gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration / 1000);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration / 1000);
+}
+
+function playErrorSound() {
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.value = 120;
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.5);
+}
+
+function getSpeed() {
+  let spd = 500;
+  for (const [r, s] of Object.entries(SPEED_MAP)) {
+    if (round >= parseInt(r)) spd = s;
+  }
+  return spd;
+}
+
+function lightUp(color, duration) {
+  const btn = document.querySelector(`[data-color="${color}"]`);
+  btn.classList.add('lit');
+  playTone(color, duration);
+  return new Promise(r => setTimeout(() => { btn.classList.remove('lit'); r(); }, duration));
+}
+
+function setPhase(text, cls) {
+  const el = $('phase');
+  el.textContent = text;
+  el.className = 'phase-indicator ' + cls;
+}
+
+function updateRound() {
+  $('round-display').textContent = round;
+  $('center-text').textContent = round || '🧠';
+}
+
+function updateHighScore() {
+  const key = 'simon_high_' + mode;
+  const hs = parseInt(localStorage.getItem(key) || '0');
+  $('high-score').textContent = hs;
+}
+
+function saveHighScore() {
+  const key = 'simon_high_' + mode;
+  const hs = parseInt(localStorage.getItem(key) || '0');
+  const score = mode === 'endless' ? bestStreak : round;
+  if (score > hs) {
+    localStorage.setItem(key, score);
+    updateHighScore();
+  }
+}
+
+function setButtons(enabled) {
+  btns.forEach(b => {
+    if (enabled) b.classList.remove('disabled');
+    else b.classList.add('disabled');
+  });
+  inputLocked = !enabled;
+}
+
+async function playSequence() {
+  setPhase('👀 Watch!', 'phase-watch');
+  setButtons(false);
+  await sleep(600);
+  const spd = getSpeed();
+  for (let i = 0; i < sequence.length; i++) {
+    await lightUp(sequence[i], spd * 0.7);
+    await sleep(spd * 0.3);
+  }
+  setPhase('👆 Your Turn!', 'phase-turn');
+  playerIndex = 0;
+  setButtons(true);
+}
+
+function addToSequence() {
+  sequence.push(COLORS[Math.floor(Math.random() * 4)]);
+  round = sequence.length;
+  updateRound();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function handleCorrect() {
+  const btn = document.querySelector(`[data-color="${sequence[playerIndex]}"]`);
+  btn.classList.add('correct-flash');
+  setTimeout(() => btn.classList.remove('correct-flash'), 300);
+  playerIndex++;
+  if (playerIndex >= sequence.length) {
+    // Round complete
+    setButtons(false);
+    if (mode === 'endless') {
+      bestStreak = Math.max(bestStreak, round);
+    }
+    saveHighScore();
+    if (round % 5 === 0) spawnConfetti();
+    await sleep(800);
+    addToSequence();
+    playSequence();
+  }
+}
+
+async function handleWrong() {
+  playErrorSound();
+  const board = $('board');
+  board.classList.add('shake');
+  btns.forEach(b => b.classList.add('wrong-flash'));
+  setTimeout(() => {
+    board.classList.remove('shake');
+    btns.forEach(b => b.classList.remove('wrong-flash'));
+  }, 400);
+
+  if (mode === 'classic') {
+    await endGame();
+  } else if (mode === 'relaxed') {
+    lives--;
+    $('lives-count').textContent = lives;
+    if (lives <= 0) {
+      await endGame();
+    } else {
+      setButtons(false);
+      await sleep(800);
+      playerIndex = 0;
+      playSequence();
+    }
+  } else {
+    // endless
+    bestStreak = Math.max(bestStreak, round);
+    saveHighScore();
+    // restart sequence from scratch but keep going
+    setButtons(false);
+    await sleep(600);
+    sequence = [];
+    round = 0;
+    updateRound();
+    await sleep(400);
+    addToSequence();
+    playSequence();
+  }
+}
+
+async function endGame() {
+  playing = false;
+  setButtons(false);
+  saveHighScore();
+  setPhase('', 'phase-idle');
+  $('game-over-msg').style.display = 'block';
+  const score = mode === 'endless' ? bestStreak : round;
+  $('score-msg').textContent = `You reached round ${score}!`;
+  $('start-btn').style.display = '';
+  $('start-btn').textContent = '🔄 Play Again';
+}
+
+function startGame() {
+  initAudio();
+  playing = true;
+  sequence = [];
+  round = 0;
+  playerIndex = 0;
+  lives = 3;
+  bestStreak = 0;
+  updateRound();
+  updateHighScore();
+  $('game-over-msg').style.display = 'none';
+  $('score-msg').textContent = '';
+  $('start-btn').style.display = 'none';
+  $('lives-count').textContent = lives;
+  $('lives-display').style.display = mode === 'relaxed' ? '' : 'none';
+  addToSequence();
+  playSequence();
+}
+
+// Button clicks
+btns.forEach(btn => {
+  const handler = async (e) => {
+    e.preventDefault();
+    if (inputLocked || !playing) return;
+    const color = btn.dataset.color;
+    inputLocked = true;
+    await lightUp(color, 200);
+    if (color === sequence[playerIndex]) {
+      await handleCorrect();
+    } else {
+      await handleWrong();
+    }
+    if (playing && !inputLocked) {
+      // re-enable handled in handleCorrect flow
+    }
+    inputLocked = !playing || playerIndex >= sequence.length;
+    if (playing && playerIndex < sequence.length) inputLocked = false;
+  };
+  btn.addEventListener('click', handler);
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); handler(e); });
+});
+
+// Mode buttons
+modeBtns.forEach(mb => {
+  mb.addEventListener('click', () => {
+    if (playing) return;
+    modeBtns.forEach(b => b.classList.remove('active'));
+    mb.classList.add('active');
+    mode = mb.dataset.mode;
+    updateHighScore();
+    $('lives-display').style.display = mode === 'relaxed' ? '' : 'none';
+  });
+});
+
+$('start-btn').addEventListener('click', startGame);
+
+// Confetti
+function spawnConfetti() {
+  const container = $('confetti');
+  const colors = ['#6c5ce7','#a29bfe','#00cec9','#fd79a8','#f1c40f','#2ecc71','#e74c3c','#3498db'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (6 + Math.random() * 8) + 'px';
+    piece.style.height = (6 + Math.random() * 8) + 'px';
+    piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    piece.style.animationDelay = (Math.random() * 0.5) + 's';
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+
+updateHighScore();
+</script>
+</body>
+</html>

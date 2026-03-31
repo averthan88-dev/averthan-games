@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Typing Speed Racer - Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#fff;font-family:'Nunito',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none}
+h1,h2,h3,.logo{font-family:'Fredoka One',cursive}
+.gradient-text{background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00cec9,#fd79a8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.btn{font-family:'Nunito',sans-serif;font-weight:700;border:none;padding:14px 32px;border-radius:16px;font-size:1.1rem;cursor:pointer;transition:all .2s;color:#fff;position:relative;overflow:hidden}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.4)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,#6c5ce7,#a29bfe)}
+.btn-success{background:linear-gradient(135deg,#00cec9,#55efc4)}
+.btn-danger{background:linear-gradient(135deg,#fd79a8,#e84393)}
+.btn-warning{background:linear-gradient(135deg,#fdcb6e,#f39c12);color:#2d3436}
+.btn-sm{padding:10px 20px;font-size:.9rem;border-radius:12px}
+
+/* Home Button */
+.home-btn{position:fixed;top:16px;left:16px;z-index:1000;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);color:#fff;width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;text-decoration:none;font-size:1.4rem;backdrop-filter:blur(10px)}
+.home-btn:hover{background:rgba(108,92,231,.4);border-color:#6c5ce7;transform:scale(1.05)}
+
+/* Screens */
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center}
+.screen.active{display:flex}
+
+/* Menu */
+#menu{gap:20px;padding:20px}
+#menu h1{font-size:clamp(2rem,6vw,3.5rem);margin-bottom:8px}
+#menu .subtitle{font-size:clamp(.9rem,2.5vw,1.2rem);opacity:.7;margin-bottom:30px}
+.difficulty-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.diff-card{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);border-radius:20px;padding:24px 28px;cursor:pointer;transition:all .25s;text-align:center;min-width:140px}
+.diff-card:hover{transform:translateY(-4px);border-color:#6c5ce7;background:rgba(108,92,231,.15)}
+.diff-card.selected{border-color:#6c5ce7;background:rgba(108,92,231,.2);box-shadow:0 0 30px rgba(108,92,231,.3)}
+.diff-card h3{font-size:1.3rem;margin-bottom:6px}
+.diff-card p{font-size:.8rem;opacity:.6}
+.diff-card .emoji{font-size:2rem;margin-bottom:8px}
+.high-score-display{font-size:.95rem;opacity:.7;margin-top:12px}
+
+/* Game Area */
+#game{padding:0}
+.game-hud{position:absolute;top:0;left:0;right:0;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;z-index:100;background:linear-gradient(180deg,rgba(10,10,26,.95),transparent);pointer-events:none}
+.game-hud>*{pointer-events:auto}
+.hud-left,.hud-right{display:flex;align-items:center;gap:16px}
+.hud-center{display:flex;flex-direction:column;align-items:center}
+.lives{font-size:1.5rem;letter-spacing:4px}
+.score{font-family:'Fredoka One',cursive;font-size:1.6rem}
+.combo{font-size:.85rem;color:#fdcb6e;font-weight:700;opacity:0;transition:opacity .3s}
+.combo.visible{opacity:1}
+.wpm{font-size:.85rem;opacity:.7}
+.hud-stat{text-align:center}
+.hud-stat .label{font-size:.7rem;opacity:.5;text-transform:uppercase;letter-spacing:1px}
+.hud-stat .value{font-family:'Fredoka One',cursive;font-size:1.1rem}
+
+/* Game Canvas */
+#gameCanvas{width:100%;height:100%;position:absolute;top:0;left:0}
+
+/* Input */
+.input-area{position:absolute;bottom:0;left:0;right:0;padding:16px 20px;background:linear-gradient(0deg,rgba(10,10,26,.97),rgba(10,10,26,.8),transparent);z-index:100;display:flex;justify-content:center;gap:12px;align-items:center}
+#wordInput{background:rgba(255,255,255,.08);border:2px solid rgba(108,92,231,.4);border-radius:16px;padding:14px 24px;font-size:1.3rem;color:#fff;font-family:'Nunito',sans-serif;font-weight:700;width:100%;max-width:500px;text-align:center;outline:none;transition:border-color .2s;letter-spacing:2px}
+#wordInput:focus{border-color:#6c5ce7;box-shadow:0 0 20px rgba(108,92,231,.3)}
+#wordInput::placeholder{color:rgba(255,255,255,.25)}
+
+/* Power-ups HUD */
+.powerups-hud{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100}
+.pu-btn{width:52px;height:52px;border-radius:16px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;transition:all .2s;position:relative}
+.pu-btn:hover{background:rgba(255,255,255,.12);transform:scale(1.1)}
+.pu-btn.disabled{opacity:.3;pointer-events:none}
+.pu-btn .count{position:absolute;top:-6px;right:-6px;background:#fd79a8;color:#fff;font-size:.65rem;font-weight:800;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.pu-btn .key-hint{position:absolute;bottom:-18px;font-size:.55rem;opacity:.4;white-space:nowrap}
+
+/* Game Over */
+#gameover{gap:20px;padding:20px;background:rgba(10,10,26,.92);backdrop-filter:blur(20px)}
+#gameover h2{font-size:clamp(1.8rem,5vw,2.8rem)}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:360px;width:100%;margin:10px 0}
+.stat-card{background:rgba(255,255,255,.06);border-radius:16px;padding:18px;text-align:center}
+.stat-card .stat-value{font-family:'Fredoka One',cursive;font-size:1.8rem;background:linear-gradient(135deg,#6c5ce7,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .stat-label{font-size:.75rem;opacity:.5;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+.new-record{color:#fdcb6e;font-weight:800;font-size:1.1rem;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.go-buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* Falling word styling (canvas-rendered, but keeping for reference) */
+.danger-zone{position:absolute;bottom:70px;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent,#fd79a8,transparent);opacity:.3}
+
+/* Responsive */
+@media(max-width:600px){
+  .game-hud{padding:8px 12px;font-size:.85rem}
+  .hud-left,.hud-right{gap:10px}
+  .lives{font-size:1.2rem}
+  .score{font-size:1.2rem}
+  #wordInput{font-size:1.1rem;padding:12px 16px}
+  .diff-card{min-width:110px;padding:18px 16px}
+  .pu-btn{width:44px;height:44px;font-size:1.2rem}
+  .powerups-hud{bottom:72px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+}
+
+/* Particles container */
+#particles{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50}
+
+/* Animated BG */
+.bg-stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;overflow:hidden}
+.bg-stars .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--dur) infinite}
+@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.8}}
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="home-btn" title="Home">🏠</a>
+
+<div class="bg-stars" id="bgStars"></div>
+
+<!-- MENU SCREEN -->
+<div class="screen active" id="menu">
+  <h1 class="gradient-text">⌨️ Typing Racer</h1>
+  <p class="subtitle">Type the falling words before they crash!</p>
+  <div class="difficulty-grid">
+    <div class="diff-card selected" data-diff="easy" onclick="selectDifficulty('easy')">
+      <div class="emoji">🐢</div>
+      <h3 style="color:#55efc4">Easy</h3>
+      <p>3-4 letter words</p>
+    </div>
+    <div class="diff-card" data-diff="medium" onclick="selectDifficulty('medium')">
+      <div class="emoji">🐇</div>
+      <h3 style="color:#fdcb6e">Medium</h3>
+      <p>5-6 letter words</p>
+    </div>
+    <div class="diff-card" data-diff="hard" onclick="selectDifficulty('hard')">
+      <div class="emoji">🚀</div>
+      <h3 style="color:#fd79a8">Hard</h3>
+      <p>7+ letter words</p>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="startGame()" style="font-size:1.3rem;padding:16px 48px">🏁 Start Race!</button>
+  <div class="high-score-display" id="menuHighScore">High Score: 0</div>
+  <div style="margin-top:20px;font-size:.75rem;opacity:.4">Press 1/2/3 to pick difficulty, Enter to start</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="game">
+  <div class="game-hud">
+    <div class="hud-left">
+      <div class="hud-stat">
+        <div class="label">Score</div>
+        <div class="value score" id="scoreDisplay">0</div>
+      </div>
+      <div class="hud-stat">
+        <div class="label">Combo</div>
+        <div class="value combo visible" id="comboDisplay">x0</div>
+      </div>
+    </div>
+    <div class="hud-center">
+      <div class="lives" id="livesDisplay">❤️❤️❤️</div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-stat">
+        <div class="label">WPM</div>
+        <div class="value" id="wpmDisplay">0</div>
+      </div>
+      <div class="hud-stat">
+        <div class="label">Level</div>
+        <div class="value" id="levelDisplay">1</div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+  <div id="particles"></div>
+  <div class="danger-zone"></div>
+
+  <div class="powerups-hud">
+    <div class="pu-btn" id="puFreeze" onclick="usePowerUp('freeze')" title="Freeze - Slow words">
+      ❄️<span class="count" id="puFreezeCount">1</span>
+      <span class="key-hint">F key</span>
+    </div>
+    <div class="pu-btn" id="puBomb" onclick="usePowerUp('bomb')" title="Bomb - Clear all words">
+      💣<span class="count" id="puBombCount">1</span>
+      <span class="key-hint">B key</span>
+    </div>
+    <div class="pu-btn" id="puLife" onclick="usePowerUp('life')" title="Extra Life">
+      💖<span class="count" id="puLifeCount">1</span>
+      <span class="key-hint">L key</span>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="wordInput" placeholder="Type here..." autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div class="screen" id="gameover">
+  <h2 class="gradient-text">🏁 Race Over!</h2>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-value" id="finalScore">0</div><div class="stat-label">Score</div></div>
+    <div class="stat-card"><div class="stat-value" id="finalWPM">0</div><div class="stat-label">WPM</div></div>
+    <div class="stat-card"><div class="stat-value" id="finalWords">0</div><div class="stat-label">Words</div></div>
+    <div class="stat-card"><div class="stat-value" id="finalCombo">0</div><div class="stat-label">Best Combo</div></div>
+  </div>
+  <div class="new-record" id="newRecord" style="display:none">🏆 NEW HIGH SCORE! 🏆</div>
+  <div class="go-buttons">
+    <button class="btn btn-primary" onclick="startGame()">🔄 Play Again</button>
+    <button class="btn btn-warning" onclick="showMenu()">📋 Menu</button>
+  </div>
+</div>
+
+<script>
+// ===== WORD LISTS =====
+const WORDS = {
+  easy: [
+    "cat","dog","sun","run","fun","hat","bat","red","big","hot","cup","map","pen","box","fox",
+    "bug","rug","mug","hug","jug","pig","fig","dig","wig","zip","tip","hip","lip","rip","sip",
+    "top","hop","pop","mop","cop","dot","got","pot","lot","not","bed","led","fed","set","get",
+    "let","met","net","pet","wet","van","can","fan","man","pan","ran","tan","win","bin","fin",
+    "pin","tin","oak","ice","ace","age","ape","ate","awe","axe","eye","ore","use","arm","art",
+    "air","add","aim","aid","ask","ant","bay","bow","boy","bus","buy","car","cow","cry","cut",
+    "day","dew","dry","dye","ear","eat","egg","end","era","eve","fad","far","fat","few","fit",
+    "fix","fly","fog","for","fry","fur","gag","gap","gas","gem","gin","god","gum","gun","gut",
+    "gym","had","ham","has","hay","hem","hen","her","hid","him","his","hit","hog","how","hub",
+    "hue","ice","ill","imp","ink","inn","ion","ire","irk","ivy","jab","jag","jam","jar","jaw",
+    "jay","jet","job","jog","joy","jug","key","kid","kit","lab","lad","lag","lap","law","lay",
+    "leg","lid","lie","lit","log","low","mad","mix","mob","mud","nap","new","nil","nod","nor",
+    "now","nut","odd","off","oil","old","one","opt","orb","our","out","owe","owl","own","pad",
+    "pal","paw","pay","pea","pie","pit","ply","pod","pry","pub","pun","pup","put","ram","raw",
+    "ray","rib","rid","rim","rod","rot","row","rub","rug","rut","rye","sad","sag","sap","sat",
+    "saw","say","sea","shy","sin","sir","sit","six","ski","sky","sly","sob","sod","son","sow",
+    "spy","sty","sum","tab","tag","tap","tar","tax","tea","ten","the","thy","tie","toe","ton",
+    "too","tow","toy","try","tub","tug","two","urn","vat","vex","via","vie","vim","vow","wad"
+  ],
+  medium: [
+    "apple","beach","candy","dance","eagle","fairy","giant","happy","igloo","jelly",
+    "koala","lemon","magic","night","ocean","piano","queen","river","snake","tiger",
+    "ultra","vivid","whale","xenon","yacht","zebra","alarm","blaze","charm","dream",
+    "ember","flame","grace","honey","ivory","joker","knack","lunar","mango","noble",
+    "oasis","pearl","quest","radar","solar","torch","urban","valve","wired","youth",
+    "acorn","badge","camel","delta","elbow","flute","globe","hatch","index","jewel",
+    "kayak","label","medal","nerve","orbit","patch","quilt","rebel","siege","trick",
+    "unity","vigor","wafer","xylem","yearn","zippy","angel","brave","cloud","dwarf",
+    "entry","frost","grain","hedge","inbox","joint","knife","lucky","melon","ninja",
+    "olive","pixel","quiet","robin","steam","thumb","usher","vault","wheat","youth",
+    "agile","blend","coral","drift","event","fiber","ghost","hiker","issue","jolly",
+    "karma","liner","moose","novel","onion","plumb","quote","rover","shark","trail",
+    "ultra","vinyl","wrist","yacht","zesty","about","beach","catch","doing","every",
+    "field","going","house","input","jumbo","kitty","light","money","noise","other",
+    "party","quest","right","sleep","there","under","video","water","xenon","young",
+    "above","bring","chair","depth","earth","fresh","green","heart","image","judge",
+    "known","learn","mouth","north","order","place","quick","round","south","think",
+    "until","voice","world","extra","yours","zones","basic","climb","dodge","enjoy",
+    "float","guard","heavy","ideal","juicy","kneel","level","minor","nurse","outer",
+    "power","query","ranch","shelf","tower","upper","value","watch","xerox","yield"
+  ],
+  hard: [
+    "awesome","balloon","captain","diamond","elegant","feather","giraffe","harvest","imagine","jukebox",
+    "kitchen","lantern","machine","natural","octopus","pancake","quarter","rainbow","sandbox","teacher",
+    "uniform","village","weather","xylitol","youtube","zillion","ability","balance","cabinet","damaged",
+    "earnest","factory","gallery","habitat","iceberg","jasmine","kaleidoscope","laundry","magical","natural",
+    "observe","package","quality","raccoon","satisfy","tractor","umbrella","vaccine","warrior","younger",
+    "achieve","blanket","century","dolphin","embrace","fiction","genuine","harmony","instead","journal",
+    "kingdom","library","missile","neutral","olympia","pension","quilted","reptile","shelter","therapy",
+    "universe","venture","windows","xxxxxxx","yielded","zealous","abandon","bicycle","cascade","discuss",
+    "elevate","furnish","glimpse","hanging","illicit","juniper","kindred","leopard","monster","network",
+    "opinion","parking","quickly","reflect","species","tonight","unicorn","version","wealthy","yellows",
+    "achieve","breathe","chicken","distant","emperor","flannel","gorilla","history","inspect","january",
+    "kindness","lettuce","million","notable","organic","pattern","quicker","restore","strange","trolley",
+    "utility","victory","whisper","xxxxxxx","youthful","zipping","address","blanket","catalog","deliver",
+    "exhibit","fashion","gondola","husband","impulse","journey","keynote","liberty","mention","notable",
+    "optimum","platter","quarrel","release","stadium","triumph","undergo","variety","western","xxxxxxx",
+    "younger","zoology","amplify","bracket","chevron","dazzled","effects","formula","grizzly","headline",
+    "illegal","jewelry","kitchen","logging","mammoth","necktie","outlook","pointer","qualify","reactor",
+    "storage","textile","upswing","verdict","witness","xxxxxxx","yachted","zealous","antenna","biscuit",
+    "climate","digital","emotion","florist","graphic","horizon","inquiry","javelin","ketchup","leaflet",
+    "mineral","network","origami","pilgrim","quintet","reserve","shuttle","thermal","unlucky","vibrant"
+  ]
+};
+
+// ===== AUDIO =====
+let audioCtx;
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)()}
+function playSound(type){
+  if(!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;
+  o.connect(g);g.connect(audioCtx.destination);
+  switch(type){
+    case'correct':o.type='sine';o.frequency.setValueAtTime(523,t);o.frequency.exponentialRampToValueAtTime(784,t+.1);g.gain.setValueAtTime(.15,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);o.start(t);o.stop(t+.25);break;
+    case'combo':o.type='sine';o.frequency.setValueAtTime(659,t);o.frequency.exponentialRampToValueAtTime(1047,t+.15);g.gain.setValueAtTime(.15,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);o.start(t);o.stop(t+.3);break;
+    case'miss':o.type='sawtooth';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(80,t+.3);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);o.start(t);o.stop(t+.35);break;
+    case'powerup':o.type='sine';o.frequency.setValueAtTime(400,t);o.frequency.exponentialRampToValueAtTime(1200,t+.2);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);o.start(t);o.stop(t+.35);break;
+    case'gameover':o.type='sawtooth';o.frequency.setValueAtTime(440,t);o.frequency.exponentialRampToValueAtTime(110,t+.6);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.7);o.start(t);o.stop(t+.7);break;
+    case'type':o.type='sine';o.frequency.setValueAtTime(880,t);g.gain.setValueAtTime(.03,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);o.start(t);o.stop(t+.05);break;
+    case'freeze':o.type='triangle';o.frequency.setValueAtTime(1200,t);o.frequency.exponentialRampToValueAtTime(600,t+.3);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.4);o.start(t);o.stop(t+.4);break;
+    case'bomb':o.type='square';o.frequency.setValueAtTime(100,t);o.frequency.exponentialRampToValueAtTime(40,t+.4);g.gain.setValueAtTime(.15,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.start(t);o.stop(t+.5);break;
+  }
+}
+
+// ===== GAME STATE =====
+let difficulty='easy';
+let score=0,lives=3,combo=0,maxCombo=0,wordsTyped=0,level=1;
+let fallingWords=[],particles=[];
+let gameRunning=false,gamePaused=false;
+let startTime=0,wpm=0;
+let powerUps={freeze:1,bomb:1,life:1};
+let freezeActive=false,freezeTimer=0;
+let canvas,ctx;
+let lastSpawn=0,spawnInterval=2000;
+let animFrame;
+let inputEl;
+
+const DIFF_CONFIG={
+  easy:{baseSpeed:.6,spawnMin:2200,spawnMax:3500,speedInc:.04,spawnDec:80},
+  medium:{baseSpeed:.85,spawnMin:1800,spawnMax:3000,speedInc:.05,spawnDec:90},
+  hard:{baseSpeed:1.1,spawnMin:1400,spawnMax:2500,speedInc:.06,spawnDec:100}
+};
+
+// ===== BG STARS =====
+(function(){
+  const c=document.getElementById('bgStars');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${Math.random()*3+2}s;opacity:${Math.random()*.5+.1}`;
+    c.appendChild(s);
+  }
+})();
+
+// ===== SCREEN MANAGEMENT =====
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function showMenu(){
+  if(animFrame)cancelAnimationFrame(animFrame);
+  gameRunning=false;
+  updateMenuHighScore();
+  showScreen('menu');
+}
+function selectDifficulty(d){
+  difficulty=d;
+  document.querySelectorAll('.diff-card').forEach(c=>c.classList.toggle('selected',c.dataset.diff===d));
+  updateMenuHighScore();
+}
+function updateMenuHighScore(){
+  const hs=localStorage.getItem('typingRacer_hs_'+difficulty)||0;
+  document.getElementById('menuHighScore').textContent='High Score ('+difficulty+'): '+hs;
+}
+updateMenuHighScore();
+
+// ===== START GAME =====
+function startGame(){
+  initAudio();
+  score=0;lives=3;combo=0;maxCombo=0;wordsTyped=0;level=1;wpm=0;
+  fallingWords=[];particles=[];
+  powerUps={freeze:1,bomb:1,life:1};
+  freezeActive=false;freezeTimer=0;
+  startTime=Date.now();
+  gameRunning=true;gamePaused=false;
+  lastSpawn=0;
+
+  const cfg=DIFF_CONFIG[difficulty];
+  spawnInterval=cfg.spawnMax;
+
+  showScreen('game');
+  canvas=document.getElementById('gameCanvas');
+  ctx=canvas.getContext('2d');
+  resizeCanvas();
+
+  inputEl=document.getElementById('wordInput');
+  inputEl.value='';
+  inputEl.focus();
+
+  updateHUD();
+  updatePowerUpHUD();
+  if(animFrame)cancelAnimationFrame(animFrame);
+  lastTime=performance.now();
+  animFrame=requestAnimationFrame(gameLoop);
+}
+
+function resizeCanvas(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+}
+window.addEventListener('resize',resizeCanvas);
+
+// ===== GAME LOOP =====
+let lastTime=0;
+function gameLoop(timestamp){
+  if(!gameRunning)return;
+  const dt=Math.min(timestamp-lastTime,50);
+  lastTime=timestamp;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Freeze timer
+  if(freezeActive){
+    freezeTimer-=dt;
+    if(freezeTimer<=0){freezeActive=false;freezeTimer=0;}
+    // Draw freeze overlay
+    ctx.fillStyle='rgba(0,206,201,0.06)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+
+  // Spawn words
+  lastSpawn+=dt;
+  if(lastSpawn>=spawnInterval){
+    spawnWord();
+    lastSpawn=0;
+  }
+
+  const speedMult=freezeActive?0.3:1;
+  const bottomLimit=canvas.height-90;
+  const typed=inputEl?inputEl.value.toLowerCase():'';
+
+  // Update & draw words
+  for(let i=fallingWords.length-1;i>=0;i--){
+    const w=fallingWords[i];
+    w.y+=w.speed*speedMult*(dt/16);
+
+    // Check if reached bottom
+    if(w.y>bottomLimit){
+      fallingWords.splice(i,1);
+      loseLife();
+      continue;
+    }
+
+    // Draw word
+    drawWord(w,typed);
+  }
+
+  // Update & draw particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*(dt/16);
+    p.y+=p.vy*(dt/16);
+    p.life-=dt;
+    p.vy+=0.05*(dt/16);
+    if(p.life<=0){particles.splice(i,1);continue;}
+    const alpha=p.life/p.maxLife;
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size*alpha,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  // Draw danger line
+  ctx.strokeStyle='rgba(253,121,168,0.3)';
+  ctx.lineWidth=2;
+  ctx.setLineDash([10,10]);
+  ctx.beginPath();
+  ctx.moveTo(0,bottomLimit);
+  ctx.lineTo(canvas.width,bottomLimit);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // WPM calc
+  const elapsed=(Date.now()-startTime)/60000;
+  if(elapsed>0.05)wpm=Math.round(wordsTyped/elapsed);
+  document.getElementById('wpmDisplay').textContent=wpm;
+
+  animFrame=requestAnimationFrame(gameLoop);
+}
+
+// ===== DRAW WORD =====
+function drawWord(w,typed){
+  const fontSize=w.fontSize||24;
+  ctx.font=`800 ${fontSize}px 'Nunito', sans-serif`;
+
+  // Check matching
+  let matchLen=0;
+  if(typed.length>0){
+    const wLower=w.text.toLowerCase();
+    if(wLower.startsWith(typed))matchLen=typed.length;
+  }
+
+  // Glow for matched
+  if(matchLen>0){
+    ctx.shadowColor='#00cec9';
+    ctx.shadowBlur=15;
+  }
+
+  // Draw each letter
+  const letters=w.text.split('');
+  let xOff=w.x;
+  const metrics=ctx.measureText(w.text);
+  xOff=w.x-metrics.width/2;
+
+  for(let i=0;i<letters.length;i++){
+    if(i<matchLen){
+      ctx.fillStyle='#55efc4';
+    }else{
+      ctx.fillStyle=w.color||'#fff';
+    }
+    ctx.fillText(letters[i],xOff,w.y);
+    xOff+=ctx.measureText(letters[i]).width;
+  }
+
+  ctx.shadowBlur=0;
+
+  // Power-up indicator
+  if(w.powerUp){
+    const puEmoji=w.powerUp==='freeze'?'❄️':w.powerUp==='bomb'?'💣':'💖';
+    ctx.font='16px sans-serif';
+    ctx.fillText(puEmoji,w.x-8,w.y-fontSize+4);
+  }
+}
+
+// ===== SPAWN WORD =====
+function spawnWord(){
+  const cfg=DIFF_CONFIG[difficulty];
+  const wordList=WORDS[difficulty];
+  const text=wordList[Math.floor(Math.random()*wordList.length)];
+  const speed=cfg.baseSpeed+cfg.speedInc*(level-1)+(Math.random()*.2-.1);
+  const colors=['#fff','#a29bfe','#dfe6e9','#ffeaa7','#fab1a0','#81ecec','#74b9ff'];
+  const x=Math.random()*(canvas.width-140)+70;
+
+  const w={text,x,y:-20,speed,color:colors[Math.floor(Math.random()*colors.length)],fontSize:difficulty==='hard'?20:difficulty==='medium'?24:28};
+
+  // 10% chance for power-up word
+  if(Math.random()<0.1){
+    const pus=['freeze','bomb','life'];
+    w.powerUp=pus[Math.floor(Math.random()*pus.length)];
+    w.color='#fdcb6e';
+  }
+
+  fallingWords.push(w);
+
+  // Level up every 10 words
+  if(wordsTyped>0&&wordsTyped%10===0){
+    level=Math.floor(wordsTyped/10)+1;
+    spawnInterval=Math.max(800,cfg.spawnMax-cfg.spawnDec*(level-1));
+    document.getElementById('levelDisplay').textContent=level;
+  }
+}
+
+// ===== INPUT HANDLING =====
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('wordInput');
+  inp.addEventListener('input',function(){
+    if(!gameRunning)return;
+    playSound('type');
+    const typed=this.value.toLowerCase().trim();
+    if(!typed)return;
+
+    // Check for complete match
+    for(let i=0;i<fallingWords.length;i++){
+      if(fallingWords[i].text.toLowerCase()===typed){
+        const w=fallingWords[i];
+        // Correct!
+        fallingWords.splice(i,1);
+        this.value='';
+
+        // Score
+        combo++;
+        if(combo>maxCombo)maxCombo=combo;
+        const basePoints=w.text.length*10;
+        const comboMult=Math.min(combo,10);
+        score+=basePoints*comboMult;
+        wordsTyped++;
+
+        // Power-up grant
+        if(w.powerUp){
+          powerUps[w.powerUp]++;
+          updatePowerUpHUD();
+          playSound('powerup');
+        }
+
+        // Effects
+        spawnParticles(w.x,w.y,w.color);
+        if(combo>=3)playSound('combo');else playSound('correct');
+
+        updateHUD();
+        break;
+      }
+    }
+  });
+
+  // Keyboard shortcuts for power-ups
+  document.addEventListener('keydown',function(e){
+    if(!gameRunning)return;
+    if(e.key==='F2'||e.key==='F3'||e.key==='F4')e.preventDefault();
+    // Use Escape for pause or power-ups with specific unused keys
+  });
+
+  // Keep focus on input during game
+  document.addEventListener('click',function(){
+    if(gameRunning&&inputEl)inputEl.focus();
+  });
+});
+
+// Menu keyboard shortcuts
+document.addEventListener('keydown',function(e){
+  const menuActive=document.getElementById('menu').classList.contains('active');
+  if(menuActive){
+    if(e.key==='1')selectDifficulty('easy');
+    if(e.key==='2')selectDifficulty('medium');
+    if(e.key==='3')selectDifficulty('hard');
+    if(e.key==='Enter')startGame();
+  }
+  if(gameRunning){
+    if(e.key==='Escape'){showMenu();}
+    // Power-up keys - only when Ctrl held to not interfere with typing
+    if(e.ctrlKey&&e.key==='1'){e.preventDefault();usePowerUp('freeze');}
+    if(e.ctrlKey&&e.key==='2'){e.preventDefault();usePowerUp('bomb');}
+    if(e.ctrlKey&&e.key==='3'){e.preventDefault();usePowerUp('life');}
+  }
+});
+
+// ===== LOSE LIFE =====
+function loseLife(){
+  lives--;
+  combo=0;
+  playSound('miss');
+  updateHUD();
+  if(lives<=0)gameOver();
+}
+
+// ===== GAME OVER =====
+function gameOver(){
+  gameRunning=false;
+  if(animFrame)cancelAnimationFrame(animFrame);
+  playSound('gameover');
+
+  document.getElementById('finalScore').textContent=score;
+  document.getElementById('finalWPM').textContent=wpm;
+  document.getElementById('finalWords').textContent=wordsTyped;
+  document.getElementById('finalCombo').textContent=maxCombo;
+
+  const hsKey='typingRacer_hs_'+difficulty;
+  const prevHS=parseInt(localStorage.getItem(hsKey)||'0');
+  if(score>prevHS){
+    localStorage.setItem(hsKey,score);
+    document.getElementById('newRecord').style.display='block';
+  }else{
+    document.getElementById('newRecord').style.display='none';
+  }
+
+  showScreen('gameover');
+}
+
+// ===== POWER-UPS =====
+function usePowerUp(type){
+  if(!gameRunning||powerUps[type]<=0)return;
+  powerUps[type]--;
+  updatePowerUpHUD();
+
+  switch(type){
+    case'freeze':
+      freezeActive=true;
+      freezeTimer=5000;
+      playSound('freeze');
+      break;
+    case'bomb':
+      // Clear all words with particles
+      fallingWords.forEach(w=>spawnParticles(w.x,w.y,'#fd79a8'));
+      score+=fallingWords.length*5;
+      fallingWords=[];
+      playSound('bomb');
+      break;
+    case'life':
+      if(lives<5){lives++;updateHUD();}
+      playSound('powerup');
+      break;
+  }
+  if(inputEl)inputEl.focus();
+}
+
+function updatePowerUpHUD(){
+  ['freeze','bomb','life'].forEach(t=>{
+    const el=document.getElementById('pu'+t.charAt(0).toUpperCase()+t.slice(1));
+    const cnt=document.getElementById('pu'+t.charAt(0).toUpperCase()+t.slice(1)+'Count');
+    cnt.textContent=powerUps[t];
+    el.classList.toggle('disabled',powerUps[t]<=0);
+  });
+}
+
+// ===== HUD =====
+function updateHUD(){
+  document.getElementById('scoreDisplay').textContent=score;
+  const hearts='❤️'.repeat(Math.max(0,lives))+'🖤'.repeat(Math.max(0,3-lives));
+  document.getElementById('livesDisplay').textContent=hearts;
+  const comboEl=document.getElementById('comboDisplay');
+  comboEl.textContent='x'+combo;
+  comboEl.classList.toggle('visible',combo>0);
+}
+
+// ===== PARTICLES =====
+function spawnParticles(x,y,color){
+  const colors=['#6c5ce7','#a29bfe','#00cec9','#fd79a8','#fdcb6e','#55efc4',color];
+  for(let i=0;i<20;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=Math.random()*4+1;
+    particles.push({
+      x,y,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed-2,
+      size:Math.random()*4+2,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      life:600+Math.random()*400,
+      maxLife:1000
+    });
+  }
+}
+</script>
+</body>
+</html>

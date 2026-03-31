@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 - Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a1a;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  touch-action: none;
+}
+.top-bar {
+  width: 100%;
+  max-width: 500px;
+  padding: 16px 20px 0;
+  display: flex;
+  align-items: center;
+}
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #a29bfe;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(108,92,231,0.12);
+  transition: all 0.2s;
+}
+.home-btn:hover { background: rgba(108,92,231,0.25); color: #fff; }
+.home-btn svg { width: 18px; height: 18px; }
+
+header {
+  width: 100%;
+  max-width: 500px;
+  padding: 14px 20px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 42px;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe, #00cec9, #fd79a8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.scores {
+  display: flex;
+  gap: 8px;
+}
+.score-box {
+  background: rgba(108,92,231,0.18);
+  border: 1px solid rgba(162,155,254,0.2);
+  border-radius: 12px;
+  padding: 6px 16px;
+  text-align: center;
+  min-width: 80px;
+}
+.score-box .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #a29bfe;
+  font-weight: 700;
+}
+.score-box .value {
+  font-family: 'Fredoka One', cursive;
+  font-size: 22px;
+  color: #fff;
+}
+.controls {
+  width: 100%;
+  max-width: 500px;
+  padding: 0 20px 10px;
+  display: flex;
+  gap: 8px;
+}
+.btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+}
+.btn-new {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+}
+.btn-new:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(108,92,231,0.4); }
+.btn-undo {
+  background: rgba(0,206,201,0.2);
+  border: 1px solid rgba(0,206,201,0.3);
+}
+.btn-undo:hover { background: rgba(0,206,201,0.35); }
+.btn-undo:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.game-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  padding: 0 20px;
+}
+.grid-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: rgba(108,92,231,0.08);
+  border-radius: 16px;
+  border: 2px solid rgba(162,155,254,0.15);
+  padding: 10px;
+}
+.grid-bg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+}
+.cell-bg {
+  background: rgba(162,155,254,0.07);
+  border-radius: 12px;
+}
+.tile-layer {
+  position: absolute;
+  top: 10px; left: 10px; right: 10px; bottom: 10px;
+}
+.tile {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-family: 'Fredoka One', cursive;
+  font-weight: 400;
+  transition: top 0.15s ease, left 0.15s ease;
+  z-index: 1;
+}
+.tile.merged {
+  animation: pop 0.25s ease;
+  z-index: 2;
+}
+.tile.new-tile {
+  animation: appear 0.25s ease;
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes appear {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.overlay-gameover {
+  background: rgba(10,10,26,0.85);
+}
+.overlay-win {
+  background: rgba(10,10,26,0.8);
+}
+.overlay h2 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+.overlay-win h2 {
+  background: linear-gradient(135deg, #6c5ce7, #00cec9, #fd79a8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 44px;
+}
+.overlay p {
+  font-size: 16px;
+  color: #a29bfe;
+  margin-bottom: 20px;
+}
+.overlay .btn { margin: 4px; }
+.btn-continue {
+  background: linear-gradient(135deg, #00cec9, #6c5ce7);
+}
+
+/* Confetti canvas */
+#confetti {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.footer-msg {
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(162,155,254,0.4);
+}
+
+@media (max-width: 520px) {
+  .title { font-size: 32px; }
+  .score-box { min-width: 65px; padding: 5px 10px; }
+  .score-box .value { font-size: 18px; }
+  .grid-wrapper { border-radius: 12px; padding: 8px; }
+  .grid-bg { gap: 7px; }
+  .tile-layer { top: 8px; left: 8px; right: 8px; bottom: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="../index.html" class="home-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10"/></svg>
+    Home
+  </a>
+</div>
+
+<header>
+  <div class="title">2048</div>
+  <div class="scores">
+    <div class="score-box"><div class="label">Score</div><div class="value" id="score">0</div></div>
+    <div class="score-box"><div class="label">Best</div><div class="value" id="best">0</div></div>
+  </div>
+</header>
+
+<div class="controls">
+  <button class="btn btn-new" onclick="newGame()">New Game</button>
+  <button class="btn btn-undo" id="undoBtn" onclick="undo()" disabled>↩ Undo</button>
+</div>
+
+<div class="game-container">
+  <div class="grid-wrapper">
+    <div class="grid-bg">
+      <div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div>
+      <div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div>
+      <div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div>
+      <div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div><div class="cell-bg"></div>
+    </div>
+    <div class="tile-layer" id="tileLayer"></div>
+    <div class="overlay overlay-gameover" id="gameoverOverlay">
+      <h2>Game Over</h2>
+      <p>No more moves!</p>
+      <button class="btn btn-new" onclick="newGame()">Try Again</button>
+    </div>
+    <div class="overlay overlay-win" id="winOverlay">
+      <h2>You Win! 🎉</h2>
+      <p>You reached 2048!</p>
+      <button class="btn btn-continue" onclick="keepPlaying()">Keep Playing</button>
+      <button class="btn btn-new" onclick="newGame()">New Game</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer-msg">Swipe or use arrow keys to play</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+const TILE_COLORS = {
+  2:    { bg: 'linear-gradient(135deg, #d4d0f5, #e8e5fc)', color: '#444' },
+  4:    { bg: 'linear-gradient(135deg, #b8b0f0, #d4d0f5)', color: '#444' },
+  8:    { bg: 'linear-gradient(135deg, #a29bfe, #6c5ce7)', color: '#fff' },
+  16:   { bg: 'linear-gradient(135deg, #6c5ce7, #5a4bd1)', color: '#fff' },
+  32:   { bg: 'linear-gradient(135deg, #fd79a8, #e84393)', color: '#fff' },
+  64:   { bg: 'linear-gradient(135deg, #e84393, #c44569)', color: '#fff' },
+  128:  { bg: 'linear-gradient(135deg, #00cec9, #00b894)', color: '#fff' },
+  256:  { bg: 'linear-gradient(135deg, #00b894, #009688)', color: '#fff' },
+  512:  { bg: 'linear-gradient(135deg, #fdcb6e, #f39c12)', color: '#fff' },
+  1024: { bg: 'linear-gradient(135deg, #f39c12, #e67e22)', color: '#fff' },
+  2048: { bg: 'linear-gradient(135deg, #6c5ce7, #00cec9, #fd79a8)', color: '#fff' },
+};
+function getTileStyle(v) {
+  if (TILE_COLORS[v]) return TILE_COLORS[v];
+  return { bg: 'linear-gradient(135deg, #2d3436, #636e72)', color: '#fff' };
+}
+function tileFontSize(v) {
+  if (v < 100) return '2.2em';
+  if (v < 1000) return '1.8em';
+  if (v < 10000) return '1.4em';
+  return '1.1em';
+}
+
+let grid, score, best, prevGrid, prevScore, canUndo, won, keepGoing, moving;
+const scoreEl = document.getElementById('score');
+const bestEl = document.getElementById('best');
+const undoBtn = document.getElementById('undoBtn');
+const tileLayer = document.getElementById('tileLayer');
+
+function loadBest() { best = parseInt(localStorage.getItem('2048_best') || '0'); bestEl.textContent = best; }
+function saveBest() { if (score > best) { best = score; localStorage.setItem('2048_best', best); bestEl.textContent = best; } }
+
+function newGame() {
+  grid = Array.from({length:4}, ()=>Array(4).fill(0));
+  score = 0; canUndo = false; won = false; keepGoing = false; moving = false;
+  prevGrid = null; prevScore = 0;
+  scoreEl.textContent = '0';
+  undoBtn.disabled = true;
+  document.getElementById('gameoverOverlay').classList.remove('active');
+  document.getElementById('winOverlay').classList.remove('active');
+  addRandom(); addRandom();
+  renderTiles();
+}
+
+function addRandom() {
+  const empty = [];
+  for (let r=0;r<4;r++) for(let c=0;c<4;c++) if(!grid[r][c]) empty.push([r,c]);
+  if (!empty.length) return false;
+  const [r,c] = empty[Math.floor(Math.random()*empty.length)];
+  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return [r,c];
+}
+
+function cloneGrid(g) { return g.map(r=>[...r]); }
+
+function renderTiles(newTiles=[], mergedTiles=[]) {
+  tileLayer.innerHTML = '';
+  const layer = tileLayer;
+  const gap = window.innerWidth <= 520 ? 7 : 10;
+  // Cell size is calculated as percentage
+  for (let r=0;r<4;r++) for(let c=0;c<4;c++) {
+    if (!grid[r][c]) continue;
+    const v = grid[r][c];
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    const s = getTileStyle(v);
+    tile.style.background = s.bg;
+    tile.style.color = s.color;
+    tile.style.fontSize = tileFontSize(v);
+    // Position as percentage of tile layer
+    tile.style.width = `calc((100% - ${gap*3}px) / 4)`;
+    tile.style.height = `calc((100% - ${gap*3}px) / 4)`;
+    tile.style.left = `calc(${c} * (100% - ${gap*3}px) / 4 + ${c * gap}px)`;
+    tile.style.top = `calc(${r} * (100% - ${gap*3}px) / 4 + ${r * gap}px)`;
+    tile.textContent = v;
+    if (newTiles.some(p=>p[0]===r&&p[1]===c)) tile.classList.add('new-tile');
+    if (mergedTiles.some(p=>p[0]===r&&p[1]===c)) tile.classList.add('merged');
+    // Box shadow for depth
+    if (v >= 8) tile.style.boxShadow = `0 4px 15px rgba(108,92,231,0.3)`;
+    if (v >= 128) tile.style.boxShadow = `0 6px 25px rgba(0,206,201,0.4)`;
+    if (v >= 2048) tile.style.boxShadow = `0 8px 35px rgba(253,121,168,0.5)`;
+    layer.appendChild(tile);
+  }
+}
+
+function slideRow(row) {
+  let arr = row.filter(v=>v);
+  let merged = [];
+  let pts = 0;
+  for (let i=0;i<arr.length-1;i++) {
+    if (arr[i]===arr[i+1]) {
+      arr[i] *= 2;
+      pts += arr[i];
+      merged.push(i);
+      arr.splice(i+1,1);
+    }
+  }
+  while(arr.length<4) arr.push(0);
+  return { row: arr, points: pts, merged };
+}
+
+function move(dir) {
+  if (moving) return;
+  const old = cloneGrid(grid);
+  const oldScore = score;
+  let moved = false;
+  let mergedCells = [];
+
+  if (dir === 'left' || dir === 'right') {
+    for (let r=0;r<4;r++) {
+      let row = [...grid[r]];
+      if (dir==='right') row.reverse();
+      const res = slideRow(row);
+      if (dir==='right') res.row.reverse();
+      for (let c=0;c<4;c++) { if (grid[r][c]!==res.row[c]) moved=true; grid[r][c]=res.row[c]; }
+      score += res.points;
+      // track merged positions
+      if (dir==='right') res.merged.forEach(i => mergedCells.push([r, 3-i]));
+      else res.merged.forEach(i => mergedCells.push([r, i]));
+    }
+  } else {
+    for (let c=0;c<4;c++) {
+      let col = [grid[0][c],grid[1][c],grid[2][c],grid[3][c]];
+      if (dir==='down') col.reverse();
+      const res = slideRow(col);
+      if (dir==='down') res.row.reverse();
+      for (let r=0;r<4;r++) { if (grid[r][c]!==res.row[r]) moved=true; grid[r][c]=res.row[r]; }
+      score += res.points;
+      if (dir==='down') res.merged.forEach(i => mergedCells.push([3-i, c]));
+      else res.merged.forEach(i => mergedCells.push([i, c]));
+    }
+  }
+
+  if (!moved) return;
+
+  prevGrid = old;
+  prevScore = oldScore;
+  canUndo = true;
+  undoBtn.disabled = false;
+
+  const newPos = addRandom();
+  scoreEl.textContent = score;
+  saveBest();
+  renderTiles(newPos ? [newPos] : [], mergedCells);
+
+  // Check win
+  if (!won && !keepGoing) {
+    for (let r=0;r<4;r++) for(let c=0;c<4;c++) {
+      if (grid[r][c]===2048) { won = true; showWin(); return; }
+    }
+  }
+
+  // Check game over
+  if (isGameOver()) {
+    setTimeout(()=> document.getElementById('gameoverOverlay').classList.add('active'), 400);
+  }
+}
+
+function isGameOver() {
+  for (let r=0;r<4;r++) for(let c=0;c<4;c++) {
+    if (!grid[r][c]) return false;
+    if (c<3 && grid[r][c]===grid[r][c+1]) return false;
+    if (r<3 && grid[r][c]===grid[r+1][c]) return false;
+  }
+  return true;
+}
+
+function undo() {
+  if (!canUndo || !prevGrid) return;
+  grid = cloneGrid(prevGrid);
+  score = prevScore;
+  scoreEl.textContent = score;
+  canUndo = false;
+  undoBtn.disabled = true;
+  prevGrid = null;
+  document.getElementById('gameoverOverlay').classList.remove('active');
+  renderTiles();
+}
+
+function showWin() {
+  document.getElementById('winOverlay').classList.add('active');
+  launchConfetti();
+}
+function keepPlaying() {
+  keepGoing = true;
+  document.getElementById('winOverlay').classList.remove('active');
+}
+
+// Confetti
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#6c5ce7','#a29bfe','#00cec9','#fd79a8','#fdcb6e','#e84393','#00b894'];
+  const pieces = Array.from({length:120}, ()=>({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height - canvas.height,
+    w: Math.random()*10+5,
+    h: Math.random()*6+3,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    vy: Math.random()*4+2,
+    vx: Math.random()*4-2,
+    rot: Math.random()*360,
+    rv: Math.random()*10-5
+  }));
+  let frames = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.y += p.vy; p.x += p.vx; p.rot += p.rv;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    frames++;
+    if (frames < 180) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  const map = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
+  if (map[e.key]) { e.preventDefault(); move(map[e.key]); }
+});
+
+// Touch / swipe
+let tx, ty;
+document.addEventListener('touchstart', e => {
+  tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+}, {passive: true});
+document.addEventListener('touchend', e => {
+  if (tx===undefined) return;
+  const dx = e.changedTouches[0].clientX - tx;
+  const dy = e.changedTouches[0].clientY - ty;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if (Math.max(adx,ady) < 30) return;
+  if (adx > ady) move(dx>0?'right':'left');
+  else move(dy>0?'down':'up');
+  tx = ty = undefined;
+});
+
+// Init
+loadBest();
+newGame();
+</script>
+</body>
+</html>
