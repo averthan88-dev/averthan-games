@@ -522,6 +522,11 @@
     </div>
 
     <script>
+        // Clear any false ban cookies
+        document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+        document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/;domain=averthan.games';
+        document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/;domain=.averthan.games';
+
         // Generate twinkling stars
         const starsContainer = document.getElementById('stars');
         for (let i = 0; i < 80; i++) {

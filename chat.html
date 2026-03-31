@@ -528,6 +528,16 @@ firebase.initializeApp({
 const db = firebase.database();
 const LOBBY_ID = 'lobby';
 
+// EMERGENCY: Clear all false ban artifacts immediately on load
+(function(){
+  document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
+  document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/;domain=averthan.games';
+  document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/;domain=.averthan.games';
+  // Also nuke from all possible paths
+  document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/chat.html';
+  console.log('Ban cookies cleared.');
+})();
+
 // Stars
 (function() {
   const c = document.getElementById('stars');
