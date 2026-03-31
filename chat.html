@@ -95,7 +95,7 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
   margin-bottom: 8px;
 }
 
-.room-list { flex: 1; overflow-y: auto; }
+.room-list { flex: 0 1 auto; overflow-y: auto; min-height: 60px; max-height: 40%; }
 .room-item {
   padding: 10px 16px;
   cursor: pointer;
@@ -138,8 +138,12 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 /* Members panel */
 .members-panel {
   border-top: 1px solid rgba(255,255,255,0.06);
-  max-height: 200px;
+  flex: 1;
+  min-height: 120px;
+  max-height: 50%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 .member-item {
   padding: 6px 16px;
