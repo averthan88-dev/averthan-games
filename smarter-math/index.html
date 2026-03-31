@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smarter Math - Grade 7 | Averthan Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0a0a1a;--card:rgba(255,255,255,0.05);--text:#fff;--sub:rgba(255,255,255,0.7);
+--purple:#6c5ce7;--lpurple:#a29bfe;--pink:#fd79a8;--teal:#00cec9;--green:#55efc4;
+--orange:#e17055;--emerald:#00b894;--magenta:#e84393;--yellow:#fdcb6e;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;line-height:1.6}
+h1,h2,h3,.title-font{font-family:'Fredoka One',cursive}
+
+/* Main Menu Button */
+.main-menu-btn{position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.7);color:#fff;text-decoration:none;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:700;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);transition:all .3s}
+.main-menu-btn:hover{background:rgba(108,92,231,0.6);transform:scale(1.05)}
+
+/* Sound Toggle */
+.sound-toggle{position:fixed;top:12px;right:12px;z-index:9999;background:rgba(0,0,0,0.7);color:#fff;border:1px solid rgba(255,255,255,0.1);padding:8px 14px;border-radius:20px;font-size:18px;cursor:pointer;backdrop-filter:blur(10px);transition:all .3s}
+.sound-toggle:hover{background:rgba(108,92,231,0.6)}
+
+/* Progress Bar */
+.progress-bar-container{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,0.1);z-index:9998}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--teal),var(--green));transition:width .5s ease;border-radius:0 2px 2px 0}
+
+/* Screens */
+.screen{display:none;padding:60px 20px 30px;max-width:1000px;margin:0 auto;animation:fadeIn .5s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes bounceIn{0%{transform:scale(0)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes starPop{0%{transform:scale(0) rotate(-30deg);opacity:0}60%{transform:scale(1.3) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fillBar{from{width:0}to{width:var(--fill)}}
+@keyframes drawCircle{from{stroke-dashoffset:314}to{stroke-dashoffset:var(--target)}}
+
+/* Title */
+.app-title{font-size:clamp(2.5rem,6vw,4rem);text-align:center;margin:20px 0 5px;background:linear-gradient(135deg,var(--purple),var(--pink),var(--teal),var(--green),var(--purple));background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradientMove 4s ease infinite}
+.app-subtitle{text-align:center;color:var(--sub);font-size:1.1rem;margin-bottom:30px;font-weight:600}
+.overall-progress{text-align:center;margin-bottom:30px}
+.overall-progress .bar{width:80%;max-width:400px;height:10px;background:rgba(255,255,255,0.1);border-radius:5px;margin:8px auto;overflow:hidden}
+.overall-progress .fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--green));border-radius:5px;transition:width .8s ease}
+.overall-progress span{font-size:.9rem;color:var(--sub)}
+
+/* Topic Grid */
+.topic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:20px}
+.topic-card{background:var(--card);border-radius:20px;padding:24px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(10px);transition:all .3s;position:relative;overflow:hidden}
+.topic-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--accent);border-radius:20px 20px 0 0}
+.topic-card:hover{transform:translateY(-5px);border-color:rgba(255,255,255,0.2);box-shadow:0 10px 40px rgba(0,0,0,0.3)}
+.topic-card .emoji{font-size:2.5rem;margin-bottom:10px;display:inline-block;animation:float 3s ease-in-out infinite}
+.topic-card h3{font-size:1.2rem;margin-bottom:6px}
+.topic-card p{color:var(--sub);font-size:.85rem;margin-bottom:12px}
+.topic-card .card-progress{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
+.topic-card .card-progress-fill{height:100%;border-radius:2px;transition:width .5s}
+.topic-card .check{position:absolute;top:12px;right:12px;font-size:1.5rem}
+.topic-card:nth-child(odd) .emoji{animation-delay:.5s}
+
+/* Topic View */
+.topic-header{display:flex;align-items:center;gap:15px;margin-bottom:20px;flex-wrap:wrap}
+.topic-header .back-btn{background:rgba(255,255,255,0.1);border:none;color:#fff;padding:10px 18px;border-radius:12px;cursor:pointer;font-size:1rem;font-weight:700;transition:all .3s}
+.topic-header .back-btn:hover{background:rgba(255,255,255,0.2)}
+.topic-header h2{font-size:1.8rem;flex:1}
+.slide-dots{display:flex;gap:6px;justify-content:center;margin:15px 0}
+.slide-dots .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all .3s;cursor:pointer}
+.slide-dots .dot.active{background:var(--accent);transform:scale(1.3)}
+.slide-dots .dot.completed{background:rgba(255,255,255,0.5)}
+
+/* Slide Content */
+.slide-container{min-height:400px;animation:fadeIn .4s ease}
+.slide-card{background:var(--card);border-radius:20px;padding:30px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.slide-card h3{font-size:1.4rem;margin-bottom:15px;display:flex;align-items:center;gap:10px}
+.slide-card .narration{color:var(--sub);font-style:italic;margin-bottom:20px;font-size:.95rem;padding:10px 15px;border-left:3px solid var(--accent);background:rgba(255,255,255,0.02);border-radius:0 8px 8px 0}
+
+/* Visual Area */
+.visual-area{background:rgba(0,0,0,0.3);border-radius:16px;padding:20px;margin:20px 0;min-height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;overflow:hidden}
+.visual-area canvas{border-radius:12px;max-width:100%}
+.visual-area svg{max-width:100%}
+
+/* Interactive Elements */
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.choice-btn{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);color:#fff;padding:14px 18px;border-radius:14px;cursor:pointer;font-size:1rem;font-weight:600;transition:all .3s;font-family:'Nunito',sans-serif}
+.choice-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3)}
+.choice-btn.correct{background:rgba(85,239,196,0.2);border-color:var(--green);animation:bounceIn .4s}
+.choice-btn.wrong{background:rgba(253,121,168,0.2);border-color:var(--pink);animation:shake .4s}
+.choice-btn:disabled{cursor:not-allowed;opacity:.7}
+
+.number-input{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);color:#fff;padding:12px 16px;border-radius:12px;font-size:1.2rem;width:120px;text-align:center;font-family:'Nunito',sans-serif;outline:none;transition:border-color .3s}
+.number-input:focus{border-color:var(--accent)}
+.submit-btn{background:linear-gradient(135deg,var(--purple),var(--lpurple));border:none;color:#fff;padding:12px 24px;border-radius:12px;cursor:pointer;font-size:1rem;font-weight:700;transition:all .3s;font-family:'Nunito',sans-serif;margin-left:10px}
+.submit-btn:hover{transform:scale(1.05);box-shadow:0 5px 20px rgba(108,92,231,0.4)}
+
+.slider-control{width:100%;margin:10px 0}
+.slider-control input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:3px;background:rgba(255,255,255,0.2);outline:none}
+.slider-control input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff}
+
+/* Navigation */
+.slide-nav{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px}
+.nav-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:12px 24px;border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;transition:all .3s;font-family:'Nunito',sans-serif}
+.nav-btn:hover:not(:disabled){background:rgba(255,255,255,0.2);transform:scale(1.03)}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.nav-btn.primary{background:linear-gradient(135deg,var(--accent,var(--purple)),rgba(255,255,255,0.2));border:none}
+
+/* Quiz */
+.quiz-header{text-align:center;margin-bottom:20px}
+.quiz-header h3{font-size:1.6rem}
+.quiz-question-num{color:var(--sub);font-size:.9rem}
+.quiz-score{text-align:center;padding:30px}
+.stars{display:flex;justify-content:center;gap:15px;margin:20px 0}
+.stars .star{font-size:3rem;opacity:.2;transition:all .5s}
+.stars .star.earned{opacity:1;animation:starPop .5s ease forwards}
+.stars .star:nth-child(2).earned{animation-delay:.2s}
+.stars .star:nth-child(3).earned{animation-delay:.4s}
+.score-text{font-size:2rem;font-weight:800;margin:15px 0}
+.retry-btn{background:linear-gradient(135deg,var(--purple),var(--pink));border:none;color:#fff;padding:14px 32px;border-radius:16px;cursor:pointer;font-size:1.1rem;font-weight:700;font-family:'Nunito',sans-serif;margin-top:15px;transition:all .3s}
+.retry-btn:hover{transform:scale(1.05)}
+
+/* Number Line */
+.number-line{position:relative;height:60px;margin:20px 0}
+.number-line .line{position:absolute;top:50%;left:5%;right:5%;height:3px;background:rgba(255,255,255,0.4);border-radius:2px}
+.number-line .tick{position:absolute;top:50%;width:2px;height:16px;background:rgba(255,255,255,0.6);transform:translateX(-50%) translateY(-50%)}
+.number-line .label{position:absolute;top:70%;font-size:.75rem;transform:translateX(-50%);color:var(--sub)}
+.number-line .marker{position:absolute;top:20%;font-size:1.2rem;transform:translateX(-50%);transition:left .5s ease;z-index:2}
+
+/* Fraction Bars */
+.fraction-bar{display:flex;height:40px;border-radius:8px;overflow:hidden;margin:8px 0;border:2px solid rgba(255,255,255,0.2)}
+.fraction-bar .segment{flex:1;border-right:1px solid rgba(255,255,255,0.15);transition:background .3s}
+.fraction-bar .segment:last-child{border:none}
+.fraction-bar .segment.filled{background:var(--accent)}
+.fraction-bar .segment.empty{background:rgba(255,255,255,0.05)}
+
+/* Algebra Tiles */
+.algebra-tiles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:15px 0}
+.tile{width:50px;height:50px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;transition:all .3s}
+.tile.x-tile{background:rgba(108,92,231,0.4);border:2px solid var(--purple)}
+.tile.num-tile{background:rgba(85,239,196,0.3);border:2px solid var(--green)}
+.tile.neg-tile{background:rgba(253,121,168,0.3);border:2px solid var(--pink)}
+
+/* Balance Scale */
+.balance-scale{display:flex;align-items:flex-end;justify-content:center;gap:20px;margin:20px 0;min-height:150px}
+.scale-side{background:rgba(255,255,255,0.06);border-radius:12px;padding:15px;min-width:120px;text-align:center;border:2px solid rgba(255,255,255,0.1);transition:all .3s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.scale-side.balanced{border-color:var(--green);box-shadow:0 0 20px rgba(85,239,196,0.2)}
+.scale-equals{font-size:2rem;font-weight:800;align-self:center}
+
+/* Geometry Drawing */
+.geo-canvas{background:rgba(0,0,0,0.4);border-radius:12px;border:1px solid rgba(255,255,255,0.1)}
+
+/* Pie Chart */
+.pie-container{position:relative;width:200px;height:200px;margin:0 auto}
+
+/* Stats */
+.stat-row{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap}
+.stat-bar{flex:1;height:24px;background:rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;min-width:100px}
+.stat-bar .fill{height:100%;border-radius:12px;transition:width 1s ease;display:flex;align-items:center;padding:0 8px;font-size:.75rem;font-weight:700}
+
+/* Shopping Sim */
+.product-card{background:rgba(255,255,255,0.05);border-radius:12px;padding:16px;margin:8px 0;display:flex;align-items:center;gap:15px;border:1px solid rgba(255,255,255,0.08)}
+.product-card .price{font-size:1.3rem;font-weight:800;color:var(--green)}
+.product-card .unit-price{font-size:.85rem;color:var(--sub)}
+
+/* Responsive */
+@media(max-width:600px){
+  .choices{grid-template-columns:1fr}
+  .topic-grid{grid-template-columns:1fr}
+  .slide-card{padding:20px}
+  .balance-scale{flex-direction:column;align-items:center}
+  .scale-equals{transform:rotate(90deg)}
+}
+
+/* Feedback */
+.feedback{padding:12px 16px;border-radius:12px;margin:10px 0;font-weight:700;animation:fadeIn .3s}
+.feedback.correct{background:rgba(85,239,196,0.15);color:var(--green);border:1px solid rgba(85,239,196,0.3)}
+.feedback.wrong{background:rgba(253,121,168,0.15);color:var(--pink);border:1px solid rgba(253,121,168,0.3)}
+.feedback.info{background:rgba(108,92,231,0.15);color:var(--lpurple);border:1px solid rgba(108,92,231,0.3)}
+
+/* Coin/Dice */
+.coin{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f9ca24,#f0932b);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#2d3436;cursor:pointer;transition:transform .3s;margin:10px auto;box-shadow:0 4px 15px rgba(249,202,36,0.3)}
+.coin:hover{transform:scale(1.1)}
+.coin.flipping{animation:spin .5s ease}
+.dice{width:70px;height:70px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:#2d3436;cursor:pointer;margin:10px auto;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform .3s}
+.dice:hover{transform:scale(1.1)}
+.dice.rolling{animation:shake .3s}
+
+/* Highlights */
+.highlight{background:rgba(108,92,231,0.2);padding:2px 8px;border-radius:6px;font-weight:700}
+.step{padding:8px 12px;margin:4px 0;border-radius:8px;transition:all .4s}
+.step.active{background:rgba(108,92,231,0.2);border-left:3px solid var(--accent)}
+.step.done{opacity:.5}
+
+/* Metric Ladder */
+.metric-ladder{display:flex;flex-direction:column;align-items:center;gap:4px;margin:15px 0}
+.ladder-step{padding:8px 20px;border-radius:10px;font-weight:700;font-size:1rem;transition:all .4s;min-width:120px;text-align:center}
+.ladder-step.active{transform:scale(1.15);box-shadow:0 0 20px rgba(85,239,196,0.3)}
+.ladder-arrow{font-size:1.2rem;color:var(--sub)}
+
+.interactive-hint{color:var(--sub);font-size:.85rem;text-align:center;margin-top:8px;font-style:italic}
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="main-menu-btn">◀ Main Menu</a>
+<button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
+<div class="progress-bar-container"><div class="progress-bar-fill" id="globalProgress" style="width:0%"></div></div>
+
+<!-- HOME SCREEN -->
+<div class="screen active" id="homeScreen">
+  <h1 class="app-title title-font">Smarter Math</h1>
+  <p class="app-subtitle">Grade 7 • Interactive Learning</p>
+  <div class="overall-progress">
+    <span id="progressText">0 of 8 topics completed</span>
+    <div class="bar"><div class="fill" id="homeProgressFill" style="width:0%"></div></div>
+  </div>
+  <div class="topic-grid" id="topicGrid"></div>
+</div>
+
+<!-- TOPIC SCREEN -->
+<div class="screen" id="topicScreen">
+  <div class="topic-header">
+    <button class="back-btn" onclick="goHome()">← Back</button>
+    <h2 id="topicTitle"></h2>
+  </div>
+  <div class="slide-dots" id="slideDots"></div>
+  <div class="slide-container" id="slideContainer"></div>
+  <div class="slide-nav">
+    <button class="nav-btn" id="prevBtn" onclick="prevSlide()">← Previous</button>
+    <span id="slideCounter" style="color:var(--sub);font-size:.9rem"></span>
+    <button class="nav-btn primary" id="nextBtn" onclick="nextSlide()">Next →</button>
+  </div>
+</div>
+
+<script>
+// ===== TTS CONFIG =====
+const XI_API_KEY = 'sk_829c7c66b4f149beb858b00101142d9aca349e29ad67e218';
+const XI_VOICE_ID = 'hpp4J3VqNfWAUOO0d1Us';
+const XI_MODEL = 'eleven_v3';
+const voiceCache = new Map();
+let soundEnabled = true;
+let currentAudio = null;
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+  if (!soundEnabled && currentAudio) { currentAudio.pause(); currentAudio = null; }
+}
+
+async function speak(text) {
+  if (!soundEnabled || !text) return;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  const key = text.substring(0, 100);
+  if (voiceCache.has(key)) {
+    playBlob(voiceCache.get(key)); return;
+  }
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`, {
+      method: 'POST',
+      headers: { 'xi-api-key': XI_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, model_id: XI_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+    });
+    if (!res.ok) throw new Error('API fail');
+    const blob = await res.blob();
+    voiceCache.set(key, blob);
+    playBlob(blob);
+  } catch (e) { speakFallback(text); }
+}
+
+function playBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  currentAudio = new Audio(url);
+  currentAudio.play().catch(() => {});
+}
+
+function speakFallback(text) {
+  if (!soundEnabled) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95; u.pitch = 1.05;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
+// ===== PROGRESS =====
+function getProgress() {
+  try { return JSON.parse(localStorage.getItem('smartermath_progress') || '{}'); } catch { return {}; }
+}
+function saveProgress(p) { localStorage.setItem('smartermath_progress', JSON.stringify(p)); }
+function markTopicComplete(id) {
+  const p = getProgress(); p[id] = true; saveProgress(p); updateProgressUI();
+}
+function updateProgressUI() {
+  const p = getProgress();
+  const done = topics.filter(t => p[t.id]).length;
+  const pct = Math.round((done / topics.length) * 100);
+  document.getElementById('globalProgress').style.width = pct + '%';
+  document.getElementById('homeProgressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${done} of ${topics.length} topics completed`;
+  document.querySelectorAll('.topic-card').forEach((card, i) => {
+    const check = card.querySelector('.check');
+    if (p[topics[i].id]) { check.textContent = '✅'; card.querySelector('.card-progress-fill').style.width = '100%'; }
+  });
+}
+
+// ===== UTILITY =====
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = rand(0, i); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }
+
+// ===== TOPICS DATA =====
+const topics = [
+  {
+    id: 'numbers', emoji: '🔢', title: 'Number Sense', accent: '#6c5ce7',
+    desc: 'Integers, fractions, decimals, BEDMAS, powers & roots',
+    slides: [
+      { title: 'Integers on the Number Line', voice: 'Welcome to Number Sense! Integers include positive numbers, negative numbers, and zero. Lets explore them on a number line.' },
+      { title: 'Adding & Subtracting Integers', voice: 'Adding a negative number is the same as subtracting. Subtracting a negative is the same as adding. Let\'s practice with visual chips!' },
+      { title: 'Fractions: Visual Bars', voice: 'Fractions represent parts of a whole. These fraction bars show you exactly how much each fraction covers.' },
+      { title: 'Decimals & Place Value', voice: 'Decimals are another way to write fractions. Each place to the right of the decimal point represents tenths, hundredths, and thousandths.' },
+      { title: 'Order of Operations (BEDMAS)', voice: 'BEDMAS tells us the order: Brackets, Exponents, Division and Multiplication, then Addition and Subtraction. Let\'s solve step by step!' },
+      { title: 'Powers & Square Roots', voice: 'A power means repeated multiplication. A square root asks: what number times itself gives this value? Let\'s visualize with squares!' },
+      { title: '🎯 Number Sense Quiz', voice: 'Time for a quiz! Show what you\'ve learned about number sense. You\'ve got this!', isQuiz: true }
+    ]
+  },
+  {
+    id: 'geometry', emoji: '📐', title: 'Geometry', accent: '#00cec9',
+    desc: 'Angles, triangles, area, circles, volume, transformations',
+    slides: [
+      { title: 'Understanding Angles', voice: 'An angle is formed where two lines meet. Acute angles are less than 90 degrees, right angles are exactly 90, and obtuse angles are greater than 90.' },
+      { title: 'Triangle Properties', voice: 'The angles in any triangle always add up to 180 degrees. Triangles can be classified by their sides or their angles.' },
+      { title: 'Area & Perimeter', voice: 'Perimeter is the distance around a shape. Area is the space inside. Let\'s calculate both for different shapes!' },
+      { title: 'Circles: Pi & Area', voice: 'Pi is the ratio of a circle\'s circumference to its diameter, approximately 3.14159. The area equals pi times radius squared.' },
+      { title: '3D Volume', voice: 'Volume measures the space inside a 3D shape. For a rectangular prism, multiply length times width times height.' },
+      { title: 'Transformations', voice: 'Shapes can be moved by translation, flipped by reflection, or turned by rotation. These are called transformations.' },
+      { title: '🎯 Geometry Quiz', voice: 'Let\'s test your geometry knowledge! Remember your formulas and properties.', isQuiz: true }
+    ]
+  },
+  {
+    id: 'data', emoji: '📊', title: 'Data & Probability', accent: '#fd79a8',
+    desc: 'Mean, median, mode, graphs, probability experiments',
+    slides: [
+      { title: 'Mean, Median & Mode', voice: 'The mean is the average. The median is the middle value when sorted. The mode is the most frequent value. Let\'s calculate all three!' },
+      { title: 'Bar & Line Graphs', voice: 'Bar graphs compare categories. Line graphs show changes over time. Both help us visualize data clearly.' },
+      { title: 'Circle Graphs', voice: 'Circle graphs, or pie charts, show parts of a whole as slices. Each slice is a percentage of the total.' },
+      { title: 'Probability Basics', voice: 'Probability tells us how likely something is to happen, from 0 meaning impossible to 1 meaning certain. Let\'s flip coins and roll dice!' },
+      { title: 'Experimental vs Theoretical', voice: 'Theoretical probability is what we expect. Experimental probability is what actually happens. They get closer with more trials!' },
+      { title: '🎯 Data & Probability Quiz', voice: 'Quiz time! Show your data analysis and probability skills.', isQuiz: true }
+    ]
+  },
+  {
+    id: 'algebra', emoji: '🔤', title: 'Algebra', accent: '#fdcb6e',
+    desc: 'Variables, expressions, equations, inequalities, patterns',
+    slides: [
+      { title: 'Variables & Expressions', voice: 'A variable is a letter that stands for a number. An expression combines variables and numbers with operations like addition and multiplication.' },
+      { title: 'Evaluating Expressions', voice: 'To evaluate an expression, replace each variable with its given value, then calculate following order of operations.' },
+      { title: 'Solving Equations', voice: 'An equation is like a balance scale. Whatever you do to one side, you must do to the other to keep it balanced!' },
+      { title: 'Inequalities', voice: 'Inequalities use symbols like greater than and less than. They have many solutions, which we can show on a number line.' },
+      { title: 'Patterns & Sequences', voice: 'Patterns follow rules. Finding the rule lets us predict any term in the sequence. Look for what changes each step!' },
+      { title: '🎯 Algebra Quiz', voice: 'Let\'s test your algebra skills! Remember to keep equations balanced.', isQuiz: true }
+    ]
+  },
+  {
+    id: 'measurement', emoji: '📏', title: 'Measurement', accent: '#55efc4',
+    desc: 'Metric conversions, composite shapes, surface area',
+    slides: [
+      { title: 'Metric Conversions', voice: 'The metric system is based on powers of 10. Moving between units means multiplying or dividing by 10, 100, or 1000.' },
+      { title: 'Composite Shape Perimeters', voice: 'A composite shape is made of simpler shapes combined. Find the perimeter by adding all the outer edges.' },
+      { title: 'Area of Parallelograms & Trapezoids', voice: 'A parallelogram\'s area equals base times height. A trapezoid\'s area uses both parallel sides: half the sum of the bases times the height.' },
+      { title: 'Surface Area & Nets', voice: 'Surface area is the total area of all faces of a 3D shape. Unfolding the shape into a net helps us see every face.' },
+      { title: '🎯 Measurement Quiz', voice: 'Measurement quiz time! Think carefully about units and formulas.', isQuiz: true }
+    ]
+  },
+  {
+    id: 'proportions', emoji: '⚖️', title: 'Proportional Reasoning', accent: '#e17055',
+    desc: 'Ratios, rates, proportions, percentages, discounts',
+    slides: [
+      { title: 'Understanding Ratios', voice: 'A ratio compares two quantities. We can write ratios as fractions, with a colon, or with the word to. Let\'s explore!' },
+      { title: 'Rates & Unit Rates', voice: 'A rate compares two different units, like kilometers per hour. A unit rate has a denominator of 1, making comparison easy.' },
+      { title: 'Solving Proportions', voice: 'A proportion says two ratios are equal. We can solve for unknowns using cross-multiplication.' },
+      { title: 'Percentages', voice: 'Percent means per hundred. To find a percent of a number, convert the percent to a decimal and multiply.' },
+      { title: 'Discounts & Tax', voice: 'Shopping involves percentages! Discounts reduce prices and tax increases them. Let\'s be smart shoppers!' },
+      { title: '🎯 Proportions Quiz', voice: 'Quiz time! Show your proportional reasoning skills.', isQuiz: true }
+    ]
+  },
+  {
+    id: 'pythagoras', emoji: '🔺', title: 'Pythagorean Exploration', accent: '#00b894',
+    desc: 'Right triangles, visual proofs, finding sides',
+    slides: [
+      { title: 'Right Triangles & Hypotenuse', voice: 'In a right triangle, the longest side opposite the right angle is called the hypotenuse. The other two sides are called legs.' },
+      { title: 'Visual Proof: Squares on Sides', voice: 'The Pythagorean theorem says: the square on the hypotenuse equals the sum of the squares on the other two sides. Watch the visual proof!' },
+      { title: 'Finding Missing Sides', voice: 'We can use a squared plus b squared equals c squared to find any missing side of a right triangle.' },
+      { title: 'Real-World Problems', voice: 'The Pythagorean theorem appears everywhere: ladders against walls, distances between points, even TV screen sizes!' },
+      { title: '🎯 Pythagorean Quiz', voice: 'Quiz time! Apply the Pythagorean theorem to find missing sides.', isQuiz: true }
+    ]
+  },
+  {
+    id: 'finance', emoji: '🧮', title: 'Financial Literacy', accent: '#e84393',
+    desc: 'Budgeting, simple interest, best deals, savings',
+    slides: [
+      { title: 'Budgeting Basics', voice: 'A budget tracks your income and expenses. The goal is to spend less than you earn so you can save for the future!' },
+      { title: 'Simple Interest', voice: 'Simple interest is calculated with the formula: Interest equals Principal times Rate times Time. It\'s how your money can grow!' },
+      { title: 'Finding the Best Deal', voice: 'Compare prices by calculating the unit price, which is the cost per single unit. The lowest unit price is the best deal!' },
+      { title: 'Savings Goals', voice: 'Setting a savings goal and timeline helps you plan. Divide your goal by the number of periods to find how much to save each time.' },
+      { title: '🎯 Finance Quiz', voice: 'Final quiz! Show your financial literacy skills.', isQuiz: true }
+    ]
+  }
+];
+
+// ===== BUILD HOME SCREEN =====
+function buildHome() {
+  const grid = document.getElementById('topicGrid');
+  grid.innerHTML = '';
+  const prog = getProgress();
+  topics.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'topic-card';
+    card.style.setProperty('--accent', t.accent);
+    card.style.cssText += `animation:fadeIn .5s ease ${i * 0.08}s both`;
+    card.innerHTML = `
+      <div class="check">${prog[t.id] ? '✅' : ''}</div>
+      <div class="emoji">${t.emoji}</div>
+      <h3>${t.title}</h3>
+      <p>${t.desc}</p>
+      <div class="card-progress"><div class="card-progress-fill" style="width:${prog[t.id]?100:0}%;background:${t.accent}"></div></div>
+    `;
+    card.onclick = () => openTopic(i);
+    grid.appendChild(card);
+  });
+  updateProgressUI();
+}
+
+// ===== TOPIC NAVIGATION =====
+let currentTopic = null;
+let currentSlide = 0;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  showScreen('homeScreen');
+  buildHome();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  speechSynthesis.cancel();
+}
+
+function openTopic(idx) {
+  currentTopic = idx;
+  currentSlide = 0;
+  const t = topics[idx];
+  document.getElementById('topicTitle').innerHTML = `${t.emoji} ${t.title}`;
+  document.getElementById('topicScreen').style.setProperty('--accent', t.accent);
+  showScreen('topicScreen');
+  buildDots();
+  renderSlide();
+}
+
+function buildDots() {
+  const dots = document.getElementById('slideDots');
+  const t = topics[currentTopic];
+  dots.innerHTML = '';
+  t.slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === currentSlide ? ' active' : '');
+    d.style.setProperty('--accent', t.accent);
+    d.onclick = () => { currentSlide = i; renderSlide(); buildDots(); };
+    dots.appendChild(d);
+  });
+}
+
+function prevSlide() {
+  if (currentSlide > 0) { currentSlide--; renderSlide(); buildDots(); }
+}
+
+function nextSlide() {
+  const t = topics[currentTopic];
+  if (currentSlide < t.slides.length - 1) { currentSlide++; renderSlide(); buildDots(); }
+}
+
+function renderSlide() {
+  const t = topics[currentTopic];
+  const s = t.slides[currentSlide];
+  const container = document.getElementById('slideContainer');
+  const counter = document.getElementById('slideCounter');
+  counter.textContent = `${currentSlide + 1} / ${t.slides.length}`;
+  document.getElementById('prevBtn').disabled = currentSlide === 0;
+  document.getElementById('nextBtn').disabled = currentSlide === t.slides.length - 1;
+  document.getElementById('nextBtn').style.background = `linear-gradient(135deg,${t.accent},rgba(255,255,255,0.15))`;
+
+  container.style.animation = 'none';
+  container.offsetHeight;
+  container.style.animation = 'fadeIn .4s ease';
+
+  if (s.isQuiz) {
+    renderQuiz(container, t);
+  } else {
+    renderContent(container, t, currentSlide);
+  }
+  speak(s.voice);
+}
+
+// ===== CONTENT RENDERERS =====
+function renderContent(container, topic, slideIdx) {
+  const s = topic.slides[slideIdx];
+  const accent = topic.accent;
+
+  let html = `<div class="slide-card" style="--accent:${accent}">
+    <h3 style="color:${accent}">${s.title}</h3>
+    <div class="narration" style="border-color:${accent}">${s.voice}</div>
+    <div class="visual-area" id="visualArea"></div>
+    <div id="interactiveArea"></div>
+  </div>`;
+  container.innerHTML = html;
+
+  const vis = document.getElementById('visualArea');
+  const inter = document.getElementById('interactiveArea');
+
+  // Route to specific renderers
+  const key = topic.id + '_' + slideIdx;
+  const renderers = {
+    'numbers_0': renderIntegerLine,
+    'numbers_1': renderIntegerOps,
+    'numbers_2': renderFractions,
+    'numbers_3': renderDecimals,
+    'numbers_4': renderBEDMAS,
+    'numbers_5': renderPowers,
+    'geometry_0': renderAngles,
+    'geometry_1': renderTriangles,
+    'geometry_2': renderAreaPerimeter,
+    'geometry_3': renderCircles,
+    'geometry_4': renderVolume,
+    'geometry_5': renderTransformations,
+    'data_0': renderMeanMedianMode,
+    'data_1': renderBarLineGraph,
+    'data_2': renderCircleGraph,
+    'data_3': renderProbability,
+    'data_4': renderExpVsTheo,
+    'algebra_0': renderVariables,
+    'algebra_1': renderEvalExpr,
+    'algebra_2': renderSolveEq,
+    'algebra_3': renderInequalities,
+    'algebra_4': renderPatterns,
+    'measurement_0': renderMetric,
+    'measurement_1': renderComposite,
+    'measurement_2': renderParaTrap,
+    'measurement_3': renderSurfaceArea,
+    'proportions_0': renderRatios,
+    'proportions_1': renderRates,
+    'proportions_2': renderProportions,
+    'proportions_3': renderPercentages,
+    'proportions_4': renderDiscounts,
+    'pythagoras_0': renderRightTri,
+    'pythagoras_1': renderVisualProof,
+    'pythagoras_2': renderFindSides,
+    'pythagoras_3': renderRealWorld,
+    'finance_0': renderBudget,
+    'finance_1': renderInterest,
+    'finance_2': renderBestDeal,
+    'finance_3': renderSavings,
+  };
+
+  if (renderers[key]) renderers[key](vis, inter, accent);
+}
+
+// ===== NUMBER SENSE SLIDES =====
+function renderIntegerLine(vis, inter, accent) {
+  const val = rand(-8, 8);
+  vis.innerHTML = `<div style="width:100%;padding:20px">
+    <div class="number-line" style="height:80px">
+      <div class="line"></div>
+      ${Array.from({length:21},(_, i) => {
+        const n = i - 10;
+        const pct = 5 + (i/20)*90;
+        return `<div class="tick" style="left:${pct}%"></div><div class="label" style="left:${pct}%">${n}</div>`;
+      }).join('')}
+      <div class="marker" id="nlMarker" style="left:${5+((val+10)/20)*90}%">📍</div>
+    </div>
+    <p style="text-align:center;margin-top:30px;font-size:1.2rem">The marker is at: <strong style="color:${accent}">${val}</strong></p>
+  </div>`;
+
+  const target = rand(-10, 10);
+  inter.innerHTML = `<p style="margin:10px 0">Move to the integer <strong>${target}</strong>:</p>
+    <div class="slider-control"><input type="range" min="-10" max="10" value="0" id="nlSlider"></div>
+    <p id="nlValue" style="text-align:center;font-size:1.3rem;font-weight:800">0</p>
+    <button class="submit-btn" onclick="checkNL(${target})">Check Answer</button>
+    <div id="nlFeedback"></div>`;
+  document.getElementById('nlSlider').oninput = function() {
+    document.getElementById('nlValue').textContent = this.value;
+    const marker = document.getElementById('nlMarker');
+    marker.style.left = (5 + ((parseInt(this.value)+10)/20)*90) + '%';
+  };
+}
+function checkNL(target) {
+  const v = parseInt(document.getElementById('nlSlider').value);
+  const fb = document.getElementById('nlFeedback');
+  fb.className = 'feedback ' + (v === target ? 'correct' : 'wrong');
+  fb.textContent = v === target ? '✅ Correct! Great job!' : `❌ Not quite. The answer is ${target}. Try again!`;
+}
+
+function renderIntegerOps(vis, inter, accent) {
+  const a = rand(-8, 8), b = rand(-8, 8);
+  const op = Math.random() > 0.5 ? '+' : '-';
+  const answer = op === '+' ? a + b : a - b;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:2rem;font-weight:800;margin:20px">(${a}) ${op} (${b}) = ?</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:15px 0">
+      ${a > 0 ? Array(a).fill('<div class="tile num-tile">+1</div>').join('') : Array(Math.abs(a)).fill('<div class="tile neg-tile">-1</div>').join('')}
+    </div>
+    <p style="color:var(--sub)">${op === '+' ? 'Adding' : 'Subtracting'} ${b > 0 ? b + ' positive' : Math.abs(b) + ' negative'} chips</p>
+  </div>`;
+  const opts = shuffle([answer, answer + rand(1,3), answer - rand(1,3), answer + rand(-5,5)]).slice(0,4);
+  if (!opts.includes(answer)) opts[0] = answer;
+  inter.innerHTML = `<div class="choices">${opts.map(o =>
+    `<button class="choice-btn" onclick="checkChoice(this,${o===answer})">${o}</button>`
+  ).join('')}</div><div id="intFB"></div>`;
+}
+
+function renderFractions(vis, inter, accent) {
+  const d = [2,3,4,5,6,8][rand(0,5)];
+  const n = rand(1, d-1);
+  vis.innerHTML = `<div style="width:100%;max-width:400px">
+    <p style="text-align:center;font-size:1.5rem;font-weight:800;margin-bottom:15px">${n}/${d}</p>
+    <div class="fraction-bar" style="--accent:${accent}">
+      ${Array.from({length:d},(_, i) => `<div class="segment ${i < n ? 'filled' : 'empty'}" style="background:${i < n ? accent : 'rgba(255,255,255,0.05)'}"></div>`).join('')}
+    </div>
+    <p style="text-align:center;color:var(--sub);margin-top:10px">${n} out of ${d} parts are filled</p>
+  </div>`;
+
+  const d2 = [2,3,4,5,6][rand(0,4)], n2 = rand(1, d2);
+  const cd = (d * d2) / gcd(d, d2);
+  const sum_n = n*(cd/d) + n2*(cd/d2);
+  const g = gcd(sum_n, cd);
+  inter.innerHTML = `<p style="margin:10px 0"><strong>Add: ${n}/${d} + ${n2}/${d2}</strong></p>
+    <p style="color:var(--sub)">Common denominator: ${cd}</p>
+    <p style="color:var(--sub)">${n*(cd/d)}/${cd} + ${n2*(cd/d2)}/${cd} = ${sum_n}/${cd}${g>1?' = '+sum_n/g+'/'+cd/g:''}</p>
+    <div class="feedback info" style="margin-top:10px">Answer: <strong>${sum_n/g}/${cd/g}</strong></div>`;
+}
+
+function renderDecimals(vis, inter, accent) {
+  const places = ['Ones','Tenths','Hundredths','Thousandths'];
+  const num = (rand(1,9) + rand(0,9)/10 + rand(0,9)/100).toFixed(2);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:2.5rem;font-weight:800;color:${accent}">${num}</p>
+    <div style="display:flex;gap:2px;justify-content:center;margin:15px 0">
+      ${num.replace('.','').split('').map((d,i) => 
+        `<div style="background:rgba(255,255,255,0.08);padding:15px 20px;border-radius:10px;text-align:center">
+          <div style="font-size:1.5rem;font-weight:800">${d}</div>
+          <div style="font-size:.7rem;color:var(--sub)">${places[i] || ''}</div>
+        </div>`
+      ).join('<div style="display:flex;align-items:center;padding:0 2px;font-size:1.5rem;font-weight:800;color:var(--sub)">' + (num.indexOf('.') >= 0 ? '' : '') + '</div>')}
+    </div>
+  </div>`;
+
+  const a = parseFloat((rand(1,9) + rand(1,9)/10).toFixed(1));
+  const b = parseFloat((rand(1,9) + rand(1,9)/10).toFixed(1));
+  const ans = parseFloat((a + b).toFixed(1));
+  inter.innerHTML = `<p style="margin:10px 0"><strong>Calculate: ${a} + ${b} = ?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input type="number" step="0.1" class="number-input" id="decAns">
+      <button class="submit-btn" onclick="checkDec(${ans})">Check</button>
+    </div><div id="decFB"></div>`;
+}
+function checkDec(ans) {
+  const v = parseFloat(document.getElementById('decAns').value);
+  const fb = document.getElementById('decFB');
+  fb.className = 'feedback ' + (Math.abs(v - ans) < 0.01 ? 'correct' : 'wrong');
+  fb.textContent = Math.abs(v - ans) < 0.01 ? '✅ Correct!' : `❌ The answer is ${ans}`;
+}
+
+function renderBEDMAS(vis, inter, accent) {
+  const a = rand(2,6), b = rand(1,4), c = rand(2,5), d = rand(1,3);
+  const expr = `${a} + ${b} × ${c} - ${d}`;
+  const step1 = b * c;
+  const step2 = a + step1;
+  const result = step2 - d;
+  vis.innerHTML = `<div style="text-align:center;width:100%">
+    <p style="font-size:1.8rem;font-weight:800;margin:15px 0">${expr}</p>
+    <div style="text-align:left;max-width:300px;margin:0 auto">
+      <div class="step active" style="--accent:${accent}"><strong>B</strong>rackets - none</div>
+      <div class="step active"><strong>E</strong>xponents - none</div>
+      <div class="step active"><strong>D</strong>iv/<strong>M</strong>ul: ${b} × ${c} = ${step1}</div>
+      <div class="step active"><strong>A</strong>dd: ${a} + ${step1} = ${step2}</div>
+      <div class="step active"><strong>S</strong>ub: ${step2} - ${d} = <strong style="color:${accent}">${result}</strong></div>
+    </div>
+  </div>`;
+
+  const x = rand(1,5), y = rand(2,4), z = rand(1,3), w = rand(1,5);
+  const expr2 = `(${x} + ${y}) × ${z} + ${w}`;
+  const ans2 = (x+y)*z + w;
+  inter.innerHTML = `<p><strong>Solve: ${expr2} = ?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="bedAns">
+      <button class="submit-btn" onclick="checkSimple('bedAns',${ans2},'bedFB')">Check</button>
+    </div><div id="bedFB"></div>`;
+}
+
+function renderPowers(vis, inter, accent) {
+  const base = rand(2, 6);
+  const sq = base * base;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.5rem;margin-bottom:15px">${base}² = ${base} × ${base} = <strong style="color:${accent}">${sq}</strong></p>
+    <div style="display:inline-grid;grid-template-columns:repeat(${base},30px);gap:3px;margin:15px 0">
+      ${Array(sq).fill(`<div style="width:30px;height:30px;background:${accent};border-radius:4px;opacity:0.7"></div>`).join('')}
+    </div>
+    <p style="color:var(--sub)">${base}² is a ${base}×${base} square = ${sq} unit squares</p>
+    <p style="font-size:1.3rem;margin-top:15px">√${sq} = <strong style="color:${accent}">${base}</strong></p>
+  </div>`;
+
+  const b2 = rand(2,9);
+  inter.innerHTML = `<p><strong>What is ${b2}² ?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="powAns">
+      <button class="submit-btn" onclick="checkSimple('powAns',${b2*b2},'powFB')">Check</button>
+    </div><div id="powFB"></div>`;
+}
+
+// ===== GEOMETRY SLIDES =====
+function renderAngles(vis, inter, accent) {
+  const angle = rand(20, 160);
+  const type = angle < 90 ? 'Acute' : angle === 90 ? 'Right' : 'Obtuse';
+  vis.innerHTML = `<svg width="250" height="200" viewBox="0 0 250 200">
+    <line x1="30" y1="170" x2="220" y2="170" stroke="white" stroke-width="2"/>
+    <line x1="30" y1="170" x2="${30+180*Math.cos(-angle*Math.PI/180)}" y2="${170+180*Math.sin(-angle*Math.PI/180)}" stroke="${accent}" stroke-width="2"/>
+    <path d="M 70 170 A 40 40 0 0 0 ${30+40*Math.cos(-angle*Math.PI/180)} ${170+40*Math.sin(-angle*Math.PI/180)}" fill="none" stroke="${accent}" stroke-width="2" opacity="0.6"/>
+    <text x="80" y="155" fill="${accent}" font-size="16" font-weight="800">${angle}°</text>
+    <text x="80" y="195" fill="white" font-size="14">${type} angle</text>
+  </svg>`;
+
+  inter.innerHTML = `<p><strong>Slider: Change the angle</strong></p>
+    <div class="slider-control"><input type="range" min="10" max="170" value="${angle}" id="angleSlider" style="--accent:${accent}"></div>
+    <p id="angleVal" style="text-align:center;font-size:1.2rem">${angle}°</p>
+    <p id="angleType" style="text-align:center;color:var(--sub)">${type}</p>
+    <p style="margin-top:10px"><strong>What is the supplement of ${angle}°?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="suppAns">
+      <button class="submit-btn" onclick="checkSimple('suppAns',${180-angle},'suppFB')">Check</button>
+    </div><div id="suppFB"></div>`;
+  document.getElementById('angleSlider').oninput = function() {
+    const v = parseInt(this.value);
+    document.getElementById('angleVal').textContent = v + '°';
+    document.getElementById('angleType').textContent = v < 90 ? 'Acute' : v === 90 ? 'Right' : 'Obtuse';
+  };
+}
+
+function renderTriangles(vis, inter, accent) {
+  const a1 = rand(30, 80), a2 = rand(30, 150 - a1);
+  const a3 = 180 - a1 - a2;
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="250" height="200" viewBox="0 0 250 200">
+      <polygon points="125,30 30,170 220,170" fill="none" stroke="${accent}" stroke-width="2.5"/>
+      <text x="115" y="25" fill="${accent}" font-size="13" font-weight="700">${a1}°</text>
+      <text x="10" y="190" fill="white" font-size="13">${a2}°</text>
+      <text x="200" y="190" fill="white" font-size="13">${a3}°</text>
+    </svg>
+    <p style="font-size:1.1rem">${a1}° + ${a2}° + ${a3}° = <strong style="color:${accent}">180°</strong></p>
+    <p style="color:var(--sub)">The angles in every triangle sum to 180°</p>
+  </div>`;
+
+  const x = rand(30, 70), y = rand(40, 130-x);
+  const z = 180 - x - y;
+  inter.innerHTML = `<p><strong>A triangle has angles ${x}° and ${y}°. What is the third angle?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="triAns">
+      <button class="submit-btn" onclick="checkSimple('triAns',${z},'triFB')">Check</button>
+    </div><div id="triFB"></div>`;
+}
+
+function renderAreaPerimeter(vis, inter, accent) {
+  const w = rand(3, 10), h = rand(3, 8);
+  vis.innerHTML = `<div style="text-align:center">
+    <div style="width:${w*25}px;height:${h*25}px;border:3px solid ${accent};border-radius:4px;margin:0 auto;position:relative;background:${accent}22">
+      <span style="position:absolute;bottom:-25px;left:50%;transform:translateX(-50%);font-weight:700">${w} cm</span>
+      <span style="position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-weight:700">${h} cm</span>
+    </div>
+    <p style="margin-top:35px">Area = ${w} × ${h} = <strong style="color:${accent}">${w*h} cm²</strong></p>
+    <p>Perimeter = 2(${w} + ${h}) = <strong>${2*(w+h)} cm</strong></p>
+  </div>`;
+
+  const w2 = rand(4, 12), h2 = rand(3, 9);
+  inter.innerHTML = `<p><strong>Rectangle: ${w2} cm × ${h2} cm. What is the area?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="areaAns">
+      <button class="submit-btn" onclick="checkSimple('areaAns',${w2*h2},'areaFB')">Check</button>
+    </div><div id="areaFB"></div>`;
+}
+
+function renderCircles(vis, inter, accent) {
+  const r = rand(3, 8);
+  const circ = (2 * Math.PI * r).toFixed(1);
+  const area = (Math.PI * r * r).toFixed(1);
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      <circle cx="110" cy="110" r="${r*12}" fill="none" stroke="${accent}" stroke-width="2.5"/>
+      <line x1="110" y1="110" x2="${110+r*12}" y2="110" stroke="white" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="${110+r*6}" y="105" fill="white" font-size="14" font-weight="700">r=${r}</text>
+      <circle cx="110" cy="110" r="3" fill="white"/>
+    </svg>
+    <p>Circumference = 2πr = 2 × π × ${r} ≈ <strong style="color:${accent}">${circ}</strong></p>
+    <p>Area = πr² = π × ${r}² ≈ <strong style="color:${accent}">${area}</strong></p>
+  </div>`;
+
+  const r2 = rand(2, 10);
+  const ans = Math.round(Math.PI * r2 * r2 * 10) / 10;
+  inter.innerHTML = `<p><strong>What is the area of a circle with radius ${r2}? (Round to 1 decimal)</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" step="0.1" class="number-input" id="circAns">
+      <button class="submit-btn" onclick="checkClose('circAns',${ans},'circFB',1)">Check</button>
+    </div><div id="circFB"></div>`;
+}
+
+function renderVolume(vis, inter, accent) {
+  const l = rand(2, 6), w = rand(2, 5), h = rand(2, 5);
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="260" height="200" viewBox="0 0 260 200">
+      <polygon points="40,140 120,140 150,110 70,110" fill="${accent}44" stroke="${accent}" stroke-width="2"/>
+      <polygon points="120,140 150,110 150,50 120,80" fill="${accent}33" stroke="${accent}" stroke-width="2"/>
+      <polygon points="40,140 40,80 70,50 70,110" fill="${accent}22" stroke="${accent}" stroke-width="2"/>
+      <polygon points="40,80 120,80 150,50 70,50" fill="${accent}55" stroke="${accent}" stroke-width="2"/>
+      <text x="60" y="160" fill="white" font-size="13" font-weight="700">${l} cm</text>
+      <text x="155" y="100" fill="white" font-size="13" font-weight="700">${h} cm</text>
+      <text x="100" y="45" fill="white" font-size="13" font-weight="700">${w} cm</text>
+    </svg>
+    <p>V = l × w × h = ${l} × ${w} × ${h} = <strong style="color:${accent}">${l*w*h} cm³</strong></p>
+  </div>`;
+
+  const l2 = rand(3,8), w2 = rand(2,6), h2 = rand(2,7);
+  inter.innerHTML = `<p><strong>Volume of a box: ${l2} × ${w2} × ${h2} = ?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="volAns">
+      <button class="submit-btn" onclick="checkSimple('volAns',${l2*w2*h2},'volFB')">Check</button>
+    </div><div id="volFB"></div>`;
+}
+
+function renderTransformations(vis, inter, accent) {
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="300" height="200" viewBox="0 0 300 200">
+      <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+      </pattern></defs>
+      <rect width="300" height="200" fill="url(#grid)"/>
+      <polygon points="40,80 80,80 80,120 40,120" fill="${accent}66" stroke="${accent}" stroke-width="2"/>
+      <text x="50" y="105" fill="white" font-size="11" font-weight="700">A</text>
+      <polygon points="160,80 200,80 200,120 160,120" fill="${accent}33" stroke="${accent}" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="170" y="105" fill="white" font-size="11" font-weight="700">A'</text>
+      <line x1="80" y1="100" x2="160" y2="100" stroke="white" stroke-width="1" stroke-dasharray="4,4" marker-end="url(#arrow)"/>
+      <text x="100" y="95" fill="var(--sub)" font-size="11">Translation</text>
+    </svg>
+    <p style="color:var(--sub);margin-top:10px">Translation: slide • Reflection: flip • Rotation: turn</p>
+  </div>`;
+
+  const transforms = ['Translation', 'Reflection', 'Rotation'];
+  const descs = ['Sliding a shape without turning it', 'Flipping a shape over a line', 'Turning a shape around a point'];
+  const qi = rand(0, 2);
+  inter.innerHTML = `<p><strong>Which transformation: "${descs[qi]}"?</strong></p>
+    <div class="choices">${shuffle(transforms).map(t => 
+      `<button class="choice-btn" onclick="checkChoice(this,${t===transforms[qi]})">${t}</button>`
+    ).join('')}</div><div id="transFB"></div>`;
+}
+
+// ===== DATA & PROBABILITY =====
+function renderMeanMedianMode(vis, inter, accent) {
+  const data = Array.from({length:7}, () => rand(2, 15)).sort((a,b) => a-b);
+  data[rand(0,6)] = data[rand(0,6)]; // create a mode
+  const mean = (data.reduce((s,v) => s+v, 0) / data.length).toFixed(1);
+  const median = data[3];
+  const freq = {}; data.forEach(v => freq[v] = (freq[v]||0)+1);
+  const mode = Object.entries(freq).sort((a,b) => b[1]-a[1])[0][0];
+
+  vis.innerHTML = `<div style="width:100%;text-align:center">
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:15px 0">
+      ${data.map(v => `<div style="background:${accent}33;border:2px solid ${accent};padding:10px 16px;border-radius:10px;font-weight:800;font-size:1.2rem">${v}</div>`).join('')}
+    </div>
+    <p>Mean = ${data.join(' + ')} ÷ ${data.length} = <strong style="color:${accent}">${mean}</strong></p>
+    <p>Median (middle) = <strong style="color:#55efc4">${median}</strong></p>
+    <p>Mode (most frequent) = <strong style="color:#fd79a8">${mode}</strong></p>
+  </div>`;
+
+  const d2 = Array.from({length:5}, () => rand(3,20)).sort((a,b)=>a-b);
+  const m2 = (d2.reduce((s,v)=>s+v,0)/5).toFixed(1);
+  inter.innerHTML = `<p><strong>Find the mean of: ${d2.join(', ')}</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" step="0.1" class="number-input" id="meanAns">
+      <button class="submit-btn" onclick="checkClose('meanAns',${m2},'meanFB',1)">Check</button>
+    </div><div id="meanFB"></div>`;
+}
+
+function renderBarLineGraph(vis, inter, accent) {
+  const labels = ['Mon','Tue','Wed','Thu','Fri'];
+  const values = labels.map(() => rand(10, 50));
+  const max = Math.max(...values);
+  vis.innerHTML = `<div style="width:100%">
+    <p style="text-align:center;font-weight:700;margin-bottom:10px">Weekly Steps (thousands)</p>
+    <div style="display:flex;align-items:flex-end;gap:12px;justify-content:center;height:180px;padding-bottom:30px;position:relative">
+      ${values.map((v,i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span style="font-size:.8rem;font-weight:700">${v}k</span>
+        <div style="width:40px;height:${(v/max)*130}px;background:${accent};border-radius:6px 6px 0 0;animation:fadeIn .5s ease ${i*0.1}s both"></div>
+        <span style="font-size:.75rem;color:var(--sub)">${labels[i]}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  inter.innerHTML = `<p><strong>Which day had the most steps?</strong></p>
+    <div class="choices">${shuffle(labels).map(l => {
+      const isMax = l === labels[values.indexOf(max)];
+      return `<button class="choice-btn" onclick="checkChoice(this,${isMax})">${l}</button>`;
+    }).join('')}</div>`;
+}
+
+function renderCircleGraph(vis, inter, accent) {
+  const cats = ['Food','Rent','Fun','Savings','Transport'];
+  const vals = [30, 25, 20, 15, 10];
+  const colors = ['#6c5ce7','#00cec9','#fd79a8','#55efc4','#fdcb6e'];
+  let cumAngle = 0;
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      ${vals.map((v, i) => {
+        const startAngle = cumAngle;
+        const sliceAngle = (v / 100) * 360;
+        cumAngle += sliceAngle;
+        const sr = (startAngle - 90) * Math.PI / 180;
+        const er = (startAngle + sliceAngle - 90) * Math.PI / 180;
+        const x1 = 110 + 90 * Math.cos(sr), y1 = 110 + 90 * Math.sin(sr);
+        const x2 = 110 + 90 * Math.cos(er), y2 = 110 + 90 * Math.sin(er);
+        const large = sliceAngle > 180 ? 1 : 0;
+        return `<path d="M110,110 L${x1},${y1} A90,90 0 ${large},1 ${x2},${y2} Z" fill="${colors[i]}" opacity="0.7"/>`;
+      }).join('')}
+    </svg>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+      ${cats.map((c,i) => `<span style="font-size:.85rem"><span style="color:${colors[i]}">●</span> ${c} ${vals[i]}%</span>`).join('')}
+    </div>
+  </div>`;
+
+  inter.innerHTML = `<p><strong>What percentage is spent on Food and Rent combined?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="pieAns">
+      <button class="submit-btn" onclick="checkSimple('pieAns',55,'pieFB')">Check</button>
+    </div><div id="pieFB"></div>`;
+}
+
+function renderProbability(vis, inter, accent) {
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.2rem;font-weight:700;margin-bottom:15px">Probability Experiments</p>
+    <div style="display:flex;gap:30px;justify-content:center;flex-wrap:wrap">
+      <div>
+        <div class="coin" id="coin" onclick="flipCoin()">H</div>
+        <p style="font-size:.85rem;color:var(--sub)">Click to flip!</p>
+        <p id="coinStats" style="font-size:.9rem;margin-top:5px">H: 0 | T: 0</p>
+      </div>
+      <div>
+        <div class="dice" id="dice" onclick="rollDice()">⚀</div>
+        <p style="font-size:.85rem;color:var(--sub)">Click to roll!</p>
+        <p id="diceStats" style="font-size:.9rem;margin-top:5px"></p>
+      </div>
+    </div>
+  </div>`;
+  window._coinH = 0; window._coinT = 0;
+  window._diceFreq = {1:0,2:0,3:0,4:0,5:0,6:0};
+
+  inter.innerHTML = `<p><strong>What is the probability of rolling an even number on a die?</strong></p>
+    <div class="choices">
+      <button class="choice-btn" onclick="checkChoice(this,false)">1/6</button>
+      <button class="choice-btn" onclick="checkChoice(this,false)">1/3</button>
+      <button class="choice-btn" onclick="checkChoice(this,true)">1/2</button>
+      <button class="choice-btn" onclick="checkChoice(this,false)">2/3</button>
+    </div>`;
+}
+
+window.flipCoin = function() {
+  const coin = document.getElementById('coin');
+  coin.classList.add('flipping');
+  setTimeout(() => {
+    const h = Math.random() < 0.5;
+    coin.textContent = h ? 'H' : 'T';
+    coin.classList.remove('flipping');
+    if (h) window._coinH++; else window._coinT++;
+    document.getElementById('coinStats').textContent = `H: ${window._coinH} | T: ${window._coinT}`;
+  }, 500);
+};
+
+window.rollDice = function() {
+  const dice = document.getElementById('dice');
+  dice.classList.add('rolling');
+  setTimeout(() => {
+    const v = rand(1, 6);
+    dice.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][v-1];
+    dice.classList.remove('rolling');
+    window._diceFreq[v]++;
+    document.getElementById('diceStats').textContent = Object.entries(window._diceFreq).map(([k,v])=>`${k}:${v}`).join(' ');
+  }, 300);
+};
+
+function renderExpVsTheo(vis, inter, accent) {
+  vis.innerHTML = `<div style="text-align:center;width:100%">
+    <p style="font-size:1.2rem;font-weight:700;margin-bottom:10px">Coin Flip Experiment</p>
+    <p style="color:var(--sub)">Theoretical probability of heads = 50%</p>
+    <div style="margin:15px 0">
+      <button class="submit-btn" id="runExp" onclick="runExperiment()">Flip 10 Coins</button>
+      <button class="submit-btn" onclick="runExperiment100()" style="margin-left:5px">Flip 100</button>
+    </div>
+    <div id="expResults"></div>
+    <p id="expNote" style="color:var(--sub);font-size:.9rem;margin-top:10px"></p>
+  </div>`;
+  window._expTotal = 0; window._expHeads = 0;
+  inter.innerHTML = `<div class="feedback info">As we do more flips, the experimental probability gets closer to the theoretical probability of 50%. This is called the Law of Large Numbers!</div>`;
+}
+
+window.runExperiment = function() {
+  let h = 0;
+  for (let i = 0; i < 10; i++) if (Math.random() < 0.5) h++;
+  window._expTotal += 10;
+  window._expHeads += h;
+  updateExpDisplay();
+};
+window.runExperiment100 = function() {
+  let h = 0;
+  for (let i = 0; i < 100; i++) if (Math.random() < 0.5) h++;
+  window._expTotal += 100;
+  window._expHeads += h;
+  updateExpDisplay();
+};
+function updateExpDisplay() {
+  const pct = ((window._expHeads / window._expTotal) * 100).toFixed(1);
+  document.getElementById('expResults').innerHTML = `
+    <p style="font-size:1.3rem;font-weight:800">Heads: ${window._expHeads}/${window._expTotal} = <span style="color:#55efc4">${pct}%</span></p>
+    <div class="stat-bar" style="max-width:300px;margin:10px auto"><div class="fill" style="width:${pct}%;background:linear-gradient(90deg,#6c5ce7,#00cec9)"></div></div>
+    <div style="width:2px;height:24px;background:#fd79a8;position:relative;left:50%;top:-24px"></div>`;
+  document.getElementById('expNote').textContent = `After ${window._expTotal} flips: ${Math.abs(parseFloat(pct)-50) < 5 ? 'Very close to 50%!' : 'Keep flipping to get closer to 50%!'}`;
+}
+
+// ===== ALGEBRA =====
+function renderVariables(vis, inter, accent) {
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;margin-bottom:15px">Expression: <strong style="color:${accent}">3x + 5</strong></p>
+    <div class="algebra-tiles">
+      <div class="tile x-tile">x</div><div class="tile x-tile">x</div><div class="tile x-tile">x</div>
+      <div style="font-size:1.5rem;display:flex;align-items:center;padding:0 5px">+</div>
+      <div class="tile num-tile">1</div><div class="tile num-tile">1</div><div class="tile num-tile">1</div><div class="tile num-tile">1</div><div class="tile num-tile">1</div>
+    </div>
+    <p style="color:var(--sub);margin-top:10px">3 x-tiles + 5 unit tiles</p>
+  </div>`;
+
+  const coeff = rand(2,6), constant = rand(1,9);
+  const xVal = rand(1,5);
+  const ans = coeff * xVal + constant;
+  inter.innerHTML = `<p><strong>If x = ${xVal}, evaluate: ${coeff}x + ${constant}</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="varAns">
+      <button class="submit-btn" onclick="checkSimple('varAns',${ans},'varFB')">Check</button>
+    </div><div id="varFB"></div>`;
+}
+
+function renderEvalExpr(vis, inter, accent) {
+  const a = rand(2,5), b = rand(1,8), c = rand(1,6);
+  const x = rand(1,6);
+  const result = a * x * x + b * x + c;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.5rem;margin-bottom:15px">Evaluate <strong style="color:${accent}">${a}x² + ${b}x + ${c}</strong> when x = ${x}</p>
+    <div style="text-align:left;max-width:300px;margin:0 auto">
+      <div class="step active">Step 1: ${a}(${x})² + ${b}(${x}) + ${c}</div>
+      <div class="step active">Step 2: ${a}(${x*x}) + ${b*x} + ${c}</div>
+      <div class="step active">Step 3: ${a*x*x} + ${b*x} + ${c}</div>
+      <div class="step active">Step 4: <strong style="color:${accent}">${result}</strong></div>
+    </div>
+  </div>`;
+
+  const a2 = rand(2,4), b2 = rand(1,9), x2 = rand(2,7);
+  inter.innerHTML = `<p><strong>Evaluate: ${a2}x + ${b2} when x = ${x2}</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="evalAns">
+      <button class="submit-btn" onclick="checkSimple('evalAns',${a2*x2+b2},'evalFB')">Check</button>
+    </div><div id="evalFB"></div>`;
+}
+
+function renderSolveEq(vis, inter, accent) {
+  const x = rand(1, 10);
+  const a = rand(2, 6), b = rand(1, 15);
+  const rhs = a * x + b;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.5rem;margin-bottom:15px">Solve: <strong style="color:${accent}">${a}x + ${b} = ${rhs}</strong></p>
+    <div class="balance-scale">
+      <div class="scale-side"><span style="font-size:1.2rem;font-weight:800">${a}x + ${b}</span></div>
+      <div class="scale-equals">=</div>
+      <div class="scale-side"><span style="font-size:1.2rem;font-weight:800">${rhs}</span></div>
+    </div>
+    <div style="text-align:left;max-width:300px;margin:15px auto">
+      <div class="step active">Subtract ${b}: ${a}x = ${rhs - b}</div>
+      <div class="step active">Divide by ${a}: x = ${(rhs-b)/a}</div>
+      <div class="step active">Answer: <strong style="color:${accent}">x = ${x}</strong></div>
+    </div>
+  </div>`;
+
+  const x2 = rand(1,8), a2 = rand(2,5), b2 = rand(1,12);
+  inter.innerHTML = `<p><strong>Solve: ${a2}x + ${b2} = ${a2*x2+b2}</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="eqAns" placeholder="x = ?">
+      <button class="submit-btn" onclick="checkSimple('eqAns',${x2},'eqFB')">Check</button>
+    </div><div id="eqFB"></div>`;
+}
+
+function renderInequalities(vis, inter, accent) {
+  const x = rand(1, 8);
+  const op = Math.random() > 0.5 ? '>' : '<';
+  vis.innerHTML = `<div style="text-align:center;width:100%">
+    <p style="font-size:1.5rem;margin-bottom:15px">x ${op} ${x}</p>
+    <div class="number-line" style="height:70px">
+      <div class="line"></div>
+      ${Array.from({length:13},(_, i) => {
+        const n = i;
+        const pct = 5 + (i/12)*90;
+        return `<div class="tick" style="left:${pct}%"></div><div class="label" style="left:${pct}%">${n}</div>`;
+      }).join('')}
+      <div style="position:absolute;top:42%;height:6px;border-radius:3px;background:${accent};opacity:0.5;
+        ${op === '>' ? `left:${5+((x)/12)*90}%;right:5%` : `left:5%;right:${95-((x)/12)*90}%`}"></div>
+      <div style="position:absolute;top:38%;width:14px;height:14px;border-radius:50%;border:3px solid ${accent};background:var(--bg);left:${5+(x/12)*90}%;transform:translateX(-50%)"></div>
+    </div>
+    <p style="margin-top:30px;color:var(--sub)">Open circle = not included. Shading shows all solutions.</p>
+  </div>`;
+
+  const v = rand(2,7);
+  inter.innerHTML = `<p><strong>Which numbers satisfy x > ${v}?</strong></p>
+    <div class="choices">
+      <button class="choice-btn" onclick="checkChoice(this,${v-1 > v})">${v-1}</button>
+      <button class="choice-btn" onclick="checkChoice(this,${v > v})">${v}</button>
+      <button class="choice-btn" onclick="checkChoice(this,true)">${v+2}</button>
+      <button class="choice-btn" onclick="checkChoice(this,true)">${v+5}</button>
+    </div>`;
+}
+
+function renderPatterns(vis, inter, accent) {
+  const start = rand(2, 5), step = rand(2, 6);
+  const seq = Array.from({length: 6}, (_, i) => start + step * i);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.2rem;margin-bottom:15px">Find the pattern:</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      ${seq.map((v, i) => `<div style="background:${accent}33;border:2px solid ${accent};padding:12px 18px;border-radius:12px;font-weight:800;font-size:1.3rem;animation:bounceIn .4s ease ${i*0.1}s both">${v}</div>`).join('<div style="display:flex;align-items:center;color:var(--sub)">→</div>')}
+    </div>
+    <p style="margin-top:15px;color:var(--sub)">Rule: Start at ${start}, add ${step} each time</p>
+    <p>Formula: <strong style="color:${accent}">${step}n + ${start - step}</strong> (where n is the position)</p>
+  </div>`;
+
+  const s2 = rand(1,5), st2 = rand(2,7);
+  const next = s2 + st2 * 5;
+  inter.innerHTML = `<p><strong>Pattern: ${s2}, ${s2+st2}, ${s2+st2*2}, ${s2+st2*3}, ${s2+st2*4}, ...</strong></p>
+    <p>What is the 6th term?</p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="patAns">
+      <button class="submit-btn" onclick="checkSimple('patAns',${next},'patFB')">Check</button>
+    </div><div id="patFB"></div>`;
+}
+
+// ===== MEASUREMENT =====
+function renderMetric(vis, inter, accent) {
+  const units = ['km','hm','dam','m','dm','cm','mm'];
+  const activeIdx = 3;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.2rem;font-weight:700;margin-bottom:15px">Metric Ladder</p>
+    <div class="metric-ladder">
+      ${units.map((u, i) => `
+        <div class="ladder-step ${i===activeIdx?'active':''}" style="background:${accent}${i===activeIdx?'44':'15'};border:2px solid ${accent}${i===activeIdx?'':'33'}">${u}</div>
+        ${i < units.length-1 ? '<div class="ladder-arrow">↕ ×10</div>' : ''}
+      `).join('')}
+    </div>
+    <p style="color:var(--sub);margin-top:10px">Each step down = ×10 | Each step up = ÷10</p>
+  </div>`;
+
+  const val = rand(1, 50);
+  const conversions = [{q:`${val} m = ? cm`, a: val*100},{q:`${val*1000} mm = ? m`, a: val},{q:`${val} km = ? m`, a: val*1000}];
+  const c = conversions[rand(0,2)];
+  inter.innerHTML = `<p><strong>${c.q}</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="metAns">
+      <button class="submit-btn" onclick="checkSimple('metAns',${c.a},'metFB')">Check</button>
+    </div><div id="metFB"></div>`;
+}
+
+function renderComposite(vis, inter, accent) {
+  const a = rand(4,8), b = rand(3,6), c = rand(2,4);
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="250" height="200" viewBox="0 0 250 200">
+      <rect x="30" y="50" width="${a*20}" height="${b*20}" fill="none" stroke="${accent}" stroke-width="2"/>
+      <rect x="${30+a*20}" y="${50+b*20-c*20}" width="${c*20}" height="${c*20}" fill="none" stroke="${accent}" stroke-width="2"/>
+      <text x="${30+a*10}" y="45" fill="white" font-size="12" text-anchor="middle">${a} cm</text>
+      <text x="15" y="${50+b*10}" fill="white" font-size="12" text-anchor="middle">${b} cm</text>
+      <text x="${30+a*20+c*10}" y="${50+b*20+15}" fill="white" font-size="12" text-anchor="middle">${c} cm</text>
+    </svg>
+    <p style="color:var(--sub)">Add all outer edges to find perimeter</p>
+  </div>`;
+  const perim = 2*a + 2*b + 2*c;
+  inter.innerHTML = `<div class="feedback info">Perimeter = sum of all outer edges. Break the shape into rectangles and trace around the outside!</div>`;
+}
+
+function renderParaTrap(vis, inter, accent) {
+  const b = rand(5, 10), h = rand(3, 7);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.2rem;font-weight:700;margin-bottom:10px">Parallelogram</p>
+    <svg width="260" height="160" viewBox="0 0 260 160">
+      <polygon points="60,120 ${60+b*18},120 ${60+b*18+30},30 ${60+30},30" fill="${accent}22" stroke="${accent}" stroke-width="2"/>
+      <line x1="${60+30}" y1="30" x2="${60+30}" y2="120" stroke="white" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="${60+b*9+15}" y="140" fill="white" font-size="13" font-weight="700">b = ${b} cm</text>
+      <text x="${60+35}" y="80" fill="white" font-size="13" font-weight="700">h = ${h}</text>
+    </svg>
+    <p>Area = base × height = ${b} × ${h} = <strong style="color:${accent}">${b*h} cm²</strong></p>
+  </div>`;
+
+  const b2 = rand(4,12), h2 = rand(3,8);
+  inter.innerHTML = `<p><strong>Parallelogram: base = ${b2} cm, height = ${h2} cm. Area = ?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="paraAns">
+      <button class="submit-btn" onclick="checkSimple('paraAns',${b2*h2},'paraFB')">Check</button>
+    </div><div id="paraFB"></div>`;
+}
+
+function renderSurfaceArea(vis, inter, accent) {
+  const l = rand(2,5), w = rand(2,4), h = rand(2,5);
+  const sa = 2*(l*w + l*h + w*h);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.2rem;font-weight:700;margin-bottom:10px">Surface Area of Rectangular Prism</p>
+    <svg width="260" height="200" viewBox="0 0 260 200">
+      <polygon points="40,140 ${40+l*25},140 ${40+l*25+20},${140-20} ${60},${140-20}" fill="${accent}44" stroke="${accent}" stroke-width="2"/>
+      <polygon points="${40+l*25},140 ${40+l*25+20},${140-20} ${40+l*25+20},${140-20-h*20} ${40+l*25},${140-h*20}" fill="${accent}33" stroke="${accent}" stroke-width="2"/>
+      <polygon points="40,140 40,${140-h*20} 60,${140-20-h*20} 60,${140-20}" fill="${accent}22" stroke="${accent}" stroke-width="2"/>
+      <polygon points="40,${140-h*20} ${40+l*25},${140-h*20} ${40+l*25+20},${140-20-h*20} 60,${140-20-h*20}" fill="${accent}55" stroke="${accent}" stroke-width="2"/>
+      <text x="${40+l*12}" y="158" fill="white" font-size="12">${l} cm</text>
+      <text x="${40+l*25+25}" y="${140-h*10}" fill="white" font-size="12">${h} cm</text>
+      <text x="${40+l*25+10}" y="${135}" fill="white" font-size="12">${w} cm</text>
+    </svg>
+    <p>SA = 2(lw + lh + wh) = 2(${l*w} + ${l*h} + ${w*h}) = <strong style="color:${accent}">${sa} cm²</strong></p>
+  </div>`;
+
+  const l2=rand(2,6),w2=rand(2,5),h2=rand(2,6);
+  inter.innerHTML = `<p><strong>SA of prism: l=${l2}, w=${w2}, h=${h2}. Find SA.</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="saAns">
+      <button class="submit-btn" onclick="checkSimple('saAns',${2*(l2*w2+l2*h2+w2*h2)},'saFB')">Check</button>
+    </div><div id="saFB"></div>`;
+}
+
+// ===== PROPORTIONAL REASONING =====
+function renderRatios(vis, inter, accent) {
+  const a = rand(2, 8), b = rand(2, 8);
+  vis.innerHTML = `<div style="text-align:center;width:100%">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:15px">Ratio ${a} : ${b}</p>
+    <div style="display:flex;gap:4px;justify-content:center;margin:10px 0">
+      ${Array(a).fill(`<div style="width:30px;height:30px;background:${accent};border-radius:6px"></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:4px;justify-content:center;margin:10px 0">
+      ${Array(b).fill(`<div style="width:30px;height:30px;background:#fd79a8;border-radius:6px"></div>`).join('')}
+    </div>
+    <p style="color:var(--sub)">For every ${a} purple, there are ${b} pink</p>
+    <p>Simplified: <strong style="color:${accent}">${a/gcd(a,b)} : ${b/gcd(a,b)}</strong></p>
+  </div>`;
+
+  const x = rand(2,6), y = rand(2,6), g = gcd(x,y);
+  inter.innerHTML = `<p><strong>Simplify the ratio ${x*3} : ${y*3}</strong></p>
+    <div class="choices">${shuffle([
+      {t:`${x/g*3} : ${y/g*3}`, c: g===1},
+      {t:`${x} : ${y}`, c: true},
+      {t:`${x+1} : ${y+1}`, c: false},
+      {t:`1 : ${y/x||2}`, c: x===1}
+    ].filter((_,i) => i < 4)).map(o => `<button class="choice-btn" onclick="checkChoice(this,${o.c})">${o.t}</button>`).join('')}</div>`;
+}
+
+function renderRates(vis, inter, accent) {
+  const dist = rand(100, 400);
+  const time = rand(2, 5);
+  const rate = dist / time;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:15px">Unit Rate</p>
+    <p style="font-size:1.1rem">A car travels <strong>${dist} km</strong> in <strong>${time} hours</strong></p>
+    <p style="font-size:1.5rem;margin:15px 0">Speed = ${dist} ÷ ${time} = <strong style="color:${accent}">${rate} km/h</strong></p>
+    <div class="stat-bar" style="max-width:300px;margin:0 auto"><div class="fill" style="width:${Math.min(rate/120*100,100)}%;background:${accent}"></div></div>
+  </div>`;
+
+  const cost = rand(5,15) * 100;
+  const qty = rand(2,8);
+  const up = (cost / qty / 100).toFixed(2);
+  inter.innerHTML = `<p><strong>${qty} apples cost $${(cost/100).toFixed(2)}. What is the unit price?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <span>$</span><input type="number" step="0.01" class="number-input" id="rateAns">
+      <button class="submit-btn" onclick="checkClose('rateAns',${up},'rateFB',0.01)">Check</button>
+    </div><div id="rateFB"></div>`;
+}
+
+function renderProportions(vis, inter, accent) {
+  const a = rand(2,6), b = rand(3,8), c = rand(2,5);
+  const x = (b * c) / a;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.5rem;font-weight:700;margin-bottom:15px">Cross Multiplication</p>
+    <p style="font-size:1.8rem">${a}/${b} = ${c}/x</p>
+    <div style="margin:15px 0">
+      <div class="step active">${a} × x = ${b} × ${c}</div>
+      <div class="step active">${a}x = ${b*c}</div>
+      <div class="step active">x = ${b*c} ÷ ${a}</div>
+      <div class="step active">x = <strong style="color:${accent}">${x}</strong></div>
+    </div>
+  </div>`;
+
+  const a2=rand(2,5),b2=rand(3,9),c2=rand(2,7);
+  const ans = (b2*c2)/a2;
+  inter.innerHTML = `<p><strong>Solve: ${a2}/${b2} = ${c2}/x</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" step="0.1" class="number-input" id="propAns">
+      <button class="submit-btn" onclick="checkClose('propAns',${ans},'propFB',0.5)">Check</button>
+    </div><div id="propFB"></div>`;
+}
+
+function renderPercentages(vis, inter, accent) {
+  const pct = [25, 50, 75, 10, 20, 30, 40, 60, 80][rand(0,8)];
+  const total = rand(2,10) * 20;
+  const part = total * pct / 100;
+  vis.innerHTML = `<div style="text-align:center;width:100%">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:15px">${pct}% of ${total}</p>
+    <div class="stat-bar" style="max-width:350px;margin:0 auto;height:40px"><div class="fill" style="width:${pct}%;background:${accent};font-size:1rem">${part}</div></div>
+    <p style="margin-top:15px">${pct}% = ${pct}/100 = ${pct/100}</p>
+    <p>${pct/100} × ${total} = <strong style="color:${accent}">${part}</strong></p>
+  </div>`;
+
+  const p2 = [15,25,30,40,50,60,75][rand(0,6)], t2 = rand(2,8)*20;
+  inter.innerHTML = `<p><strong>What is ${p2}% of ${t2}?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="pctAns">
+      <button class="submit-btn" onclick="checkSimple('pctAns',${t2*p2/100},'pctFB')">Check</button>
+    </div><div id="pctFB"></div>`;
+}
+
+function renderDiscounts(vis, inter, accent) {
+  const price = rand(20, 80);
+  const disc = [10, 15, 20, 25, 30][rand(0,4)];
+  const saved = (price * disc / 100).toFixed(2);
+  const final_p = (price - saved).toFixed(2);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.5rem;font-weight:700">🛍️ Shopping Calculator</p>
+    <div class="product-card" style="max-width:300px;margin:15px auto">
+      <div>
+        <p style="font-weight:700">Cool Sneakers</p>
+        <p class="price" style="text-decoration:line-through;opacity:.5">$${price}.00</p>
+        <p style="color:${accent};font-weight:700">${disc}% OFF!</p>
+        <p class="price">$${final_p}</p>
+        <p class="unit-price">You save $${saved}</p>
+      </div>
+    </div>
+  </div>`;
+
+  const p2 = rand(30,120), d2 = [10,20,25,30,40,50][rand(0,5)];
+  const ans = (p2 * (1 - d2/100)).toFixed(2);
+  inter.innerHTML = `<p><strong>A $${p2} jacket is ${d2}% off. Final price?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <span>$</span><input type="number" step="0.01" class="number-input" id="discAns">
+      <button class="submit-btn" onclick="checkClose('discAns',${parseFloat(ans)},'discFB',0.5)">Check</button>
+    </div><div id="discFB"></div>`;
+}
+
+// ===== PYTHAGOREAN =====
+function renderRightTri(vis, inter, accent) {
+  vis.innerHTML = `<div style="text-align:center">
+    <svg width="250" height="220" viewBox="0 0 250 220">
+      <polygon points="40,190 200,190 200,40" fill="none" stroke="${accent}" stroke-width="2.5"/>
+      <rect x="190" y="180" width="10" height="10" fill="none" stroke="white" stroke-width="1.5"/>
+      <text x="120" y="210" fill="white" font-size="14" font-weight="700">a (leg)</text>
+      <text x="210" y="120" fill="white" font-size="14" font-weight="700">b (leg)</text>
+      <text x="90" y="110" fill="${accent}" font-size="16" font-weight="700">c (hypotenuse)</text>
+    </svg>
+    <p style="margin-top:10px">The <strong style="color:${accent}">hypotenuse</strong> is always the longest side, opposite the right angle.</p>
+  </div>`;
+
+  inter.innerHTML = `<p><strong>In a right triangle with sides 5, 12, and 13, which is the hypotenuse?</strong></p>
+    <div class="choices">
+      <button class="choice-btn" onclick="checkChoice(this,false)">5</button>
+      <button class="choice-btn" onclick="checkChoice(this,false)">12</button>
+      <button class="choice-btn" onclick="checkChoice(this,true)">13</button>
+    </div>`;
+}
+
+function renderVisualProof(vis, inter, accent) {
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:15px">a² + b² = c²</p>
+    <svg width="300" height="250" viewBox="0 0 300 250">
+      <polygon points="80,200 200,200 200,80" fill="none" stroke="white" stroke-width="2"/>
+      <!-- a² square -->
+      <rect x="80" y="200" width="120" height="30" fill="${accent}44" stroke="${accent}" stroke-width="1.5"/>
+      <text x="140" y="220" fill="white" font-size="12" text-anchor="middle">a² = 9</text>
+      <!-- Squares visualization for 3-4-5 -->
+      <rect x="80" y="200" width="36" height="36" fill="#fd79a844" stroke="#fd79a8" stroke-width="1"/>
+      <text x="98" y="222" fill="white" font-size="10">3²=9</text>
+      <rect x="200" y="80" width="48" height="48" fill="#55efc444" stroke="#55efc4" stroke-width="1"/>
+      <text x="224" y="108" fill="white" font-size="10">4²=16</text>
+      <text x="100" y="140" fill="${accent}" font-size="14" font-weight="700">5²=25</text>
+    </svg>
+    <p style="font-size:1.3rem">3² + 4² = 9 + 16 = 25 = 5² ✓</p>
+    <p style="color:var(--sub)">The areas of squares on the legs sum to the area on the hypotenuse!</p>
+  </div>`;
+
+  inter.innerHTML = `<p><strong>If a = 6 and b = 8, what is c?</strong></p>
+    <p style="color:var(--sub)">Hint: 6² + 8² = 36 + 64 = 100</p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="proofAns">
+      <button class="submit-btn" onclick="checkSimple('proofAns',10,'proofFB')">Check</button>
+    </div><div id="proofFB"></div>`;
+}
+
+function renderFindSides(vis, inter, accent) {
+  const triples = [[3,4,5],[5,12,13],[8,15,17],[6,8,10],[9,12,15]];
+  const [a,b,c] = triples[rand(0,4)];
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:10px">Step-by-Step Solver</p>
+    <p style="font-size:1.1rem">Find c when a = ${a} and b = ${b}</p>
+    <div style="text-align:left;max-width:300px;margin:15px auto">
+      <div class="step active">a² + b² = c²</div>
+      <div class="step active">${a}² + ${b}² = c²</div>
+      <div class="step active">${a*a} + ${b*b} = c²</div>
+      <div class="step active">${a*a+b*b} = c²</div>
+      <div class="step active">c = √${a*a+b*b} = <strong style="color:${accent}">${c}</strong></div>
+    </div>
+  </div>`;
+
+  const [a2,b2,c2] = triples[rand(0,4)];
+  inter.innerHTML = `<p><strong>Find the hypotenuse: a = ${a2}, b = ${b2}</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" class="number-input" id="findAns">
+      <button class="submit-btn" onclick="checkSimple('findAns',${c2},'findFB')">Check</button>
+    </div><div id="findFB"></div>`;
+}
+
+function renderRealWorld(vis, inter, accent) {
+  const wall = rand(6, 15), ground = rand(3, 8);
+  const ladder = Math.sqrt(wall*wall + ground*ground);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.2rem;font-weight:700;margin-bottom:10px">🪜 Ladder Problem</p>
+    <svg width="200" height="220" viewBox="0 0 200 220">
+      <line x1="40" y1="20" x2="40" y2="200" stroke="white" stroke-width="3"/>
+      <line x1="40" y1="200" x2="180" y2="200" stroke="white" stroke-width="2"/>
+      <line x1="40" y1="40" x2="130" y2="200" stroke="${accent}" stroke-width="3"/>
+      <text x="15" y="120" fill="white" font-size="13" font-weight="700">${wall}m</text>
+      <text x="70" y="215" fill="white" font-size="13" font-weight="700">${ground}m</text>
+      <text x="70" y="105" fill="${accent}" font-size="13" font-weight="700">? m</text>
+    </svg>
+    <p>Ladder = √(${wall}² + ${ground}²) = √${wall*wall+ground*ground} ≈ <strong style="color:${accent}">${ladder.toFixed(1)} m</strong></p>
+  </div>`;
+
+  const w2 = rand(5,12), g2 = rand(3,9);
+  const ans = Math.sqrt(w2*w2+g2*g2);
+  inter.innerHTML = `<p><strong>Wall height: ${w2}m, Distance from wall: ${g2}m. How long is the ladder?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <input type="number" step="0.1" class="number-input" id="rwAns">
+      <button class="submit-btn" onclick="checkClose('rwAns',${ans.toFixed(1)},'rwFB',0.5)">Check</button>
+    </div><div id="rwFB"></div>`;
+}
+
+// ===== FINANCIAL LITERACY =====
+function renderBudget(vis, inter, accent) {
+  const income = rand(2,5) * 1000;
+  const cats = [{n:'Housing',p:30},{n:'Food',p:20},{n:'Transport',p:15},{n:'Savings',p:15},{n:'Entertainment',p:10},{n:'Other',p:10}];
+  const colors = ['#6c5ce7','#00cec9','#fdcb6e','#55efc4','#fd79a8','#e17055'];
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:5px">Monthly Budget: $${income}</p>
+    ${cats.map((c,i) => `<div class="stat-row">
+      <span style="width:100px;font-size:.85rem;text-align:right">${c.n}</span>
+      <div class="stat-bar"><div class="fill" style="width:${c.p}%;background:${colors[i]}">${c.p}% ($${income*c.p/100})</div></div>
+    </div>`).join('')}
+  </div>`;
+
+  const inc2 = rand(1,4)*500;
+  inter.innerHTML = `<p><strong>If you earn $${inc2}/month and save 20%, how much do you save?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <span>$</span><input type="number" class="number-input" id="budAns">
+      <button class="submit-btn" onclick="checkSimple('budAns',${inc2*0.2},'budFB')">Check</button>
+    </div><div id="budFB"></div>`;
+}
+
+function renderInterest(vis, inter, accent) {
+  const P = rand(5,20) * 100;
+  const r = [2,3,4,5][rand(0,3)];
+  const t = rand(1,5);
+  const I = P * r / 100 * t;
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:10px">Simple Interest: I = P × r × t</p>
+    <p>Principal: $${P} | Rate: ${r}% | Time: ${t} year${t>1?'s':''}</p>
+    <p style="font-size:1.5rem;margin:15px 0">I = $${P} × ${r/100} × ${t} = <strong style="color:${accent}">$${I.toFixed(2)}</strong></p>
+    <p>Total: $${P} + $${I.toFixed(2)} = <strong>$${(P+I).toFixed(2)}</strong></p>
+    <div class="stat-bar" style="max-width:350px;margin:15px auto;height:30px">
+      <div class="fill" style="width:${P/(P+I)*100}%;background:#6c5ce7">Principal</div>
+      <div class="fill" style="width:${I/(P+I)*100}%;background:${accent}">Interest</div>
+    </div>
+  </div>`;
+
+  const P2 = rand(2,10)*100, r2 = rand(2,6), t2 = rand(1,4);
+  inter.innerHTML = `<p><strong>$${P2} at ${r2}% for ${t2} year${t2>1?'s':''}. How much interest?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <span>$</span><input type="number" class="number-input" id="intAns">
+      <button class="submit-btn" onclick="checkSimple('intAns',${P2*r2/100*t2},'intFB')">Check</button>
+    </div><div id="intFB"></div>`;
+}
+
+function renderBestDeal(vis, inter, accent) {
+  const items = [
+    {name: 'Brand A', qty: rand(4,8), price: rand(3,6)},
+    {name: 'Brand B', qty: rand(10,16), price: rand(6,12)},
+    {name: 'Brand C', qty: rand(20,30), price: rand(10,18)}
+  ];
+  items.forEach(it => it.unit = (it.price / it.qty).toFixed(2));
+  const best = items.reduce((a,b) => parseFloat(a.unit) < parseFloat(b.unit) ? a : b);
+
+  vis.innerHTML = `<div style="width:100%">
+    <p style="text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:15px">🛒 Which is the best deal?</p>
+    ${items.map(it => `<div class="product-card" style="${it===best?`border-color:${accent}`:''}" >
+      <div style="flex:1">
+        <p style="font-weight:700">${it.name}: ${it.qty} items</p>
+        <p class="price">$${it.price.toFixed(2)}</p>
+        <p class="unit-price">$${it.unit} per item</p>
+      </div>
+      ${it===best?`<span style="color:${accent};font-weight:800">BEST! ✓</span>`:''}
+    </div>`).join('')}
+  </div>`;
+
+  inter.innerHTML = `<div class="feedback info">The best deal has the lowest unit price. Always divide total cost by quantity to compare!</div>`;
+}
+
+function renderSavings(vis, inter, accent) {
+  const goal = rand(2,10) * 100;
+  const months = rand(4,12);
+  const perMonth = (goal / months).toFixed(2);
+  vis.innerHTML = `<div style="text-align:center">
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:10px">🎯 Savings Goal: $${goal}</p>
+    <p>Timeline: ${months} months</p>
+    <p style="font-size:1.5rem;margin:15px 0">Save <strong style="color:${accent}">$${perMonth}/month</strong></p>
+    <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:15px 0">
+      ${Array.from({length:months},(_, i) => `<div style="background:${accent}${i<months?'66':'22'};padding:8px 6px;border-radius:6px;font-size:.7rem;min-width:35px;text-align:center">M${i+1}<br>$${((i+1)*parseFloat(perMonth)).toFixed(0)}</div>`).join('')}
+    </div>
+  </div>`;
+
+  const g2 = rand(3,8)*100, m2 = rand(3,10);
+  const ans = Math.ceil(g2/m2);
+  inter.innerHTML = `<p><strong>Save $${g2} in ${m2} months. How much per month?</strong></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0">
+      <span>$</span><input type="number" class="number-input" id="savAns">
+      <button class="submit-btn" onclick="checkClose('savAns',${g2/m2},'savFB',1)">Check</button>
+    </div><div id="savFB"></div>`;
+}
+
+// ===== ANSWER CHECKING =====
+function checkChoice(btn, correct) {
+  const parent = btn.parentElement;
+  parent.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+  if (correct) {
+    btn.classList.add('correct');
+  } else {
+    btn.classList.add('wrong');
+    parent.querySelectorAll('.choice-btn').forEach(b => {
+      if (b.onclick && b.onclick.toString().includes('true')) b.classList.add('correct');
+    });
+    // Find correct one
+    setTimeout(() => {
+      parent.querySelectorAll('.choice-btn').forEach(b => {
+        const handler = b.getAttribute('onclick') || '';
+        if (handler.includes(',true)')) b.classList.add('correct');
+      });
+    }, 100);
+  }
+}
+
+function checkSimple(inputId, answer, fbId) {
+  const v = parseFloat(document.getElementById(inputId).value);
+  const fb = document.getElementById(fbId);
+  fb.className = 'feedback ' + (v === answer ? 'correct' : 'wrong');
+  fb.textContent = v === answer ? '✅ Correct! Excellent work!' : `❌ Not quite. The answer is ${answer}`;
+}
+
+function checkClose(inputId, answer, fbId, tolerance) {
+  const v = parseFloat(document.getElementById(inputId).value);
+  const fb = document.getElementById(fbId);
+  const correct = Math.abs(v - answer) <= tolerance;
+  fb.className = 'feedback ' + (correct ? 'correct' : 'wrong');
+  fb.textContent = correct ? '✅ Correct! Great job!' : `❌ Not quite. The answer is ${answer}`;
+}
+
+// ===== QUIZ SYSTEM =====
+function renderQuiz(container, topic) {
+  const accent = topic.accent;
+  if (!window._quizState || window._quizState.topicId !== topic.id) {
+    window._quizState = {
+      topicId: topic.id,
+      questions: generateQuizQuestions(topic.id),
+      current: 0,
+      score: 0,
+      answered: false
+    };
+  }
+  const qs = window._quizState;
+  if (qs.current >= qs.questions.length) {
+    renderQuizResults(container, topic);
+    return;
+  }
+  const q = qs.questions[qs.current];
+  container.innerHTML = `<div class="slide-card" style="--accent:${accent}">
+    <div class="quiz-header">
+      <h3 style="color:${accent}">🎯 ${topic.title} Quiz</h3>
+      <p class="quiz-question-num">Question ${qs.current + 1} of ${qs.questions.length}</p>
+      <div style="display:flex;gap:6px;justify-content:center;margin:10px 0">
+        ${qs.questions.map((_,i) => `<div style="width:30px;height:4px;border-radius:2px;background:${i<qs.current?accent:i===qs.current?'white':'rgba(255,255,255,0.2)'}"></div>`).join('')}
+      </div>
+    </div>
+    <p style="font-size:1.2rem;font-weight:700;margin:20px 0">${q.question}</p>
+    <div class="choices" id="quizChoices">
+      ${q.choices.map((c, i) => `<button class="choice-btn" onclick="answerQuiz(${i})">${c}</button>`).join('')}
+    </div>
+    <div id="quizFB"></div>
+  </div>`;
+}
+
+window.answerQuiz = function(idx) {
+  const qs = window._quizState;
+  if (qs.answered) return;
+  qs.answered = true;
+  const q = qs.questions[qs.current];
+  const btns = document.querySelectorAll('#quizChoices .choice-btn');
+  btns.forEach(b => b.disabled = true);
+
+  if (idx === q.correct) {
+    btns[idx].classList.add('correct');
+    qs.score++;
+    document.getElementById('quizFB').innerHTML = '<div class="feedback correct">✅ Correct!</div>';
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.correct].classList.add('correct');
+    document.getElementById('quizFB').innerHTML = `<div class="feedback wrong">❌ The correct answer is: ${q.choices[q.correct]}</div>`;
+  }
+
+  setTimeout(() => {
+    qs.current++;
+    qs.answered = false;
+    const t = topics[currentTopic];
+    if (qs.current >= qs.questions.length) {
+      renderQuizResults(document.getElementById('slideContainer'), t);
+    } else {
+      renderQuiz(document.getElementById('slideContainer'), t);
+    }
+  }, 1800);
+};
+
+function renderQuizResults(container, topic) {
+  const qs = window._quizState;
+  const pct = (qs.score / qs.questions.length) * 100;
+  const stars = pct >= 100 ? 3 : pct >= 60 ? 2 : 1;
+
+  if (pct >= 60) markTopicComplete(topic.id);
+
+  container.innerHTML = `<div class="slide-card quiz-score" style="--accent:${topic.accent}">
+    <h3 style="color:${topic.accent}">Quiz Complete!</h3>
+    <div class="stars">
+      <div class="star ${stars >= 1 ? 'earned' : ''}">⭐</div>
+      <div class="star ${stars >= 2 ? 'earned' : ''}">⭐</div>
+      <div class="star ${stars >= 3 ? 'earned' : ''}">⭐</div>
+    </div>
+    <p class="score-text" style="color:${topic.accent}">${qs.score} / ${qs.questions.length}</p>
+    <p style="color:var(--sub)">${pct >= 100 ? 'Perfect score! Amazing!' : pct >= 60 ? 'Great job! Topic completed!' : 'Keep practicing, you\'ll get there!'}</p>
+    <button class="retry-btn" onclick="retryQuiz()">Try Again</button>
+    <button class="retry-btn" style="background:rgba(255,255,255,0.1);margin-left:10px" onclick="goHome()">Back to Topics</button>
+  </div>`;
+
+  speak(pct >= 100 ? 'Perfect score! You are a math superstar!' : pct >= 60 ? 'Great job! You passed the quiz!' : 'Keep practicing and you will master this topic!');
+}
+
+window.retryQuiz = function() {
+  window._quizState = null;
+  renderSlide();
+};
+
+function generateQuizQuestions(topicId) {
+  const generators = {
+    numbers: () => {
+      const qs = [];
+      // Q1: Integer addition
+      let a = rand(-10,10), b = rand(-10,10);
+      let ans = a + b;
+      let opts = shuffle([ans, ans+rand(1,3), ans-rand(1,3), ans+rand(-5,5)]);
+      if (!opts.includes(ans)) opts[0] = ans;
+      opts = [...new Set(opts)].slice(0,4); while(opts.length<4) opts.push(ans+opts.length+1);
+      let ci = opts.indexOf(ans);
+      qs.push({question:`What is (${a}) + (${b})?`, choices:opts.map(String), correct:ci});
+
+      // Q2: Order of operations
+      let x=rand(2,5), y=rand(1,4), z=rand(2,4);
+      ans = x + y * z;
+      opts = shuffle([ans, x*y+z, (x+y)*z, ans+1]);
+      if (!opts.includes(ans)) opts[0] = ans;
+      ci = opts.indexOf(ans);
+      qs.push({question:`${x} + ${y} × ${z} = ?`, choices:opts.map(String), correct:ci});
+
+      // Q3: Square
+      let n = rand(4,12);
+      ans = n*n;
+      opts = shuffle([ans, n*2, ans+n, ans-1]);
+      ci = opts.indexOf(ans);
+      qs.push({question:`What is ${n}²?`, choices:opts.map(String), correct:ci});
+
+      // Q4: Decimal
+      let d1 = parseFloat((rand(1,9)+rand(1,9)/10).toFixed(1));
+      let d2 = parseFloat((rand(1,9)+rand(1,9)/10).toFixed(1));
+      ans = parseFloat((d1+d2).toFixed(1));
+      opts = [ans, ans+0.1, ans-0.1, ans+1].map(v=>v.toFixed(1));
+      ci = 0;
+      qs.push({question:`${d1} + ${d2} = ?`, choices:shuffle(opts), correct: undefined});
+      qs[3].correct = qs[3].choices.indexOf(ans.toFixed(1));
+
+      // Q5: Square root
+      let sq = [4,9,16,25,36,49,64,81,100][rand(0,8)];
+      ans = Math.sqrt(sq);
+      opts = shuffle([ans, ans+1, ans-1, ans*2]);
+      ci = opts.indexOf(ans);
+      qs.push({question:`√${sq} = ?`, choices:opts.map(String), correct:ci});
+
+      return qs;
+    },
+    geometry: () => {
+      const qs = [];
+      let a1=rand(30,80),a2=rand(30,140-a1); let a3=180-a1-a2;
+      let opts=shuffle([a3,a3+10,180,a3-5]);let ci=opts.indexOf(a3);
+      qs.push({question:`Triangle angles: ${a1}° and ${a2}°. Third angle?`,choices:opts.map(v=>v+'°'),correct:ci});
+
+      let w=rand(3,12),h=rand(3,10); let area=w*h;
+      opts=shuffle([area,2*(w+h),w+h,area+w]);ci=opts.indexOf(area);
+      qs.push({question:`Area of rectangle ${w}×${h}?`,choices:opts.map(v=>v+' cm²'),correct:ci});
+
+      let r=rand(2,8); let circ=parseFloat((2*Math.PI*r).toFixed(1));
+      opts=[circ,(Math.PI*r*r).toFixed(1),(2*r).toFixed(1),(Math.PI*r).toFixed(1)];
+      qs.push({question:`Circumference of circle with r=${r}? (C=2πr)`,choices:opts.map(String),correct:0});
+
+      let l=rand(2,6),w2=rand(2,5),h2=rand(2,5); let vol=l*w2*h2;
+      opts=shuffle([vol,l*w2,l+w2+h2,vol+l]);ci=opts.indexOf(vol);
+      qs.push({question:`Volume of box: ${l}×${w2}×${h2}?`,choices:opts.map(v=>v+' cm³'),correct:ci});
+
+      let ang=rand(20,80); let supp=180-ang;
+      opts=shuffle([supp,90-ang,360-ang,supp+10]);ci=opts.indexOf(supp);
+      qs.push({question:`Supplement of ${ang}°?`,choices:opts.map(v=>v+'°'),correct:ci});
+
+      return qs;
+    },
+    data: () => {
+      const qs = [];
+      let data=[rand(2,10),rand(2,10),rand(2,10),rand(2,10),rand(2,10)].sort((a,b)=>a-b);
+      let med=data[2];
+      let opts=shuffle([med,data[0],data[4],(data[0]+data[4])/2]);
+      let ci=opts.indexOf(med);
+      qs.push({question:`Median of {${data.join(', ')}}?`,choices:opts.map(String),correct:ci});
+
+      let sum=data.reduce((a,b)=>a+b,0); let mean=parseFloat((sum/5).toFixed(1));
+      opts=[mean,(sum/4).toFixed(1),(sum/6).toFixed(1),sum];
+      qs.push({question:`Mean of {${data.join(', ')}}?`,choices:opts.map(String),correct:0});
+
+      let p=rand(1,5); let total=6;
+      opts=shuffle([`${p}/6`,'1/2',`${p+1}/6`,'1/3']);ci=opts.indexOf(`${p}/6`);if(ci<0){opts[0]=`${p}/6`;ci=0;}
+      qs.push({question:`Probability of rolling ${p} on a die?`,choices:opts,correct:ci});
+
+      qs.push({question:`Probability of heads on a coin?`,choices:shuffle(['1/2','1/3','1/4','1/6']),correct:undefined});
+      qs[3].correct=qs[3].choices.indexOf('1/2');
+
+      qs.push({question:`With more trials, experimental probability gets...`,choices:shuffle(['Closer to theoretical','Further from theoretical','Always equal','Always 50%']),correct:undefined});
+      qs[4].correct=qs[4].choices.indexOf('Closer to theoretical');
+
+      return qs;
+    },
+    algebra: () => {
+      const qs = [];
+      let a=rand(2,6),b=rand(1,9),x=rand(1,8); let ans=a*x+b;
+      let opts=shuffle([ans,a*x,a+b*x,ans+a]);let ci=opts.indexOf(ans);
+      qs.push({question:`If x=${x}, what is ${a}x + ${b}?`,choices:opts.map(String),correct:ci});
+
+      x=rand(1,8);a=rand(2,5);b=rand(1,12);let rhs=a*x+b;
+      let opts2=shuffle([x,x+1,x-1,rhs/a]);ci=opts2.indexOf(x);
+      qs.push({question:`Solve: ${a}x + ${b} = ${rhs}`,choices:opts2.map(v=>'x = '+v),correct:ci});
+
+      let s=rand(2,5),st=rand(2,6);let seq=Array.from({length:5},(_,i)=>s+st*i);
+      let next=s+st*5;
+      opts=shuffle([next,next+st,next-1,s+st*6]);ci=opts.indexOf(next);
+      qs.push({question:`Pattern: ${seq.join(', ')}, ? Next term?`,choices:opts.map(String),correct:ci});
+
+      let v=rand(2,8);
+      qs.push({question:`Which satisfies x > ${v}?`,choices:shuffle([v+3,v-1,v,v-3].map(String)),correct:undefined});
+      qs[3].correct=qs[3].choices.indexOf(String(v+3));
+
+      a=rand(2,4);b=rand(1,5);x=rand(1,6);ans=a*x-b;
+      opts=shuffle([x,x+1,x-1,ans]);ci=opts.indexOf(x);
+      qs.push({question:`Solve: ${a}x - ${b} = ${ans}`,choices:opts.map(v=>'x = '+v),correct:ci});
+
+      return qs;
+    },
+    measurement: () => {
+      const qs = [];
+      let m=rand(1,20);
+      let opts=shuffle([m*100,m*10,m*1000,m]);let ci=opts.indexOf(m*100);
+      qs.push({question:`${m} m = ? cm`,choices:opts.map(String),correct:ci});
+
+      let km=rand(1,10);
+      opts=shuffle([km*1000,km*100,km*10,km]);ci=opts.indexOf(km*1000);
+      qs.push({question:`${km} km = ? m`,choices:opts.map(String),correct:ci});
+
+      let b=rand(4,10),h=rand(3,8);let area=b*h;
+      opts=shuffle([area,b+h,2*(b+h),area/2]);ci=opts.indexOf(area);
+      qs.push({question:`Area of parallelogram: b=${b}, h=${h}?`,choices:opts.map(v=>v+' cm²'),correct:ci});
+
+      let b1=rand(4,8),b2=rand(6,12);h=rand(3,7);let ta=(b1+b2)*h/2;
+      opts=shuffle([ta,b1*h,b2*h,(b1+b2)*h]);ci=opts.indexOf(ta);
+      qs.push({question:`Area of trapezoid: bases ${b1},${b2}, h=${h}?`,choices:opts.map(v=>v+' cm²'),correct:ci});
+
+      let l=rand(2,5),w=rand(2,4);h=rand(2,5);let sa=2*(l*w+l*h+w*h);
+      opts=shuffle([sa,l*w*h,2*l*w,sa+l]);ci=opts.indexOf(sa);
+      qs.push({question:`SA of prism: ${l}×${w}×${h}?`,choices:opts.map(v=>v+' cm²'),correct:ci});
+
+      return qs;
+    },
+    proportions: () => {
+      const qs = [];
+      let pct=rand(1,4)*10,total=rand(2,10)*20;let ans=total*pct/100;
+      let opts=shuffle([ans,total/pct,pct,ans+10]);let ci=opts.indexOf(ans);
+      qs.push({question:`${pct}% of ${total}?`,choices:opts.map(String),correct:ci});
+
+      let price=rand(40,80),disc=rand(1,4)*10;let final_p=price*(1-disc/100);
+      opts=shuffle([final_p,price-disc,price*disc/100,price+disc]);ci=opts.indexOf(final_p);
+      qs.push({question:`$${price} with ${disc}% off = ?`,choices:opts.map(v=>'$'+v),correct:ci});
+
+      let items=rand(4,10),cost=items*rand(1,3);let up=parseFloat((cost/items).toFixed(2));
+      opts=[up,(cost/2).toFixed(2),(cost*items).toFixed(2),(up+1).toFixed(2)];
+      qs.push({question:`${items} items for $${cost}. Unit price?`,choices:opts.map(v=>'$'+v),correct:0});
+
+      let a=rand(2,5),b=rand(3,8);let ratio=`${a}:${b}`;let g=gcd(a,b);
+      opts=shuffle([`${a/g}:${b/g}`,`${b}:${a}`,`${a+1}:${b+1}`,'1:1']);ci=opts.indexOf(`${a/g}:${b/g}`);
+      if(ci<0){opts[0]=`${a/g}:${b/g}`;ci=0;}
+      qs.push({question:`Simplify ${a*3}:${b*3}`,choices:opts,correct:ci});
+
+      let dist=rand(100,300),time=rand(2,5);let speed=dist/time;
+      opts=shuffle([speed,dist*time,dist+time,speed+10]);ci=opts.indexOf(speed);
+      qs.push({question:`${dist} km in ${time} hrs. Speed?`,choices:opts.map(v=>v+' km/h'),correct:ci});
+
+      return qs;
+    },
+    pythagoras: () => {
+      const qs = [];
+      const triples=[[3,4,5],[5,12,13],[8,15,17],[6,8,10],[9,12,15]];
+
+      let [a,b,c]=triples[rand(0,4)];
+      let opts=shuffle([c,a+b,a*b,Math.sqrt(a+b)]);let ci=opts.indexOf(c);
+      qs.push({question:`Right triangle: a=${a}, b=${b}. Find c.`,choices:opts.map(String),correct:ci});
+
+      [a,b,c]=triples[rand(0,4)];
+      let missing=Math.sqrt(c*c-a*a);
+      opts=shuffle([missing,c-a,a+c,missing+1]);ci=opts.indexOf(missing);
+      qs.push({question:`Right triangle: a=${a}, c=${c}. Find b.`,choices:opts.map(String),correct:ci});
+
+      qs.push({question:`The hypotenuse is always the...`,choices:shuffle(['Longest side','Shortest side','Middle side','Bottom side']),correct:undefined});
+      qs[2].correct=qs[2].choices.indexOf('Longest side');
+
+      [a,b,c]=triples[rand(0,4)];
+      qs.push({question:`Is ${a}²+${b}²=${c}²? (${a*a}+${b*b}=${c*c})`,choices:shuffle(['Yes','No','Sometimes','Only for right triangles']),correct:undefined});
+      qs[3].correct=qs[3].choices.indexOf('Yes');
+
+      [a,b,c]=[3,4,5];
+      qs.push({question:`Ladder reaches ${a}m high, ${b}m from wall. Length?`,choices:shuffle([c,a+b,a*b,7].map(String)),correct:undefined});
+      qs[4].correct=qs[4].choices.indexOf(String(c));
+
+      return qs;
+    },
+    finance: () => {
+      const qs = [];
+      let P=rand(2,10)*100,r=rand(2,5),t=rand(1,4);let I=P*r*t/100;
+      let opts=shuffle([I,P*r,P*t,I+P]);let ci=opts.indexOf(I);
+      qs.push({question:`Simple interest: $${P}, ${r}%, ${t} yr?`,choices:opts.map(v=>'$'+v),correct:ci});
+
+      let income=rand(2,5)*1000,savePct=20;let save=income*savePct/100;
+      opts=shuffle([save,income,income-save,savePct]);ci=opts.indexOf(save);
+      qs.push({question:`Save ${savePct}% of $${income}?`,choices:opts.map(v=>'$'+v),correct:ci});
+
+      let goal=rand(3,8)*100,months=rand(4,10);let perMonth=Math.ceil(goal/months);
+      opts=shuffle([perMonth,goal,months,perMonth*2]);ci=opts.indexOf(perMonth);
+      qs.push({question:`Save $${goal} in ${months} months. Monthly?`,choices:opts.map(v=>'~$'+v),correct:ci});
+
+      qs.push({question:`A budget helps you...`,choices:shuffle(['Track spending','Earn more','Avoid taxes','Get loans']),correct:undefined});
+      qs[3].correct=qs[3].choices.indexOf('Track spending');
+
+      let p1={qty:6,cost:12},p2={qty:10,cost:15};
+      let best=p1.cost/p1.qty < p2.cost/p2.qty ? 'A' : 'B';
+      qs.push({question:`A: ${p1.qty} for $${p1.cost} vs B: ${p2.qty} for $${p2.cost}. Best deal?`,choices:shuffle(['A ($'+(p1.cost/p1.qty).toFixed(2)+'/ea)','B ($'+(p2.cost/p2.qty).toFixed(2)+'/ea)']),correct:undefined});
+      qs[4].correct=qs[4].choices.findIndex(c=>c.startsWith(best));
+
+      return qs;
+    }
+  };
+
+  return (generators[topicId] || generators.numbers)();
+}
+
+// ===== INIT =====
+buildHome();
+</script>
+</body>
+</html>
