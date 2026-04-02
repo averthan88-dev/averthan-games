@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="google-adsense-account" content="ca-pub-1414495127165303">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1414495127165303"
+         crossorigin="anonymous"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Chess vs Kit 🦊</title>
@@ -277,8 +280,18 @@ body {
   .side-panel { width: 100%; max-width: min(92vw, 560px); }
 }
 </style>
+
+    /* AdSense ad containers */
+    .ad-container { text-align: center; margin: 15px auto; max-width: 728px; min-height: 90px; z-index: 10; position: relative; overflow: hidden; }
+    .ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
+    .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
+
 </head>
 <body>
+<div class="ad-container ad-top">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1414495127165303" data-ad-slot="auto" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
 <a href="index.html" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.6);color:#fff;text-decoration:none;padding:8px 16px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(0,0,0,0.6)'">&#9664; Main Menu</a>
 
 <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
@@ -1032,5 +1045,9 @@ function newGame(){
 
 newGame();
 </script>
+<div class="ad-anchor">
+    <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-1414495127165303" data-ad-slot="auto" data-ad-format="horizontal"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
 </body>
 </html>
