@@ -103,7 +103,7 @@
             z-index: 1;
             max-width: 1000px;
             margin: 0 auto;
-            padding: 40px 20px 60px;
+            padding: 40px 20px calc(var(--ad-anchor-height, 0px) + 60px);
         }
 
         /* Header */
@@ -322,7 +322,7 @@
             }
 
             .container {
-                padding: 30px 16px 40px;
+                padding: 30px 16px calc(var(--ad-anchor-height, 0px) + 40px);
             }
 
             .games-grid {

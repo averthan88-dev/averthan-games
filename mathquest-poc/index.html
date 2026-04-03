@@ -28,8 +28,9 @@
   body {
     font-family: 'Nunito', sans-serif;
     background: var(--bg-gradient);
-    min-height: 100vh;
+    min-height: calc(100vh - var(--ad-anchor-height, 0px));
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     overflow: hidden;
