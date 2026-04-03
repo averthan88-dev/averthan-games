@@ -42,9 +42,9 @@ body { font-family:'Nunito',sans-serif; background:#0a0a1a; color:#fff; min-heig
 @keyframes goldenPulse { from{transform:scale(1);box-shadow:0 0 20px rgba(255,215,0,0.6)} to{transform:scale(1.1);box-shadow:0 0 40px rgba(255,215,0,0.9)} }
 #golden .g-chip { position:absolute; width:10px; height:9px; background:radial-gradient(circle,#8B6914,#5D3A1A); border-radius:50%; }
 #golden .g-chip:nth-child(1){top:12px;left:15px;} #golden .g-chip:nth-child(2){top:25px;left:35px;} #golden .g-chip:nth-child(3){top:38px;left:20px;}
-.toast { position:fixed; top:80px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#6c5ce7,#a29bfe); padding:12px 24px; border-radius:14px; font-weight:700; font-size:0.95em; z-index:200; animation:toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards; box-shadow:0 8px 24px rgba(108,92,231,0.4); white-space:nowrap; }
-@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-@keyframes toastOut { to{opacity:0;transform:translateX(-50%) translateY(-20px)} }
+.toast { position:absolute; top:16px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#6c5ce7,#a29bfe); padding:12px 24px; border-radius:14px; font-weight:700; font-size:0.95em; z-index:200; animation:toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards; box-shadow:0 8px 24px rgba(108,92,231,0.4); white-space:nowrap; pointer-events:none; }
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+@keyframes toastOut { to{opacity:0;transform:translateX(-50%) translateY(-10px)} }
 .cookie-rain { position:fixed; font-size:24px; animation:rain linear forwards; pointer-events:none; z-index:10; }
 @keyframes rain { from{transform:translateY(-40px) rotate(0deg);opacity:1} to{transform:translateY(100vh) rotate(360deg);opacity:0} }
 .bonus-active { color:#FFD700; font-weight:800; animation:bonusPulse 0.5s ease-in-out infinite alternate; }
@@ -324,7 +324,7 @@ function showToast(msg) {
   const t = document.createElement('div');
   t.className = 'toast';
   t.textContent = msg;
-  document.body.appendChild(t);
+  mainEl.appendChild(t);
   setTimeout(()=>t.remove(), 3000);
 }
 
