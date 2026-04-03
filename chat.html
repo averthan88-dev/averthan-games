@@ -934,19 +934,11 @@ function dailyCleanup() {
       // Claim the cleanup (prevent multiple clients from running it)
       db.ref('meta/lastCleanup').set(now);
       console.log('Running daily cleanup...');
-      // Remove all rooms (including lobby messages)
-      db.ref('rooms').remove().then(() => {
-        // Remove all invites
-        db.ref('invites').remove();
-        // Recreate lobby
-        db.ref(`rooms/${LOBBY_ID}`).set({
-          name: 'Lobby',
-          ownerId: 'system',
-          ownerName: 'System',
-          createdAt: now
-        });
-        console.log('Daily cleanup complete.');
-      });
+      // Only clear lobby messages, leave user-created rooms intact
+      db.ref(`rooms/${LOBBY_ID}/messages`).remove();
+      // Remove all invites
+      db.ref('invites').remove();
+      console.log('Daily cleanup complete.');
     }
   });
 }
