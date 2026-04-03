@@ -1375,15 +1375,44 @@ if (loadUser()) {
 <script>
 (function() {
   function updateAdPadding() {
-    var el = document.getElementById('adAnchor');
-    if (el) {
-      document.documentElement.style.setProperty('--ad-anchor-height', el.offsetHeight + 'px');
+    var anchor = document.getElementById('adAnchor');
+    if (!anchor) return;
+    // Measure the anchor div itself
+    var h = anchor.getBoundingClientRect().height;
+    // Also check the ins element inside in case it's taller
+    var ins = anchor.querySelector('ins');
+    if (ins) h = Math.max(h, ins.getBoundingClientRect().height);
+    // Minimum of 10px (just the padding), clamp to reasonable max
+    h = Math.max(h, 10);
+    document.documentElement.style.setProperty('--ad-anchor-height', h + 'px');
+    // Also set directly on .app as fallback
+    var app = document.querySelector('.app');
+    if (app) app.style.height = 'calc(100vh - ' + h + 'px)';
+  }
+
+  // Run immediately and at multiple checkpoints
+  updateAdPadding();
+  document.addEventListener('DOMContentLoaded', updateAdPadding);
+  window.addEventListener('load', updateAdPadding);
+  window.addEventListener('resize', updateAdPadding);
+
+  // Poll for the first 10 seconds to catch lazy-loaded ads
+  var polls = 0;
+  var interval = setInterval(function() {
+    updateAdPadding();
+    if (++polls >= 20) clearInterval(interval); // stop after 10s
+  }, 500);
+
+  // ResizeObserver on both the container and ins element
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(updateAdPadding);
+    var anchor = document.getElementById('adAnchor');
+    if (anchor) {
+      ro.observe(anchor);
+      var ins = anchor.querySelector('ins');
+      if (ins) ro.observe(ins);
     }
   }
-  updateAdPadding();
-  var ro = new ResizeObserver(updateAdPadding);
-  ro.observe(document.getElementById('adAnchor'));
-  window.addEventListener('resize', updateAdPadding);
 })();
 </script>
 </body>
