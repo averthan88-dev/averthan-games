@@ -49,7 +49,7 @@ body::before {
 h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 
 /* Layout */
-.app { display: flex; height: 100vh; position: relative; z-index: 1; }
+.app { display: flex; height: calc(100vh - var(--ad-anchor-height, 0px)); position: relative; z-index: 1; }
 
 /* Sidebar */
 .sidebar {
@@ -422,7 +422,7 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
-    left: 0; top: 0; height: 100%;
+    left: 0; top: 0; height: calc(100% - var(--ad-anchor-height, 0px));
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
@@ -437,7 +437,6 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
     .ad-container { text-align: center; margin: 15px auto; max-width: 728px; min-height: 90px; z-index: 10; position: relative; overflow: hidden; }
     .ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
     .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-    .app { padding-bottom: var(--ad-anchor-height, 0px); }
     </style>
 
 </head>
