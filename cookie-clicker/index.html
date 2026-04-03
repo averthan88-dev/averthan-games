@@ -131,16 +131,15 @@ const upgrades = [
   { name:'Golden Touch', icon:'👑', desc:'5x click power', baseCost:50000, cps:0, clickMult:5 },
 ];
 
-let state = loadState();
 function defaultState() {
   return { cookies:0, totalCookies:0, clickPower:1, owned:upgrades.map(()=>0), cps:0 };
 }
-function loadState() {
-  try { const s = JSON.parse(localStorage.getItem('averthan_cookie')); if(s && s.cookies!==undefined) return s; } catch(e){}
-  return defaultState();
+// Always start fresh — no save/load between sessions
+let state = defaultState();
+function saveState() {
+  // Only report score to Hall of Fame, don't persist between sessions
+  if (typeof avReportScore === 'function') avReportScore('cookie-clicker', Math.floor(state.totalCookies));
 }
-function saveState() { localStorage.setItem('averthan_cookie', JSON.stringify(state));
-                if (typeof avReportScore === 'function') avReportScore('cookie-clicker', Math.floor(state.totalCookies)); }
 
 function calcCPS() {
   let total = 0;
@@ -307,12 +306,12 @@ function startCookieRain() {
 // Milestones
 const milestones = [1,100,1000,10000,100000,1e6,1e9,1e12];
 const milestoneNames = ['First Cookie!','Cookie Beginner','Cookie Baker','Cookie Master','Cookie Tycoon','Cookie Millionaire','Cookie Billionaire','Cookie Trillionaire'];
-let reachedMilestones = JSON.parse(localStorage.getItem('averthan_cookie_ms') || '[]');
+let reachedMilestones = [];
 function checkMilestones() {
   milestones.forEach((m,i) => {
     if(state.totalCookies >= m && !reachedMilestones.includes(i)) {
       reachedMilestones.push(i);
-      localStorage.setItem('averthan_cookie_ms', JSON.stringify(reachedMilestones));
+      // milestones tracked in-memory only
       showToast('🏆 ' + milestoneNames[i]);
       initAudio(); achieveSound();
     }
@@ -337,8 +336,7 @@ function resetGame() {
   if(confirm('Reset ALL progress? This cannot be undone!')) {
     state = defaultState();
     reachedMilestones = [];
-    localStorage.removeItem('averthan_cookie');
-    localStorage.removeItem('averthan_cookie_ms');
+    // nothing to clear — no persistence between sessions
     calcCPS(); calcClickPower(); renderShop(); updateDisplay();
     showToast('Progress reset!');
   }
