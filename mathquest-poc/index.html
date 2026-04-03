@@ -559,6 +559,10 @@
     .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
     @media (max-width: 468px) { .ad-container { min-height: 50px; } }
 
+<style>
+/* Ensure body padding works with height:100vh layouts */
+body { box-sizing: border-box !important; }
+</style>
 </head>
 <body>
 <div class="ad-container ad-top">
@@ -2442,5 +2446,30 @@ function endGame() {
     <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-1414495127165303" data-ad-slot="auto" data-ad-format="horizontal"></ins>
     <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </div>
+<script>
+/* AdSense anchor offset — dynamically shift content above sticky footer ad */
+(function(){
+  function updateAdPadding(){
+    var el=document.querySelector('.ad-anchor');
+    if(!el)return;
+    var h=el.getBoundingClientRect().height||el.offsetHeight;
+    var ins=el.querySelector('ins');
+    if(ins)h=Math.max(h,ins.getBoundingClientRect().height||0);
+    h=Math.max(h,0);
+    document.documentElement.style.setProperty('--ad-anchor-height',h+'px');
+    document.body.style.paddingBottom=h+'px';
+  }
+  updateAdPadding();
+  document.addEventListener('DOMContentLoaded',updateAdPadding);
+  window.addEventListener('load',updateAdPadding);
+  window.addEventListener('resize',updateAdPadding);
+  var polls=0,iv=setInterval(function(){updateAdPadding();if(++polls>=20)clearInterval(iv);},500);
+  if(window.ResizeObserver){
+    var ro=new ResizeObserver(updateAdPadding);
+    var el=document.querySelector('.ad-anchor');
+    if(el){ro.observe(el);var ins=el.querySelector('ins');if(ins)ro.observe(ins);}
+  }
+})();
+</script>
 </body>
 </html>
