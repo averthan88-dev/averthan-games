@@ -1018,6 +1018,7 @@ function endGame(){
   if(document.pointerLockElement) document.exitPointerLock();
   document.getElementById('game-over').style.display='flex';
   document.getElementById('final-score').textContent=score;
+  if(typeof avReportScore==='function') avReportScore('space-blaster', score);
   let msgs=['Not bad!','Great run!','Amazing!','Legendary!','Unstoppable!'];
   let mi=Math.min(Math.floor(score/500),msgs.length-1);
   document.getElementById('go-message').textContent=msgs[mi]+' Wave '+wave+'!';
@@ -1093,5 +1094,6 @@ document.getElementById('player-name').addEventListener('keydown',e=>{ if(e.key=
   }
 })();
 </script>
+<script src="av-scores.js"></script>
 </body>
 </html>
