@@ -20,9 +20,10 @@ body { font-family:'Nunito',sans-serif; background:#0a0a1a; color:#fff; min-heig
 .shop-inner::-webkit-scrollbar { height:4px; }
 .shop-inner::-webkit-scrollbar-thumb { background:rgba(108,92,231,0.4); border-radius:4px; }
 .shop-title { font-family:'Fredoka One',cursive; font-size:1em; margin-bottom:6px; background:linear-gradient(135deg,#6c5ce7,#a29bfe); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-.score-area { text-align:center; margin-bottom:20px; }
-.cookie-count { font-family:'Fredoka One',cursive; font-size:2.8em; background:linear-gradient(135deg,#fdcb6e,#e17055); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-.cps { color:rgba(255,255,255,0.5); font-size:1em; font-weight:600; }
+#score-bar { display:flex; align-items:center; justify-content:center; gap:20px; padding:8px 20px 8px 80px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
+.cookie-count { font-family:'Fredoka One',cursive; font-size:1.8em; background:linear-gradient(135deg,#fdcb6e,#e17055); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.cps { color:rgba(255,255,255,0.45); font-size:0.85em; font-weight:600; }
+.score-area { display:none; }
 #cookie { width:220px; height:220px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #d4a574, #8B6914); cursor:pointer; position:relative; transition:transform 0.1s; user-select:none; -webkit-user-select:none; box-shadow:0 0 40px rgba(212,165,116,0.3), inset 0 -8px 16px rgba(0,0,0,0.3), inset 0 4px 8px rgba(255,255,255,0.2); }
 #cookie:active { transform:scale(0.93); }
 #cookie .chip { position:absolute; width:18px; height:16px; background:radial-gradient(circle, #5D3A1A, #3D2010); border-radius:50%; }
@@ -79,13 +80,14 @@ body { box-sizing: border-box !important; }
 </div>
 <a href="../index.html" class="home-btn">← Home</a>
 <div id="app">
+  <div id="score-bar">
+    <span>🍪</span>
+    <div class="cookie-count" id="cookieCount">0</div>
+    <div class="cps" id="cpsDisplay">0 / sec</div>
+    <div class="cps bonus-active" id="bonusDisplay" style="display:none">🌟 10x BONUS!</div>
+  </div>
   <div id="main">
     <canvas id="particles"></canvas>
-    <div class="score-area">
-      <div class="cookie-count" id="cookieCount">0</div>
-      <div class="cps" id="cpsDisplay">0 cookies per second</div>
-      <div class="cps bonus-active" id="bonusDisplay" style="display:none">🌟 BONUS ACTIVE! 10x CPS 🌟</div>
-    </div>
     <div id="cookie">
       <div class="chip"></div><div class="chip"></div><div class="chip"></div><div class="chip"></div><div class="chip"></div><div class="chip"></div><div class="chip"></div>
     </div>
