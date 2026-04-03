@@ -121,10 +121,28 @@ h1 {
 }
 .start-btn:hover { transform: scale(1.05); box-shadow: 0 6px 30px rgba(108,92,231,0.6); }
 .high-score { color: #fd79a8; font-weight: 700; font-size: 15px; margin: 4px 0; }
-.game-over-msg {
-  font-family: 'Fredoka One', cursive; font-size: 24px;
-  color: #e74c3c; margin: 8px 0; display: none;
+.game-over-msg { display: none; }
+#game-over-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; flex-direction: column;
+  gap: 16px; text-align: center;
 }
+#game-over-overlay.show { display: flex; }
+#game-over-overlay h2 {
+  font-family: 'Fredoka One', cursive; font-size: clamp(32px,8vw,52px);
+  color: #e74c3c; margin: 0;
+}
+#game-over-overlay p { color: #a29bfe; font-size: 18px; font-weight: 700; margin: 0; }
+#play-again-btn {
+  background: linear-gradient(135deg, #6c5ce7, #00cec9);
+  color: #fff; border: none; border-radius: 16px;
+  padding: 16px 48px; font-family: 'Fredoka One', cursive;
+  font-size: 24px; cursor: pointer; margin-top: 8px;
+  box-shadow: 0 4px 20px rgba(108,92,231,0.5);
+  transition: transform 0.2s;
+}
+#play-again-btn:hover { transform: scale(1.07); }
 
 /* Shake */
 @keyframes shake {
@@ -214,9 +232,13 @@ body { box-sizing: border-box !important; }
   <div class="center-circle" id="center-text">🧠</div>
 </div>
 
-<div class="game-over-msg" id="game-over-msg">Game Over!</div>
 <button class="start-btn" id="start-btn">▶ Start</button>
-<p class="high-score" id="score-msg"></p>
+
+<div id="game-over-overlay">
+  <h2>😵 Game Over!</h2>
+  <p id="score-msg"></p>
+  <button id="play-again-btn">🔄 Play Again</button>
+</div>
 
 <div class="confetti-container" id="confetti"></div>
 
@@ -402,16 +424,15 @@ async function handleWrong() {
 }
 
 async function endGame() {
-    if(typeof avReportScore==='function')avReportScore('simon-says',score);
   playing = false;
   setButtons(false);
   saveHighScore();
   setPhase('', 'phase-idle');
-  $('game-over-msg').style.display = 'block';
-  const score = mode === 'endless' ? bestStreak : round;
-  $('score-msg').textContent = `You reached round ${score}!`;
-  $('start-btn').style.display = '';
-  $('start-btn').textContent = '🔄 Play Again';
+  const finalScore = mode === 'endless' ? bestStreak : round;
+  if(typeof avReportScore==='function') avReportScore('simon-says', finalScore);
+  $('score-msg').textContent = `You reached round ${finalScore}! 🏆`;
+  $('game-over-overlay').classList.add('show');
+  $('start-btn').style.display = 'none';
 }
 
 function startGame() {
@@ -424,7 +445,7 @@ function startGame() {
   bestStreak = 0;
   updateRound();
   updateHighScore();
-  $('game-over-msg').style.display = 'none';
+  $('game-over-overlay').classList.remove('show');
   $('score-msg').textContent = '';
   $('start-btn').style.display = 'none';
   $('lives-count').textContent = lives;
@@ -469,6 +490,7 @@ modeBtns.forEach(mb => {
 });
 
 $('start-btn').addEventListener('click', startGame);
+$('play-again-btn').addEventListener('click', startGame);
 
 // Confetti
 function spawnConfetti() {
