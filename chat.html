@@ -205,6 +205,9 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 }
 .invite-accept { background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; }
 .invite-decline { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+.horn-btn { background: rgba(253,200,80,0.15); color: #fdc850; border: none; padding: 2px 7px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; margin-left: 3px; font-family: 'Nunito', sans-serif; transition: background 0.2s; }
+.horn-btn:hover { background: rgba(253,200,80,0.35); }
+.horn-btn:active { transform: scale(0.9); }
 @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
 
 /* Main chat area */
@@ -1153,10 +1156,13 @@ function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
     let actionsHtml = '';
     const isMe = uid === currentUser.userId;
     if (!isMe) {
+      const hornBtn = `<button class="horn-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}" title="Honk at ${escapeHtml(m.name||'Unknown')}">📯</button>`;
       if (isInLobby && myRooms.length > 0) {
-        actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button></div>`;
+        actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button>${hornBtn}</div>`;
       } else if (!isInLobby && isOwner) {
-        actionsHtml = `<div class="member-actions"><button class="kick-btn" data-uid="${uid}">Kick</button><button class="ban-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Ban</button></div>`;
+        actionsHtml = `<div class="member-actions"><button class="kick-btn" data-uid="${uid}">Kick</button><button class="ban-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Ban</button>${hornBtn}</div>`;
+      } else if (!isMe) {
+        actionsHtml = `<div class="member-actions">${hornBtn}</div>`;
       }
     }
     const youTag = isMe ? ' <span style="color:#a29bfe;font-size:0.7rem;">(you)</span>' : '';
@@ -1182,8 +1188,11 @@ function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
         const div = document.createElement('div');
         div.className = 'member-item';
         let actionsHtml = '';
+        const hornBtn2 = `<button class="horn-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}" title="Honk at ${escapeHtml(m.name||'Unknown')}">📯</button>`;
         if (isOwner) {
-          actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button></div>`;
+          actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button>${hornBtn2}</div>`;
+        } else {
+          actionsHtml = `<div class="member-actions">${hornBtn2}</div>`;
         }
         div.innerHTML = `<span class="member-name"><span class="online-dot" style="background:#ffaa00;"></span>${escapeHtml(m.name || 'Unknown')}</span>${actionsHtml}`;
         membersList.appendChild(div);
@@ -1212,6 +1221,7 @@ function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
       }
     };
   });
+  attachHornHandlers();
   membersList.querySelectorAll('.invite-btn').forEach(btn => {
     btn.onclick = () => {
       const uid = btn.dataset.uid;
@@ -1233,6 +1243,56 @@ function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
 // Room name lookup
 let _roomNameCache = {};
 function getRoomName(roomId) { return _roomNameCache[roomId] || roomId; }
+
+// Horn button handler (attached after each render)
+function attachHornHandlers() {
+  membersList.querySelectorAll('.horn-btn').forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const name = btn.dataset.name;
+      db.ref(`horns/${uid}`).set({ from: currentUser.username, ts: Date.now() });
+      btn.textContent = '✓';
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = '📯'; btn.disabled = false; }, 3000);
+      appendSystemMessage(`📯 You honked at ${name}!`);
+    };
+  });
+}
+
+// Play a fun horn sound using Web Audio API
+function playHornSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.12;
+      const end = start + 0.18;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.linearRampToValueAtTime(0, end);
+      osc.start(start);
+      osc.stop(end);
+    });
+  } catch(e) {}
+}
+
+// Listen for horns aimed at current user
+function listenHorns() {
+  db.ref(`horns/${currentUser.userId}`).on('value', snap => {
+    if (!snap.val()) return;
+    const data = snap.val();
+    playHornSound();
+    appendSystemMessage(`📯 ${escapeHtml(data.from || 'Someone')} honked at you!`);
+    // Clear the signal
+    db.ref(`horns/${currentUser.userId}`).remove();
+  });
+}
 
 // Send invite to a user
 function sendInvite(targetUid, targetName, roomId) {
@@ -1352,6 +1412,7 @@ function initChat() {
   ensureLobby();
   listenRooms();
   listenInvites();
+  listenHorns();
   // Small delay to ensure lobby exists and cleanup finishes
   setTimeout(() => joinRoom(LOBBY_ID, 'Lobby'), 800);
 }
