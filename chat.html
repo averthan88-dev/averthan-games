@@ -22,6 +22,9 @@ body {
   height: 100vh;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--ad-anchor-height, 0px);
 }
 /* Stars background */
 body::before {
@@ -49,7 +52,7 @@ body::before {
 h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 
 /* Layout */
-.app { display: flex; height: calc(100vh - var(--ad-anchor-height, 0px)); position: relative; z-index: 1; }
+.app { display: flex; flex: 1; min-height: 0; position: relative; z-index: 1; }
 
 /* Sidebar */
 .sidebar {
@@ -1385,9 +1388,8 @@ if (loadUser()) {
     // Minimum of 10px (just the padding), clamp to reasonable max
     h = Math.max(h, 10);
     document.documentElement.style.setProperty('--ad-anchor-height', h + 'px');
-    // Also set directly on .app as fallback
-    var app = document.querySelector('.app');
-    if (app) app.style.height = 'calc(100vh - ' + h + 'px)';
+    // Also set directly on body as fallback
+    document.body.style.paddingBottom = h + 'px';
   }
 
   // Run immediately and at multiple checkpoints
