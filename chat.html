@@ -1156,7 +1156,7 @@ function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
     let actionsHtml = '';
     const isMe = uid === currentUser.userId;
     if (!isMe) {
-      const hornBtn = `<button class="horn-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}" title="Honk at ${escapeHtml(m.name||'Unknown')}">📯</button>`;
+      const hornBtn = `<button class="horn-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}" title="Honk at ${escapeHtml(m.name||'Unknown')}">📣</button>`;
       if (isInLobby && myRooms.length > 0) {
         actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button>${hornBtn}</div>`;
       } else if (!isInLobby && isOwner) {
@@ -1188,7 +1188,7 @@ function renderMembersList(roomId, roomMembers, isOwner, lobbyMembers) {
         const div = document.createElement('div');
         div.className = 'member-item';
         let actionsHtml = '';
-        const hornBtn2 = `<button class="horn-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}" title="Honk at ${escapeHtml(m.name||'Unknown')}">📯</button>`;
+        const hornBtn2 = `<button class="horn-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}" title="Honk at ${escapeHtml(m.name||'Unknown')}">📣</button>`;
         if (isOwner) {
           actionsHtml = `<div class="member-actions"><button class="invite-btn" data-uid="${uid}" data-name="${escapeHtml(m.name||'Unknown')}">Invite</button>${hornBtn2}</div>`;
         } else {
@@ -1253,32 +1253,33 @@ function attachHornHandlers() {
       db.ref(`horns/${uid}`).set({ from: currentUser.username, ts: Date.now() });
       btn.textContent = '✓';
       btn.disabled = true;
-      setTimeout(() => { btn.textContent = '📯'; btn.disabled = false; }, 3000);
-      appendSystemMessage(`📯 You honked at ${name}!`);
+      setTimeout(() => { btn.textContent = '📣'; btn.disabled = false; }, 3000);
+      appendSystemMessage(`📣 You honked at ${name}!`);
     };
   });
 }
 
-// Play a fun horn sound using Web Audio API
+// Play a foghorn sound using Web Audio API
 function playHornSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sawtooth';
-      osc.frequency.value = freq;
-      const start = ctx.currentTime + i * 0.12;
-      const end = start + 0.18;
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
-      gain.gain.linearRampToValueAtTime(0, end);
-      osc.start(start);
-      osc.stop(end);
-    });
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const duration = 1.6;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    // Foghorn pitch: starts at 110Hz, rises to 130Hz, then drops back
+    osc.frequency.setValueAtTime(110, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(130, ctx.currentTime + 0.6);
+    osc.frequency.linearRampToValueAtTime(115, ctx.currentTime + duration);
+    // Volume envelope: quick fade in, hold, slow fade out
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.5, ctx.currentTime + duration - 0.4);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
   } catch(e) {}
 }
 
@@ -1288,7 +1289,7 @@ function listenHorns() {
     if (!snap.val()) return;
     const data = snap.val();
     playHornSound();
-    appendSystemMessage(`📯 ${escapeHtml(data.from || 'Someone')} honked at you!`);
+    appendSystemMessage(`📣 ${escapeHtml(data.from || 'Someone')} honked at you!`);
     // Clear the signal
     db.ref(`horns/${currentUser.userId}`).remove();
   });
