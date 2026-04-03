@@ -1259,70 +1259,62 @@ function attachHornHandlers() {
   });
 }
 
-// Play a realistic ship foghorn using Web Audio API
+// Play a royal trumpet fanfare using Web Audio API
 function playHornSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const duration = 2.8;
-    const fundamental = 88; // deep ship horn ~88 Hz
+    const t = ctx.currentTime;
 
-    // Lowpass filter to shape the tone (remove harsh highs)
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 600;
-    filter.Q.value = 1.5;
+    // Trumpet timbre: sawtooth + bright bandpass resonance
+    function playNote(freq, start, dur, vol) {
+      const osc = ctx.createOscillator();
+      const osc2 = ctx.createOscillator(); // 2nd harmonic for brightness
+      const band = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
 
-    // Master gain with slow attack + slow release envelope
-    const master = ctx.createGain();
-    master.gain.setValueAtTime(0, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 0.18); // slow attack
-    master.gain.setValueAtTime(0.55, ctx.currentTime + duration - 0.6);
-    master.gain.linearRampToValueAtTime(0, ctx.currentTime + duration); // slow release
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      osc2.type = 'sawtooth';
+      osc2.frequency.value = freq * 2;
 
-    filter.connect(master);
-    master.connect(ctx.destination);
+      band.type = 'bandpass';
+      band.frequency.value = 1200; // trumpet formant
+      band.Q.value = 0.8;
 
-    // LFO for slight pitch wobble (real foghorns wobble a bit)
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 4.5;
-    lfoGain.gain.value = 1.8; // ±1.8 Hz wobble
-    lfo.connect(lfoGain);
+      const g2 = ctx.createGain();
+      g2.gain.value = 0.18;
 
-    // Layer 1: fundamental sawtooth (main body of the horn)
-    const osc1 = ctx.createOscillator();
-    osc1.type = 'sawtooth';
-    osc1.frequency.value = fundamental;
-    lfoGain.connect(osc1.frequency); // apply wobble
-    const g1 = ctx.createGain();
-    g1.gain.value = 0.6;
-    osc1.connect(g1); g1.connect(filter);
+      osc.connect(band);
+      osc2.connect(g2); g2.connect(band);
+      band.connect(gain);
+      gain.connect(ctx.destination);
 
-    // Layer 2: 2nd harmonic (octave up, adds body)
-    const osc2 = ctx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.value = fundamental * 2;
-    lfoGain.connect(osc2.frequency);
-    const g2 = ctx.createGain();
-    g2.gain.value = 0.25;
-    osc2.connect(g2); g2.connect(filter);
+      // Sharp attack, slight decay, quick release (staccato trumpet)
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(vol, start + 0.022);
+      gain.gain.linearRampToValueAtTime(vol * 0.75, start + 0.06);
+      gain.gain.setValueAtTime(vol * 0.75, start + dur - 0.04);
+      gain.gain.linearRampToValueAtTime(0, start + dur);
 
-    // Layer 3: 3rd harmonic (adds that foghorn "brass" quality)
-    const osc3 = ctx.createOscillator();
-    osc3.type = 'sine';
-    osc3.frequency.value = fundamental * 3;
-    const g3 = ctx.createGain();
-    g3.gain.value = 0.12;
-    osc3.connect(g3); g3.connect(filter);
+      osc.start(start);  osc.stop(start + dur);
+      osc2.start(start); osc2.stop(start + dur);
+    }
 
-    // Slight pitch drift: dips slightly at start, settles
-    osc1.frequency.setValueAtTime(fundamental * 0.97, ctx.currentTime);
-    osc1.frequency.linearRampToValueAtTime(fundamental, ctx.currentTime + 0.3);
-    osc2.frequency.setValueAtTime(fundamental * 2 * 0.97, ctx.currentTime);
-    osc2.frequency.linearRampToValueAtTime(fundamental * 2, ctx.currentTime + 0.3);
+    // Royal fanfare: "Ta-ta-ta — Ta-da-DA-DAAA!"
+    // G4  G4  G4  C5        G4  E5  G5  C6(held)
+    const notes = [
+      // freq,  start,  dur,  vol
+      [392,  t + 0.00, 0.14, 0.30], // G4 (short)
+      [392,  t + 0.16, 0.14, 0.30], // G4
+      [392,  t + 0.32, 0.14, 0.30], // G4
+      [523,  t + 0.50, 0.30, 0.38], // C5 (medium)
+      [392,  t + 0.88, 0.13, 0.32], // G4
+      [659,  t + 1.03, 0.13, 0.36], // E5
+      [784,  t + 1.18, 0.18, 0.40], // G5
+      [1047, t + 1.40, 0.75, 0.45], // C6 (long, triumphant)
+    ];
+    notes.forEach(([freq, start, dur, vol]) => playNote(freq, start, dur, vol));
 
-    // Start everything
-    [osc1, osc2, osc3, lfo].forEach(o => { o.start(ctx.currentTime); o.stop(ctx.currentTime + duration); });
   } catch(e) {}
 }
 
