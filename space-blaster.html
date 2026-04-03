@@ -1095,5 +1095,15 @@ document.getElementById('player-name').addEventListener('keydown',e=>{ if(e.key=
 })();
 </script>
 <script src="av-scores.js"></script>
+<script>
+// Sync best local high score to Hall of Fame on page load
+window.addEventListener('load', function() {
+  var hs = JSON.parse(localStorage.getItem('sb-highscores') || '[]');
+  if (hs.length > 0 && typeof avReportScore === 'function') {
+    var best = hs.reduce(function(a, b) { return b.score > a.score ? b : a; }, hs[0]);
+    if (best && best.score > 0) avReportScore('space-blaster', best.score);
+  }
+});
+</script>
 </body>
 </html>
