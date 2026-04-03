@@ -27,7 +27,7 @@ h1,h2,h3,.logo{font-family:'Fredoka One',cursive}
 .home-btn:hover{background:rgba(108,92,231,.4);border-color:#6c5ce7;transform:scale(1.05)}
 
 /* Screens */
-.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center}
+.screen{position:absolute;top:0;left:0;width:100%;height:calc(100vh - var(--ad-anchor-height, 0px));display:none;flex-direction:column;align-items:center;justify-content:center}
 .screen.active{display:flex}
 
 /* Menu */
@@ -395,8 +395,9 @@ function startGame(){
 }
 
 function resizeCanvas(){
+  var adH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ad-anchor-height'))||0;
   canvas.width=window.innerWidth;
-  canvas.height=window.innerHeight;
+  canvas.height=window.innerHeight-adH;
 }
 window.addEventListener('resize',resizeCanvas);
 
@@ -739,6 +740,7 @@ function spawnParticles(x,y,color){
     h=Math.max(h,0);
     document.documentElement.style.setProperty('--ad-anchor-height',h+'px');
     document.body.style.paddingBottom=h+'px';
+    if(typeof resizeCanvas==='function')resizeCanvas();
   }
   updateAdPadding();
   document.addEventListener('DOMContentLoaded',updateAdPadding);

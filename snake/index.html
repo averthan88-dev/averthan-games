@@ -782,6 +782,7 @@ requestAnimationFrame(gameLoop);
     h=Math.max(h,0);
     document.documentElement.style.setProperty('--ad-anchor-height',h+'px');
     document.body.style.paddingBottom=h+'px';
+    if(typeof resize==='function')resize();
   }
   updateAdPadding();
   document.addEventListener('DOMContentLoaded',updateAdPadding);

@@ -26,7 +26,7 @@ canvas { display: block; border: 2px solid #1a1a2e; border-radius: 8px; }
   text-shadow: 0 0 10px rgba(0,200,255,0.6); font-family: 'KenVector', monospace; letter-spacing: 1px;
 }
 #weapon-display {
-  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: calc(var(--ad-anchor-height, 0px) + 10px); left: 50%; transform: translateX(-50%);
   color: #fff; font-size: 12px; z-index: 10;
   text-shadow: 0 0 8px rgba(0,200,255,0.5);
   background: rgba(0,0,0,0.65); padding: 4px 14px; border-radius: 6px;
@@ -136,7 +136,8 @@ const ctx    = canvas.getContext('2d');
 
 // ── Resize ─────────────────────────────────────────────────────────────────────
 function resize(){
-  let h=window.innerHeight, w=Math.min(window.innerWidth, h*0.55);
+  var adH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ad-anchor-height')) || 0;
+  let h=window.innerHeight - adH, w=Math.min(window.innerWidth, h*0.55);
   canvas.width=w; canvas.height=h;
 }
 resize(); window.addEventListener('resize', resize);
@@ -1078,6 +1079,7 @@ document.getElementById('player-name').addEventListener('keydown',e=>{ if(e.key=
     h=Math.max(h,0);
     document.documentElement.style.setProperty('--ad-anchor-height',h+'px');
     document.body.style.paddingBottom=h+'px';
+    if(typeof resize==='function')resize();
   }
   updateAdPadding();
   document.addEventListener('DOMContentLoaded',updateAdPadding);

@@ -43,9 +43,6 @@ canvas{display:block;flex:1;max-width:100%;max-height:100%;}
     .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
     </style>
 
-    .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-    @media (max-width: 468px) { .ad-container { min-height: 50px; } }
-
 <style>
 /* Ensure body padding works with height:100vh layouts */
 body { box-sizing: border-box !important; }
@@ -428,6 +425,7 @@ requestAnimationFrame(draw);
     h=Math.max(h,0);
     document.documentElement.style.setProperty('--ad-anchor-height',h+'px');
     document.body.style.paddingBottom=h+'px';
+    if(typeof resize==='function')resize();
   }
   updateAdPadding();
   document.addEventListener('DOMContentLoaded',updateAdPadding);

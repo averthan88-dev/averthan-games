@@ -94,7 +94,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 
 /* Voice button */
 .voice-btn{
-  position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;
+  position:fixed;bottom:calc(var(--ad-anchor-height, 0px) + 20px);right:20px;width:50px;height:50px;border-radius:50%;
   background:var(--accent);border:none;font-size:1.4em;cursor:pointer;z-index:100;
   box-shadow:0 4px 15px rgba(34,211,238,0.3);transition:all 0.15s;
 }
@@ -195,9 +195,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     .ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
     .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
     </style>
-
-    .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-    @media (max-width: 468px) { .ad-container { min-height: 50px; } }
 
 <style>
 /* Ensure body padding works with height:100vh layouts */
