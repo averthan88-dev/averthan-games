@@ -1044,6 +1044,10 @@ function _doJoinRoom(roomId, roomName) {
   roomTitle.textContent = roomName || roomId;
   messagesContainer.innerHTML = '';
 
+  // Remember last room for reconnect
+  localStorage.setItem('av_lastRoom', roomId);
+  localStorage.setItem('av_lastRoomName', roomName || roomId);
+
   // Show/hide Leave Room button
   leaveRoomBtn.style.display = (roomId !== LOBBY_ID) ? 'inline-block' : 'none';
 
@@ -1105,6 +1109,9 @@ function leaveCurrentRoom() {
 // Permanently leave a custom room (go back to lobby)
 function leaveRoom() {
   if (currentRoomId && currentRoomId !== LOBBY_ID) {
+    // Clear saved room so next connect goes to lobby
+    localStorage.removeItem('av_lastRoom');
+    localStorage.removeItem('av_lastRoomName');
     leaveCurrentRoom();
     joinRoom(LOBBY_ID, 'Lobby');
   }
@@ -1427,6 +1434,8 @@ function listenKicked(roomId) {
     if (snap.val()) {
       // Remove kick flag
       db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).remove();
+      localStorage.removeItem('av_lastRoom');
+      localStorage.removeItem('av_lastRoomName');
       // Go back to lobby
       joinRoom(LOBBY_ID, 'Lobby');
       appendSystemMessage('You were kicked from the room.');
@@ -1485,8 +1494,25 @@ function initChat() {
   listenRooms();
   listenInvites();
   listenHorns();
-  // Small delay to ensure lobby exists and cleanup finishes
-  setTimeout(() => joinRoom(LOBBY_ID, 'Lobby'), 800);
+  // Rejoin last room if user didn't explicitly leave, otherwise lobby
+  setTimeout(() => {
+    const lastRoom = localStorage.getItem('av_lastRoom');
+    const lastRoomName = localStorage.getItem('av_lastRoomName');
+    if (lastRoom && lastRoom !== LOBBY_ID) {
+      // Verify room still exists before rejoining
+      db.ref(`rooms/${lastRoom}`).once('value', snap => {
+        if (snap.exists()) {
+          joinRoom(lastRoom, lastRoomName || snap.val().name || lastRoom);
+        } else {
+          localStorage.removeItem('av_lastRoom');
+          localStorage.removeItem('av_lastRoomName');
+          joinRoom(LOBBY_ID, 'Lobby');
+        }
+      });
+    } else {
+      joinRoom(LOBBY_ID, 'Lobby');
+    }
+  }, 800);
 }
 
 // Startup
