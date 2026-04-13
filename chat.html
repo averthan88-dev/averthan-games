@@ -928,24 +928,26 @@ function ensureLobby() {
   });
 }
 
-// Daily cleanup - first visitor of the day triggers it
-function dailyCleanup() {
+// Lobby cleanup - first visitor after 30 minutes triggers it, then repeats
+function lobbyCleanup() {
   db.ref('meta/lastCleanup').once('value', snap => {
     const last = snap.val() || 0;
     const now = Date.now();
-    const hoursSince = (now - last) / (1000 * 60 * 60);
-    if (hoursSince >= 24) {
+    const minsSince = (now - last) / (1000 * 60);
+    if (minsSince >= 30) {
       // Claim the cleanup (prevent multiple clients from running it)
       db.ref('meta/lastCleanup').set(now);
-      console.log('Running daily cleanup...');
+      console.log('Running lobby cleanup (30 min)...');
       // Only clear lobby messages, leave user-created rooms intact
       db.ref(`rooms/${LOBBY_ID}/messages`).remove();
       // Remove all invites
       db.ref('invites').remove();
-      console.log('Daily cleanup complete.');
+      console.log('Lobby cleanup complete.');
     }
   });
 }
+// Re-check every 5 minutes so long-running sessions also trigger cleanup
+setInterval(lobbyCleanup, 5 * 60 * 1000);
 
 // Room list
 function listenRooms() {
@@ -960,8 +962,12 @@ function listenRooms() {
       if (!room.name) continue;
       roomOwnerCache[id] = room.ownerId;
       _roomNameCache[id] = room.name;
-      const memberCount = room.members ? Object.keys(room.members).length : 0;
+      // Only show rooms the user belongs to: lobby, own rooms, or rooms they're a member of
+      const isMember = room.members && room.members[currentUser.userId];
       const isMyRoom = room.ownerId === currentUser.userId && id !== LOBBY_ID;
+      const isLobby = id === LOBBY_ID;
+      if (!isLobby && !isMyRoom && !isMember && !userRooms.has(id)) continue;
+      const memberCount = room.members ? Object.keys(room.members).length : 0;
       const div = document.createElement('div');
       div.className = 'room-item' + (id === currentRoomId ? ' active' : '');
       div.innerHTML = `<span class="room-name">${escapeHtml(room.name)}</span><span class="room-count">${memberCount}</span>${isMyRoom ? '<button class="delete-room-btn" data-rid="'+id+'" title="Delete room">✕</button>' : ''}`;
@@ -984,18 +990,47 @@ function listenRooms() {
 
 // Join room
 function joinRoom(roomId, roomName) {
-  // Check room-level ban first
-  if (roomId !== LOBBY_ID) {
-    db.ref(`rooms/${roomId}/banned/${currentUser.userId}`).once('value', snap => {
-      if (snap.val()) {
-        appendSystemMessage('You are banned from that room.');
-        return;
-      }
-      _doJoinRoom(roomId, roomName);
-    });
+  // Lobby is always open
+  if (roomId === LOBBY_ID) {
+    _doJoinRoom(roomId, roomName);
     return;
   }
-  _doJoinRoom(roomId, roomName);
+  // For custom rooms: check ban, then check authorization (owner, member, or invited)
+  db.ref(`rooms/${roomId}/banned/${currentUser.userId}`).once('value', banSnap => {
+    if (banSnap.val()) {
+      appendSystemMessage('You are banned from that room.');
+      return;
+    }
+    // Check if user is the owner
+    db.ref(`rooms/${roomId}/ownerId`).once('value', ownerSnap => {
+      if (ownerSnap.val() === currentUser.userId) {
+        _doJoinRoom(roomId, roomName);
+        return;
+      }
+      // Check if already a member
+      db.ref(`rooms/${roomId}/members/${currentUser.userId}`).once('value', memSnap => {
+        if (memSnap.exists()) {
+          _doJoinRoom(roomId, roomName);
+          return;
+        }
+        // Check if user was previously in this room (tracked locally)
+        if (userRooms.has(roomId)) {
+          _doJoinRoom(roomId, roomName);
+          return;
+        }
+        // Check if there's a pending invite
+        db.ref(`invites/${currentUser.userId}/${roomId}`).once('value', invSnap => {
+          if (invSnap.exists()) {
+            // Consume the invite and join
+            db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
+            _doJoinRoom(roomId, roomName);
+          } else {
+            appendSystemMessage('You need an invite to join that room.');
+          }
+        });
+      });
+    });
+  });
 }
 
 // Track which rooms user is a member of (so they can switch freely)
@@ -1445,7 +1480,7 @@ function escapeHtml(str) {
 // Init
 function initChat() {
   userDisplay.textContent = currentUser.username;
-  dailyCleanup();
+  lobbyCleanup();
   ensureLobby();
   listenRooms();
   listenInvites();
