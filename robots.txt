@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /pieces/
+Disallow: /space-blaster-assets/
+
+Sitemap: https://averthan.games/sitemap.xml

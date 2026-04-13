@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://averthan.games/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://averthan.games/about.html</loc><priority>0.5</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/privacy-policy.html</loc><priority>0.3</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/terms.html</loc><priority>0.3</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/cookie-policy.html</loc><priority>0.3</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/contact.html</loc><priority>0.4</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/space-blaster.html</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/chess.html</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/chat.html</loc><priority>0.6</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://averthan.games/2048/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/snake/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/puzzle-quest/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/mathquest-poc/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/smarter-math/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/finance-tutor/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/wordle-junior/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/dash-runner/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/whack-a-mole/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/typing-racer/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/trivia-blitz/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/times-table-racer/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/memory-match/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/simon-says/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/fruit-slicer/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/maze-runner/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/cookie-clicker/</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://averthan.games/hall-of-fame/</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+</urlset>
