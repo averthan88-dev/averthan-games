@@ -31,15 +31,25 @@
             const s1 = document.createElement('script');
             s1.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
             s1.onload = () => {
-                const s2 = document.createElement('script');
-                s2.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js';
-                s2.onload = () => {
-                    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-                    db = firebase.database();
-                    fbReady = true;
-                    resolve();
+                const sAuth = document.createElement('script');
+                sAuth.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js';
+                sAuth.onload = () => {
+                    const s2 = document.createElement('script');
+                    s2.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js';
+                    s2.onload = () => {
+                        if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+                        db = firebase.database();
+                        // Rules require auth — sign in anonymously, then resolve.
+                        firebase.auth().signInAnonymously()
+                            .then(() => new Promise(res => {
+                                const unsub = firebase.auth().onAuthStateChanged(u => { if (u) { unsub(); res(); } });
+                            }))
+                            .then(() => { fbReady = true; resolve(); })
+                            .catch(err => { console.warn('avScores auth failed:', err); fbReady = true; resolve(); });
+                    };
+                    document.head.appendChild(s2);
                 };
-                document.head.appendChild(s2);
+                document.head.appendChild(sAuth);
             };
             document.head.appendChild(s1);
         });
@@ -62,8 +72,11 @@
         try {
             await initFirebase();
             const name = getPlayerName();
-            const safeKey = name.replace(/[.#$\/\[\]]/g, '_');
-            const ref = db.ref(`hallOfFame/${gameId}/${safeKey}`);
+            const user = firebase.auth().currentUser;
+            if (!user) { console.warn('avScores: no auth user'); return; }
+            // Use the auth.uid as the key so Firebase rules can enforce
+            // "only the signed-in user can write their own score".
+            const ref = db.ref(`hallOfFame/${gameId}/${user.uid}`);
             
             const snap = await ref.once('value');
             const existing = snap.val();
@@ -112,14 +125,24 @@
     window.avGetPlayerStats = async function(playerName) {
         try {
             await initFirebase();
-            const name = playerName || getPlayerName();
-            const safeKey = name.replace(/[.#$\/\[\]]/g, '_');
+            // Prefer matching by auth.uid for the current player; otherwise
+            // fall back to a name match across all records.
+            const user = firebase.auth().currentUser;
+            const wantName = playerName || getPlayerName();
             const snap = await db.ref('hallOfFame').once('value');
             const allGames = snap.val() || {};
             const stats = {};
             for (const [gameId, players] of Object.entries(allGames)) {
-                if (players[safeKey]) {
-                    stats[gameId] = players[safeKey];
+                if (!players) continue;
+                if (!playerName && user && players[user.uid]) {
+                    stats[gameId] = players[user.uid];
+                    continue;
+                }
+                for (const rec of Object.values(players)) {
+                    if (rec && rec.name === wantName) {
+                        stats[gameId] = rec;
+                        break;
+                    }
                 }
             }
             return stats;

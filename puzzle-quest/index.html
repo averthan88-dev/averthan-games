@@ -7,9 +7,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Puzzle Quest 🧩</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="canonical" href="https://averthan.games/puzzle-quest/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Averthan Games">
+<meta property="og:url" content="https://averthan.games/puzzle-quest/">
+<meta property="og:title" content="Puzzle Quest 🧩">
+<meta property="og:description" content="Puzzle Quest - Train your brain with hidden objects, mazes, pattern puzzles, and spot-the-difference challenges.">
+<meta property="og:image" content="https://averthan.games/favicon.svg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Puzzle Quest 🧩">
+<meta name="twitter:description" content="Puzzle Quest - Train your brain with hidden objects, mazes, pattern puzzles, and spot-the-difference challenges.">
+<meta name="twitter:image" content="https://averthan.games/favicon.svg">
     <meta name="description" content="Puzzle Quest - Train your brain with hidden objects, mazes, pattern puzzles, and spot-the-difference challenges.">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --bg:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);
@@ -70,13 +82,7 @@ input:focus{outline:none;border-color:#4facfe;}
 .result-stars{font-size:48px;margin:12px 0;}
 </style>
 
-    <style>
-    /* AdSense ad containers */
-    .ad-container { text-align: center; margin: 15px auto; max-width: 728px; min-height: 90px; z-index: 10; position: relative; overflow: hidden; }
-    .ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
-    .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-    </style>
-
+<link rel="stylesheet" href="/shared.css">
 <style>
 /* Ensure body padding works with height:100vh layouts */
 body { box-sizing: border-box !important; }
@@ -257,6 +263,7 @@ function showResult(type,time,score,max){
   else if(type==='pattern'){const pct=score/max;stars=pct>=0.9?3:pct>=0.6?2:1;}
   else{stars=time<40?3:time<70?2:1;}
   progress.stars+=stars;progress[type]++;save();
+  if(typeof avReportScore==='function')avReportScore('puzzle-quest',progress.stars,{type:type,stars:stars});
   document.getElementById('resStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
   document.getElementById('resTitle').textContent=['Nice Try!','Great Job!','Amazing!'][stars-1];
   const msgs=['Keep practicing, you\'ll get faster!','You\'re really good at this!','You\'re a puzzle master!'];
@@ -777,6 +784,7 @@ initProfile();
 <a href="../cookie-policy.html" style="color:rgba(255,255,255,0.35);text-decoration:none;margin:0 8px;font-size:13px;font-family:Nunito,sans-serif;">Cookies</a>
 <a href="../contact.html" style="color:rgba(255,255,255,0.35);text-decoration:none;margin:0 8px;font-size:13px;font-family:Nunito,sans-serif;">Contact</a>
 </div>
+<script src="../av-scores.js"></script>
 <script src="../cookie-consent.js"></script>
 </body>
 </html>

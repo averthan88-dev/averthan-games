@@ -10,9 +10,22 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Averthan Games - Community Chat</title>
+<link rel="canonical" href="https://averthan.games/chat.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Averthan Games">
+<meta property="og:url" content="https://averthan.games/chat.html">
+<meta property="og:title" content="Averthan Games - Community Chat">
+<meta property="og:description" content="Community Chat - Chat with other Averthan Games players. Create rooms and hang out with the community.">
+<meta property="og:image" content="https://averthan.games/favicon.svg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Averthan Games - Community Chat">
+<meta name="twitter:description" content="Community Chat - Chat with other Averthan Games players. Create rooms and hang out with the community.">
+<meta name="twitter:image" content="https://averthan.games/favicon.svg">
     <meta name="description" content="Community Chat - Chat with other Averthan Games players. Create rooms and hang out with the community.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -439,13 +452,7 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 }
 </style>
 
-    <style>
-    /* AdSense ad containers */
-    .ad-container { text-align: center; margin: 15px auto; max-width: 728px; min-height: 90px; z-index: 10; position: relative; overflow: hidden; }
-    .ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
-    .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-    </style>
-
+<link rel="stylesheet" href="/shared.css">
 </head>
 <body>
 <div class="ad-container ad-top">
@@ -567,6 +574,11 @@ const LOBBY_ID = 'lobby';
   document.cookie='av_banned=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/chat.html';
   console.log('Ban cookies cleared.');
 })();
+
+// Global guard: log any unhandled promise rejection from Firebase writes etc.
+window.addEventListener('unhandledrejection', function(ev) {
+  try { console.warn('Unhandled promise rejection:', ev.reason); } catch(e) {}
+});
 
 // Stars
 (function() {
@@ -822,7 +834,10 @@ function submitUsername() {
     return;
   }
   usernameError.textContent = '';
-  currentUser.userId = generateUserId();
+  // Use the Firebase-issued auth uid — falls back to a generated id if auth
+  // is somehow not ready yet (defensive; bootAfterAuth normally runs first).
+  const authUid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+  currentUser.userId = authUid || generateUserId();
   currentUser.username = name;
   saveUser(currentUser.userId, currentUser.username);
   usernameModal.style.display = 'none';
@@ -844,12 +859,17 @@ function submitChangeName() {
     changeNameError.textContent = '2-20 characters, letters, numbers & spaces only';
     return;
   }
+  if (containsProfanity(name)) {
+    changeNameError.textContent = 'That name contains inappropriate language.';
+    return;
+  }
   changeNameError.textContent = '';
   currentUser.username = name;
   saveUser(currentUser.userId, currentUser.username);
   userDisplay.textContent = name;
   // Update in current room members
-  db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}/name`).set(name);
+  db.ref(`rooms/${currentRoomId}/members/${currentUser.userId}/name`).set(name)
+    .catch(err => console.warn('Name update failed:', err));
   changeNameModal.style.display = 'none';
 }
 changeNameSubmit.onclick = submitChangeName;
@@ -923,7 +943,7 @@ function ensureLobby() {
         ownerId: 'system',
         ownerName: 'System',
         createdAt: firebase.database.ServerValue.TIMESTAMP
-      });
+      }).catch(err => console.warn('Lobby bootstrap failed:', err));
     }
   });
 }
@@ -936,7 +956,7 @@ function lobbyCleanup() {
     const minsSince = (now - last) / (1000 * 60);
     if (minsSince >= 30) {
       // Claim the cleanup (prevent multiple clients from running it)
-      db.ref('meta/lastCleanup').set(now);
+      db.ref('meta/lastCleanup').set(now).catch(err => console.warn('Cleanup claim failed:', err));
       console.log('Running lobby cleanup (30 min)...');
       // Only clear lobby messages, leave user-created rooms intact
       db.ref(`rooms/${LOBBY_ID}/messages`).remove();
@@ -989,33 +1009,72 @@ function listenRooms() {
 }
 
 // Join room
+let _joinInProgress = false;
+function _releaseJoin() { _joinInProgress = false; }
+function _finishJoin(roomId, roomName) {
+  _doJoinRoom(roomId, roomName);
+  _releaseJoin();
+}
 function joinRoom(roomId, roomName) {
+  // Prevent overlapping join checks when user clicks multiple rooms quickly.
+  if (_joinInProgress) return;
+  _joinInProgress = true;
+  // Safety release in case a branch forgets (e.g., silent Firebase error)
+  setTimeout(_releaseJoin, 3000);
+  // Already in this room? ignore
+  if (roomId === currentRoomId) { _releaseJoin(); return; }
   // Lobby is always open
   if (roomId === LOBBY_ID) {
-    _doJoinRoom(roomId, roomName);
+    _finishJoin(roomId, roomName);
     return;
   }
   // For custom rooms: check ban, then check authorization (owner, member, or invited)
   db.ref(`rooms/${roomId}/banned/${currentUser.userId}`).once('value', banSnap => {
     if (banSnap.val()) {
       appendSystemMessage('You are banned from that room.');
+      _releaseJoin();
+      return;
+    }
+    // Check if user was kicked (ownership can override; invite clears it)
+    db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).once('value', kickSnap => {
+    if (kickSnap.val()) {
+      // Kicked users need a new invite OR owner re-add to clear the flag
+      db.ref(`rooms/${roomId}/ownerId`).once('value', oSnap => {
+        if (oSnap.val() === currentUser.userId) {
+          // Owner is always allowed; clear their own stale kick flag
+          db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).remove();
+          _finishJoin(roomId, roomName);
+        } else {
+          db.ref(`invites/${currentUser.userId}/${roomId}`).once('value', invSnap => {
+            if (invSnap.exists()) {
+              // Invite overrides kick
+              db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).remove();
+              db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
+              _finishJoin(roomId, roomName);
+            } else {
+              appendSystemMessage('You were kicked from that room. Ask the owner for a new invite.');
+              _releaseJoin();
+            }
+          });
+        }
+      });
       return;
     }
     // Check if user is the owner
     db.ref(`rooms/${roomId}/ownerId`).once('value', ownerSnap => {
       if (ownerSnap.val() === currentUser.userId) {
-        _doJoinRoom(roomId, roomName);
+        _finishJoin(roomId, roomName);
         return;
       }
       // Check if already a member
       db.ref(`rooms/${roomId}/members/${currentUser.userId}`).once('value', memSnap => {
         if (memSnap.exists()) {
-          _doJoinRoom(roomId, roomName);
+          _finishJoin(roomId, roomName);
           return;
         }
         // Check if user was previously in this room (tracked locally)
         if (userRooms.has(roomId)) {
-          _doJoinRoom(roomId, roomName);
+          _finishJoin(roomId, roomName);
           return;
         }
         // Check if there's a pending invite
@@ -1023,13 +1082,15 @@ function joinRoom(roomId, roomName) {
           if (invSnap.exists()) {
             // Consume the invite and join
             db.ref(`invites/${currentUser.userId}/${roomId}`).remove();
-            _doJoinRoom(roomId, roomName);
+            _finishJoin(roomId, roomName);
           } else {
             appendSystemMessage('You need an invite to join that room.');
+            _releaseJoin();
           }
         });
       });
     });
+    }); // close kicked
   });
 }
 
@@ -1375,12 +1436,21 @@ function listenHorns() {
 
 // Send invite to a user
 function sendInvite(targetUid, targetName, roomId) {
+  // Defensive: only the room owner can invite. Rules also enforce this, but
+  // this gives a clear user-facing message instead of a silent rejection.
+  if (roomOwnerCache[roomId] && roomOwnerCache[roomId] !== currentUser.userId) {
+    appendSystemMessage('Only the room owner can send invites.');
+    return;
+  }
   db.ref(`invites/${targetUid}/${roomId}`).set({
     from: currentUser.userId,
     fromName: currentUser.username,
     roomId: roomId,
     roomName: getRoomName(roomId),
     timestamp: Date.now()
+  }).catch(err => {
+    console.warn('Invite failed:', err);
+    appendSystemMessage('Invite failed — you may not be the room owner.');
   });
   appendSystemMessage(`Invited ${targetName} to ${getRoomName(roomId)}`);
 }
@@ -1410,10 +1480,12 @@ function showInviteToast(inv, key) {
   document.body.appendChild(toast);
   document.getElementById('inv-accept').onclick = () => {
     toast.remove();
-    db.ref('invites/' + currentUser.userId + '/' + key).remove();
+    // Do NOT remove the invite here — joinRoom() consumes it atomically after
+    // verifying ban/kick status. Removing first would make joinRoom reject us.
     db.ref('rooms/' + key + '/banned/' + currentUser.userId).once('value', snap => {
       if (snap.val()) {
         appendSystemMessage('You are banned from that room.');
+        db.ref('invites/' + currentUser.userId + '/' + key).remove();
       } else {
         joinRoom(key, inv.roomName);
       }
@@ -1432,8 +1504,7 @@ function listenKicked(roomId) {
   if (roomId === LOBBY_ID) return;
   db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).on('value', snap => {
     if (snap.val()) {
-      // Remove kick flag
-      db.ref(`rooms/${roomId}/kicked/${currentUser.userId}`).remove();
+      // Keep the kick flag so they can't silently rejoin; joinRoom checks it.
       localStorage.removeItem('av_lastRoom');
       localStorage.removeItem('av_lastRoomName');
       // Go back to lobby
@@ -1452,20 +1523,35 @@ function appendSystemMessage(text) {
 }
 
 // Send message
+const MSG_MAX_LEN = 500;
+const MSG_COOLDOWN_MS = 700;
+let _lastSendAt = 0;
 function sendMessage() {
   if (_isBanned) return;
-  const text = msgInput.value.trim();
+  let text = msgInput.value.trim();
   if (!text) return;
+  // Client-side rate limit (best-effort; server rules are authoritative)
+  const now = Date.now();
+  if (now - _lastSendAt < MSG_COOLDOWN_MS) {
+    return;
+  }
+  // Hard length cap (UI maxlength can be bypassed)
+  if (text.length > MSG_MAX_LEN) text = text.slice(0, MSG_MAX_LEN);
   if (containsProfanity(text)) {
     banUser(text);
     return;
   }
+  _lastSendAt = now;
   msgInput.value = '';
   db.ref(`rooms/${currentRoomId}/messages`).push({
     userId: currentUser.userId,
     username: currentUser.username,
     text: text,
     timestamp: firebase.database.ServerValue.TIMESTAMP
+  }).catch(err => {
+    console.warn('Send failed:', err);
+    appendSystemMessage('Message failed to send. Please try again.');
+    _lastSendAt = 0; // allow retry
   });
 }
 sendBtn.onclick = sendMessage;
@@ -1515,12 +1601,34 @@ function initChat() {
   }, 800);
 }
 
-// Startup
-if (loadUser()) {
-  initChat();
-} else {
-  showUsernameModal();
+// Startup — gate everything on anonymous auth so the Firebase RTDB rules
+// can reliably identify the writer via auth.uid.
+function bootAfterAuth(authUid) {
+  // Use the Firebase-issued uid as our canonical userId so server rules can
+  // enforce "only you can write your own member/invite entries".
+  if (loadUser()) {
+    currentUser.userId = authUid;           // override any stale local id
+    saveUser(authUid, currentUser.username); // keep display name from localStorage
+    initChat();
+  } else {
+    showUsernameModal();
+  }
 }
+
+firebase.auth().signInAnonymously()
+  .then(() => {
+    // Wait for the auth state to actually settle before hitting the DB.
+    firebase.auth().onAuthStateChanged(user => {
+      if (user && user.uid) bootAfterAuth(user.uid);
+    });
+  })
+  .catch(err => {
+    console.error('Anonymous auth failed:', err);
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0a1a;color:#fff;font-family:Nunito,sans-serif;text-align:center;padding:24px;z-index:10000;';
+    el.innerHTML = '<div><h2 style="margin-bottom:12px;">Chat unavailable</h2><p style="opacity:.7;">Could not start a secure session. Please reload the page.</p></div>';
+    document.body.appendChild(el);
+  });
 </script>
 <div class="ad-anchor" id="adAnchor">
     <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-1414495127165303" data-ad-slot="auto" data-ad-format="horizontal"></ins>
@@ -1557,8 +1665,9 @@ if (loadUser()) {
   }, 500);
 
   // ResizeObserver on both the container and ins element
+  var ro = null;
   if (window.ResizeObserver) {
-    var ro = new ResizeObserver(updateAdPadding);
+    ro = new ResizeObserver(updateAdPadding);
     var anchor = document.getElementById('adAnchor');
     if (anchor) {
       ro.observe(anchor);
@@ -1566,6 +1675,11 @@ if (loadUser()) {
       if (ins) ro.observe(ins);
     }
   }
+  // Clean up on page hide to avoid leaks
+  window.addEventListener('pagehide', function() {
+    try { if (ro) ro.disconnect(); } catch (e) {}
+    try { clearInterval(interval); } catch (e) {}
+  });
 })();
 </script>
 <div style="text-align:center;padding:24px 16px 8px;border-top:1px solid rgba(255,255,255,0.08);margin-top:24px;">

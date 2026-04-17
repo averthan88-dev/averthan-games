@@ -7,6 +7,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smarter Math - Grade 7 | Averthan Games</title>
+<link rel="canonical" href="https://averthan.games/smarter-math/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Averthan Games">
+<meta property="og:url" content="https://averthan.games/smarter-math/">
+<meta property="og:title" content="Smarter Math - Grade 7 | Averthan Games">
+<meta property="og:description" content="Smarter Math - Grade 7 interactive math with animations, narration, and quizzes. 8 topics and 47 lessons covering the full curriculum.">
+<meta property="og:image" content="https://averthan.games/favicon.svg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Smarter Math - Grade 7 | Averthan Games">
+<meta name="twitter:description" content="Smarter Math - Grade 7 interactive math with animations, narration, and quizzes. 8 topics and 47 lessons covering the full curriculum.">
+<meta name="twitter:image" content="https://averthan.games/favicon.svg">
     <meta name="description" content="Smarter Math - Grade 7 interactive math with animations, narration, and quizzes. 8 topics and 47 lessons covering the full curriculum.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -210,13 +222,7 @@ h1,h2,h3,.title-font{font-family:'Fredoka One',cursive}
 .interactive-hint{color:var(--sub);font-size:.85rem;text-align:center;margin-top:8px;font-style:italic}
 </style>
 
-    <style>
-    /* AdSense ad containers */
-    .ad-container { text-align: center; margin: 15px auto; max-width: 728px; min-height: 90px; z-index: 10; position: relative; overflow: hidden; }
-    .ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
-    .ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-    </style>
-
+<link rel="stylesheet" href="/shared.css">
 <style>
 /* Ensure body padding works with height:100vh layouts */
 body { box-sizing: border-box !important; }
@@ -1672,6 +1678,7 @@ function renderQuizResults(container, topic) {
   const stars = pct >= 100 ? 3 : pct >= 60 ? 2 : 1;
 
   if (pct >= 60) markTopicComplete(topic.id);
+  if (typeof avReportScore === 'function') avReportScore('smarter-math', qs.score, {topic: topic.id, total: qs.questions.length, pct: Math.round(pct)});
 
   container.innerHTML = `<div class="slide-card quiz-score" style="--accent:${topic.accent}">
     <h3 style="color:${topic.accent}">Quiz Complete!</h3>
@@ -1956,6 +1963,7 @@ buildHome();
 <a href="../cookie-policy.html" style="color:rgba(255,255,255,0.35);text-decoration:none;margin:0 8px;font-size:13px;font-family:Nunito,sans-serif;">Cookies</a>
 <a href="../contact.html" style="color:rgba(255,255,255,0.35);text-decoration:none;margin:0 8px;font-size:13px;font-family:Nunito,sans-serif;">Contact</a>
 </div>
+<script src="../av-scores.js"></script>
 <script src="../cookie-consent.js"></script>
 </body>
 </html>
