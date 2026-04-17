@@ -39,13 +39,17 @@
                     s2.onload = () => {
                         if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
                         db = firebase.database();
-                        // Rules require auth — sign in anonymously, then resolve.
-                        firebase.auth().signInAnonymously()
-                            .then(() => new Promise(res => {
-                                const unsub = firebase.auth().onAuthStateChanged(u => { if (u) { unsub(); res(); } });
-                            }))
-                            .then(() => { fbReady = true; resolve(); })
-                            .catch(err => { console.warn('avScores auth failed:', err); fbReady = true; resolve(); });
+                        // Best-effort anonymous sign-in; ignore if not enabled.
+                        const finish = () => { fbReady = true; resolve(); };
+                        try {
+                            firebase.auth().signInAnonymously()
+                                .then(() => new Promise(res => {
+                                    const unsub = firebase.auth().onAuthStateChanged(u => { if (u) { unsub(); res(); } });
+                                    setTimeout(res, 2000); // don't block score writes on auth
+                                }))
+                                .then(finish)
+                                .catch(err => { console.warn('avScores auth unavailable:', err && err.code); finish(); });
+                        } catch (e) { finish(); }
                     };
                     document.head.appendChild(s2);
                 };
@@ -72,11 +76,11 @@
         try {
             await initFirebase();
             const name = getPlayerName();
-            const user = firebase.auth().currentUser;
-            if (!user) { console.warn('avScores: no auth user'); return; }
-            // Use the auth.uid as the key so Firebase rules can enforce
-            // "only the signed-in user can write their own score".
-            const ref = db.ref(`hallOfFame/${gameId}/${user.uid}`);
+            // Prefer Firebase auth.uid if anonymous sign-in succeeded;
+            // otherwise fall back to the sanitized player name (legacy key).
+            const user = firebase.auth && firebase.auth().currentUser;
+            const key = (user && user.uid) || name.replace(/[.#$\/\[\]]/g, '_');
+            const ref = db.ref(`hallOfFame/${gameId}/${key}`);
             
             const snap = await ref.once('value');
             const existing = snap.val();

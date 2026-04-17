@@ -1601,34 +1601,46 @@ function initChat() {
   }, 800);
 }
 
-// Startup — gate everything on anonymous auth so the Firebase RTDB rules
-// can reliably identify the writer via auth.uid.
-function bootAfterAuth(authUid) {
-  // Use the Firebase-issued uid as our canonical userId so server rules can
-  // enforce "only you can write your own member/invite entries".
+// Startup — prefer anonymous auth (so Firebase can tie writes to auth.uid if
+// rules are later tightened), but fall back gracefully if anonymous sign-in
+// is disabled on the project.
+function bootWithIdentity(authUid) {
   if (loadUser()) {
-    currentUser.userId = authUid;           // override any stale local id
-    saveUser(authUid, currentUser.username); // keep display name from localStorage
+    if (authUid) {
+      currentUser.userId = authUid;           // prefer Firebase uid
+      saveUser(authUid, currentUser.username);
+    }
     initChat();
   } else {
     showUsernameModal();
   }
 }
+let _authBooted = false;
+function bootOnce(uid) {
+  if (_authBooted) return;
+  _authBooted = true;
+  bootWithIdentity(uid);
+}
 
-firebase.auth().signInAnonymously()
-  .then(() => {
-    // Wait for the auth state to actually settle before hitting the DB.
-    firebase.auth().onAuthStateChanged(user => {
-      if (user && user.uid) bootAfterAuth(user.uid);
+try {
+  firebase.auth().signInAnonymously()
+    .then(() => {
+      firebase.auth().onAuthStateChanged(user => {
+        if (user && user.uid) bootOnce(user.uid);
+      });
+    })
+    .catch(err => {
+      // Most common: Anonymous sign-in disabled on the Firebase project.
+      // Continue without an auth uid — rules currently don't require one.
+      console.warn('Anonymous auth unavailable:', err && err.code);
+      bootOnce(null);
     });
-  })
-  .catch(err => {
-    console.error('Anonymous auth failed:', err);
-    const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0a1a;color:#fff;font-family:Nunito,sans-serif;text-align:center;padding:24px;z-index:10000;';
-    el.innerHTML = '<div><h2 style="margin-bottom:12px;">Chat unavailable</h2><p style="opacity:.7;">Could not start a secure session. Please reload the page.</p></div>';
-    document.body.appendChild(el);
-  });
+  // Safety: if auth hangs, boot anyway after 3s using the locally stored id.
+  setTimeout(() => bootOnce(null), 3000);
+} catch (e) {
+  console.warn('Auth init threw:', e);
+  bootOnce(null);
+}
 </script>
 <div class="ad-anchor" id="adAnchor">
     <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-1414495127165303" data-ad-slot="auto" data-ad-format="horizontal"></ins>
