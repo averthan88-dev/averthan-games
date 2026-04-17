@@ -27,7 +27,7 @@
         "messages": {
           ".write": true,
           "$msgId": {
-            ".validate": "newData.hasChildren(['userId','username','text','timestamp'])",
+            ".validate": "newData.hasChildren(['userId','username','text','timestamp']) && ($roomId === 'lobby' || root.child('rooms/'+$roomId+'/members/'+newData.child('userId').val()).exists()) && !root.child('rooms/'+$roomId+'/banned/'+newData.child('userId').val()).exists() && !root.child('rooms/'+$roomId+'/kicked/'+newData.child('userId').val()).exists()",
             "userId":    { ".validate": "newData.isString() && newData.val().length <= 64" },
             "username":  { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30" },
             "text":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 500" },

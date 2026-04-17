@@ -354,6 +354,13 @@ function winGame() {
   if (!prev || moves < prev.moves || (moves === prev.moves && seconds < prev.time)) {
     localStorage.setItem(key, JSON.stringify({ moves, time: seconds }));
   }
+  // Hall of Fame — composite score: difficulty tier + stars, minus a small
+  // penalty for moves/time so two players with equal stars rank by efficiency.
+  const diffBonus = { easy: 0, medium: 5000, hard: 10000 }[difficulty] || 0;
+  const hofScore = Math.max(1, diffBonus + starCount * 1000 - moves * 5 - seconds);
+  if (typeof avReportScore === 'function') {
+    avReportScore('memory-match', hofScore, { difficulty, moves, time: seconds, stars: starCount });
+  }
 
   // Show win
   const winStars = document.getElementById('winStars');

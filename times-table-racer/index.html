@@ -453,6 +453,14 @@ localStorage.setItem(key,finalTime);isPB=true;
 }
 document.getElementById('pb-area').innerHTML=isPB?'<div class="pb-badge">🎉 NEW PERSONAL BEST!</div>':'<div style="font-size:13px;color:#a29bfe;margin-top:4px">Best: '+localStorage.getItem(key)+'s</div>';
 
+// Hall of Fame: reward correctness + streak, bonus for finishing fast.
+const diffBonus = { easy: 0, medium: 2000, hard: 5000 }[difficulty] || 0;
+const timeBonus = Math.max(0, Math.floor(120 - parseFloat(finalTime)) * 10);
+const hofScore = diffBonus + correctCount * 100 + maxStreak * 20 + (playerPos === 1 ? 500 : playerPos === 2 ? 200 : 0) + timeBonus;
+if (typeof avReportScore === 'function') {
+  avReportScore('times-table-racer', hofScore, { difficulty, correct: correctCount, total: totalQuestions, time: finalTime, position: playerPos });
+}
+
 showScreen('results-screen');
 }
 </script>
