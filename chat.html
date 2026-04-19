@@ -587,6 +587,11 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
         </div>
       </div>
       <div class="user-info" style="display:flex;align-items:center;gap:8px;">
+        <button id="videoCallBtn" title="Start / join video call" style="
+          padding:5px 12px;border-radius:8px;border:1px solid rgba(108,92,231,0.4);
+          background:rgba(108,92,231,0.18);color:#a29bfe;font-size:0.75rem;font-weight:700;
+          cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap;
+        ">📹 Video</button>
         <button id="leaveRoomBtn" style="
           display:none;padding:5px 12px;border-radius:8px;border:1px solid rgba(253,121,168,0.4);
           background:rgba(253,121,168,0.15);color:#fd79a8;font-size:0.75rem;font-weight:700;
@@ -595,6 +600,21 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
         <span id="userDisplay"></span>
         <button class="change-name-btn" id="changeNameBtn">Change</button>
       </div>
+    </div>
+
+    <!-- Video call modal (Jitsi Meet iframe) -->
+    <div id="videoCallModal" style="display:none;position:fixed;inset:0;background:rgba(10,10,26,0.95);z-index:10002;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#0a0a1a;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div style="color:#e0e0e0;font-family:'Nunito',sans-serif;font-weight:700;">
+          📹 <span id="videoCallRoomLabel">Video call</span>
+        </div>
+        <button id="videoCallCloseBtn" style="
+          background:rgba(253,121,168,0.2);border:1px solid rgba(253,121,168,0.5);color:#fd79a8;
+          padding:6px 14px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:700;
+          cursor:pointer;font-size:0.85rem;
+        ">✕ End call</button>
+      </div>
+      <div id="videoCallFrameHost" style="flex:1;position:relative;background:#000;"></div>
     </div>
 
     <div class="messages-container" id="messagesContainer"></div>
@@ -2009,6 +2029,79 @@ chatMain.addEventListener('drop', (e) => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && picker.style.display === 'flex') picker.style.display = 'none';
   });
+})();
+
+// ── Video call (Jitsi Meet embed, 1 call per chat room) ─────────────────
+(function setupVideoCall() {
+  const btn = document.getElementById('videoCallBtn');
+  const modal = document.getElementById('videoCallModal');
+  const closeBtn = document.getElementById('videoCallCloseBtn');
+  const frameHost = document.getElementById('videoCallFrameHost');
+  const label = document.getElementById('videoCallRoomLabel');
+  if (!btn || !modal || !closeBtn || !frameHost) return;
+
+  // Derive a stable, unguessable-enough Jitsi room name from our chat room.
+  // Prefix keeps our rooms grouped in Jitsi's namespace.
+  function jitsiRoomFor(chatRoomId) {
+    const clean = String(chatRoomId || 'lobby').replace(/[^a-zA-Z0-9_-]/g, '');
+    return 'averthangames-' + clean;
+  }
+
+  let inCall = false;
+
+  function openCall() {
+    if (inCall || !currentRoomId) return;
+    inCall = true;
+    const jitsiRoom = jitsiRoomFor(currentRoomId);
+    const displayName = encodeURIComponent(currentUser.username || 'Guest');
+    // Jitsi config/interface overrides go in the URL hash.
+    const hash = [
+      'config.prejoinPageEnabled=false',
+      'config.startWithAudioMuted=false',
+      'config.startWithVideoMuted=false',
+      'config.disableDeepLinking=true',
+      'config.subject=' + encodeURIComponent(roomTitle.textContent || 'Chat'),
+      'userInfo.displayName=' + '"' + displayName + '"',
+      'interfaceConfig.MOBILE_APP_PROMO=false',
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_POWERED_BY=false'
+    ].join('&');
+    const src = 'https://meet.jit.si/' + encodeURIComponent(jitsiRoom) + '#' + hash;
+
+    const iframe = document.createElement('iframe');
+    iframe.allow = 'camera; microphone; fullscreen; display-capture; autoplay; clipboard-write';
+    iframe.allowFullscreen = true;
+    iframe.style.cssText = 'width:100%;height:100%;border:0;display:block;';
+    iframe.src = src;
+    frameHost.innerHTML = '';
+    frameHost.appendChild(iframe);
+
+    label.textContent = 'Video call — ' + (roomTitle.textContent || 'Chat');
+    modal.style.display = 'flex';
+
+    // Announce in chat so others know a call is happening and can join.
+    if (db && currentRoomId) {
+      db.ref(`rooms/${currentRoomId}/messages`).push({
+        userId: currentUser.userId,
+        username: currentUser.username,
+        text: '📹 ' + (currentUser.username || 'Someone') + ' started a video call — click the 📹 Video button to join.',
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      }).catch(err => console.warn('Announce call failed:', err));
+    }
+  }
+
+  function closeCall() {
+    if (!inCall) return;
+    inCall = false;
+    frameHost.innerHTML = '';
+    modal.style.display = 'none';
+  }
+
+  btn.onclick = openCall;
+  closeBtn.onclick = closeCall;
+  // Keep the call running if the user switches rooms; but if they navigate
+  // away or close the page, Jitsi's iframe will tear down on its own.
+  window.addEventListener('beforeunload', closeCall);
 })();
 
 // Cleanup on leave - remove from all rooms
