@@ -1020,22 +1020,30 @@ function _read(path) {
 }
 
 async function joinRoom(roomId, roomName) {
-  if (_joinInProgress) {
-    console.log('[joinRoom] busy, ignoring click for', roomId);
-    return;
-  }
+  if (_joinInProgress) return;
   _joinInProgress = true;
   const mySeq = ++_joinSeq;
+  const uid = currentUser.userId;
   const commit = () => {
-    if (mySeq !== _joinSeq) { console.log('[joinRoom] superseded, skipping commit for', roomId); return; }
+    if (mySeq !== _joinSeq) return; // a newer click superseded us
     _doJoinRoom(roomId, roomName);
   };
   try {
-    console.log('[joinRoom] start', { roomId, from: currentRoomId, uid: currentUser.userId });
+    // Already in this room? no-op.
     if (roomId === currentRoomId) return;
+
+    // Lobby is always open — instant.
     if (roomId === LOBBY_ID) { commit(); return; }
 
-    const uid = currentUser.userId;
+    // Fast path: we already know this is a room the user belongs to.
+    // The rooms listener updates roomOwnerCache in realtime and userRooms
+    // is persisted to localStorage, so these checks don't need a roundtrip.
+    if (roomOwnerCache[roomId] === uid || userRooms.has(roomId)) {
+      commit();
+      return;
+    }
+
+    // Slow path — verify authorization with the server.
     const banned = await _read(`rooms/${roomId}/banned/${uid}`);
     if (banned) { appendSystemMessage('You are banned from that room.'); return; }
 
@@ -1046,7 +1054,6 @@ async function joinRoom(roomId, roomName) {
       _read(`invites/${uid}/${roomId}`),
     ]);
     const isOwner = ownerId === uid;
-    console.log('[joinRoom] auth', { roomId, isOwner, ownerId, member: !!memberEntry, invite: !!invite, kicked: !!kicked });
 
     if (kicked) {
       if (isOwner) {
@@ -1065,7 +1072,7 @@ async function joinRoom(roomId, roomName) {
       return;
     }
 
-    if (isOwner || memberEntry || userRooms.has(roomId)) { commit(); return; }
+    if (isOwner || memberEntry) { commit(); return; }
 
     if (invite) {
       await db.ref(`invites/${uid}/${roomId}`).remove()
