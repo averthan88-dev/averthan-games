@@ -390,6 +390,65 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 }
 .image-modal.show { display: flex; }
 .image-modal img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+.emoji-picker {
+  position: absolute;
+  right: 20px;
+  bottom: 72px;
+  width: 320px;
+  max-height: 340px;
+  background: #1a1a2e;
+  border: 1px solid rgba(108,92,231,0.4);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 100;
+  font-family: 'Nunito', sans-serif;
+}
+.emoji-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+}
+.emoji-tab {
+  flex: 1;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  opacity: 0.55;
+  transition: opacity 0.15s, background 0.15s;
+}
+.emoji-tab:hover { opacity: 0.85; background: rgba(255,255,255,0.04); }
+.emoji-tab.active { opacity: 1; background: rgba(108,92,231,0.25); box-shadow: inset 0 -2px 0 #a29bfe; }
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.emoji-grid button {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 6px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.emoji-grid button:hover { background: rgba(255,255,255,0.08); }
+.emoji-grid button:active { transform: scale(0.85); }
+@media (max-width: 480px) {
+  .emoji-picker { width: calc(100% - 24px); right: 12px; }
+}
 
 /* Modal overlay */
 .modal-overlay {
@@ -543,8 +602,13 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
     <div class="input-bar">
       <button class="attach-btn" id="attachBtn" title="Attach image (or paste / drop)">📎</button>
       <input type="file" id="fileInput" accept="image/*" style="display:none;">
+      <button class="attach-btn" id="emojiBtn" title="Emoji picker">😀</button>
       <input type="text" id="msgInput" placeholder="Type a message… (paste or drop an image)" maxlength="500" autocomplete="off">
       <button class="send-btn" id="sendBtn">Send</button>
+    </div>
+    <div id="emojiPicker" class="emoji-picker" style="display:none;">
+      <div class="emoji-tabs" id="emojiTabs"></div>
+      <div class="emoji-grid" id="emojiGrid"></div>
     </div>
     <div id="dropOverlay" style="display:none;position:absolute;inset:0;background:rgba(108,92,231,0.25);border:2px dashed #a29bfe;border-radius:12px;pointer-events:none;z-index:5;align-items:center;justify-content:center;color:#fff;font-family:'Fredoka One',cursive;font-size:1.2rem;">Drop image to share</div>
   </div>
@@ -1768,6 +1832,182 @@ chatMain.addEventListener('drop', (e) => {
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') modal.classList.remove('show');
+  });
+})();
+
+// ── Emoji picker ─────────────────────────────────────────────────────────
+(function setupEmojiPicker() {
+  const EMOJI_CATS = [
+    { label: '🕒', key: 'recent', items: [] },
+    { label: '😀', key: 'smileys', items: [
+      '😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩',
+      '😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨',
+      '😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕',
+      '🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️',
+      '😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞',
+      '😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👻','👽','👾','🤖'
+    ]},
+    { label: '❤️', key: 'hearts', items: [
+      '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖',
+      '💘','💝','💟','💌','💋','💯','💢','💥','💫','💦','💨','🕳️','💣','💬','👁️‍🗨️','🗨️',
+      '🗯️','💭','💤'
+    ]},
+    { label: '👍', key: 'gestures', items: [
+      '👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐️',
+      '🖖','👋','🤝','🙏','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤳','💪','🦾','🦿',
+      '🦵','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄'
+    ]},
+    { label: '🐶', key: 'animals', items: [
+      '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐽','🐸',
+      '🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺',
+      '🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🦂','🐢','🐍','🦎',
+      '🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅',
+      '🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖',
+      '🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🐇'
+    ]},
+    { label: '🍔', key: 'food', items: [
+      '🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥',
+      '🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠',
+      '🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭',
+      '🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛',
+      '🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦',
+      '🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼',
+      '☕','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾','🧉','🧊'
+    ]},
+    { label: '⚽', key: 'activity', items: [
+      '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍',
+      '🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌',
+      '🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽',
+      '🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹',
+      '🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🪕','🎻','🎲','♟️',
+      '🎯','🎳','🎮','🎰','🧩'
+    ]},
+    { label: '✈️', key: 'travel', items: [
+      '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🛴','🚲','🛵',
+      '🏍️','🛺','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈',
+      '🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','💺','🛰️','🚀','🛸','🚁','🛶','⛵',
+      '🚤','🛥️','🛳️','⛴️','🚢','⚓','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰',
+      '🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺',
+      '🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩',
+      '💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️'
+    ]},
+    { label: '💡', key: 'objects', items: [
+      '⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','🖲️','🕹️','🗜️','💽','💾','💿','📀','📼',
+      '📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🎙️','🎚️','🎛️','🧭',
+      '⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🪔','🧯','🛢️','💸',
+      '💵','💴','💶','💷','💰','💳','💎','⚖️','🪜','🧰','🔧','🔨','⚒️','🛠️','⛏️','🪓',
+      '🪚','🔩','⚙️','🪤','🧱','⛓️','🧲','🔫','💣','🧨','🪃','🔪','🗡️','⚔️','🛡️','🚬',
+      '⚰️','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳️','🩹','🩺','💊','💉','🩸',
+      '🧬','🦠','🧫','🧪','🌡️','🧹','🧺','🧻','🚽','🚰','🚿','🛁','🛀','🧼','🪥','🪒'
+    ]},
+    { label: '🔣', key: 'symbols', items: [
+      '✅','❌','⭕','🛑','⛔','📵','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📛',
+      '⚠️','🚸','🔰','♻️','🟢','🔴','🟠','🟡','🔵','🟣','⚫','⚪','🟤','🔶','🔷','🔸',
+      '🔹','🔺','🔻','💠','🔘','🔳','🔲','◼️','◻️','◾','◽','▪️','▫️','🟥','🟧','🟨',
+      '🟩','🟦','🟪','🟫','⬛','⬜','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️',
+      '〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣'
+    ]}
+  ];
+
+  const MAX_RECENT = 24;
+  const RECENT_KEY = 'av_recentEmojis';
+  const emojiBtn = document.getElementById('emojiBtn');
+  const picker = document.getElementById('emojiPicker');
+  const tabs = document.getElementById('emojiTabs');
+  const grid = document.getElementById('emojiGrid');
+  if (!emojiBtn || !picker) return;
+
+  let activeCat = 'smileys';
+
+  function loadRecent() {
+    try {
+      const r = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+      return Array.isArray(r) ? r : [];
+    } catch (e) { return []; }
+  }
+  function saveRecent(list) {
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, MAX_RECENT))); } catch (e) {}
+  }
+  function pushRecent(emoji) {
+    const current = loadRecent().filter(e => e !== emoji);
+    current.unshift(emoji);
+    saveRecent(current);
+    EMOJI_CATS[0].items = current;
+  }
+
+  function insertAtCursor(input, text) {
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const before = input.value.slice(0, start);
+    const after = input.value.slice(end);
+    input.value = before + text + after;
+    const pos = start + text.length;
+    input.focus();
+    input.setSelectionRange(pos, pos);
+  }
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    const cat = EMOJI_CATS.find(c => c.key === activeCat);
+    if (!cat) return;
+    const items = cat.key === 'recent' ? loadRecent() : cat.items;
+    if (cat.key === 'recent' && items.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;font-size:.85rem;">No recent emojis yet</div>';
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    for (const emoji of items) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = emoji;
+      b.title = emoji;
+      b.onclick = (e) => {
+        e.stopPropagation();
+        insertAtCursor(msgInput, emoji);
+        pushRecent(emoji);
+        if (activeCat === 'recent') renderGrid();
+      };
+      frag.appendChild(b);
+    }
+    grid.appendChild(frag);
+  }
+
+  function renderTabs() {
+    tabs.innerHTML = '';
+    for (const cat of EMOJI_CATS) {
+      const t = document.createElement('button');
+      t.type = 'button';
+      t.className = 'emoji-tab' + (cat.key === activeCat ? ' active' : '');
+      t.textContent = cat.label;
+      t.title = cat.key;
+      t.onclick = (e) => {
+        e.stopPropagation();
+        activeCat = cat.key;
+        renderTabs();
+        renderGrid();
+      };
+      tabs.appendChild(t);
+    }
+  }
+
+  function togglePicker() {
+    if (picker.style.display === 'flex') { picker.style.display = 'none'; return; }
+    EMOJI_CATS[0].items = loadRecent();
+    if (EMOJI_CATS[0].items.length > 0 && activeCat === 'smileys') activeCat = 'recent';
+    renderTabs();
+    renderGrid();
+    picker.style.display = 'flex';
+  }
+
+  emojiBtn.onclick = (e) => { e.stopPropagation(); togglePicker(); };
+  picker.onclick = (e) => e.stopPropagation();
+  document.addEventListener('click', (e) => {
+    if (picker.style.display === 'flex' && !picker.contains(e.target) && e.target !== emojiBtn) {
+      picker.style.display = 'none';
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && picker.style.display === 'flex') picker.style.display = 'none';
   });
 })();
 
