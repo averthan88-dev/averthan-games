@@ -359,6 +359,37 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
 }
 .send-btn:hover { opacity: 0.9; }
 .send-btn:active { transform: scale(0.95); }
+.attach-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e0e0e0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+.attach-btn:hover { background: rgba(108,92,231,0.2); border-color: rgba(108,92,231,0.4); }
+.attach-btn:active { transform: scale(0.95); }
+.attach-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.bubble img.chat-image {
+  max-width: 260px;
+  max-height: 320px;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  display: block;
+  cursor: zoom-in;
+  background: rgba(0,0,0,0.3);
+}
+.image-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none;
+  align-items: center; justify-content: center; z-index: 10001; cursor: zoom-out;
+  padding: 20px;
+}
+.image-modal.show { display: flex; }
+.image-modal img { max-width: 100%; max-height: 100%; border-radius: 8px; }
 
 /* Modal overlay */
 .modal-overlay {
@@ -510,9 +541,12 @@ h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
     <div class="messages-container" id="messagesContainer"></div>
 
     <div class="input-bar">
-      <input type="text" id="msgInput" placeholder="Type a message..." maxlength="500" autocomplete="off">
+      <button class="attach-btn" id="attachBtn" title="Attach image (or paste / drop)">📎</button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none;">
+      <input type="text" id="msgInput" placeholder="Type a message… (paste or drop an image)" maxlength="500" autocomplete="off">
       <button class="send-btn" id="sendBtn">Send</button>
     </div>
+    <div id="dropOverlay" style="display:none;position:absolute;inset:0;background:rgba(108,92,231,0.25);border:2px dashed #a29bfe;border-radius:12px;pointer-events:none;z-index:5;align-items:center;justify-content:center;color:#fff;font-family:'Fredoka One',cursive;font-size:1.2rem;">Drop image to share</div>
   </div>
 </div>
 
@@ -1204,9 +1238,19 @@ function appendMessage(msg) {
   const time = msg.timestamp ? new Date(msg.timestamp) : new Date();
   const hh = String(time.getHours()).padStart(2,'0');
   const mm = String(time.getMinutes()).padStart(2,'0');
+  // Build bubble: image (if any) and/or text
+  let bubbleHtml = '';
+  if (msg.imageUrl && typeof msg.imageUrl === 'string' &&
+      (msg.imageUrl.startsWith('https://') || msg.imageUrl.startsWith('data:image/'))) {
+    bubbleHtml += `<img class="chat-image" src="${escapeHtml(msg.imageUrl)}" alt="Shared image" loading="lazy">`;
+  }
+  if (msg.text) {
+    bubbleHtml += `<div>${escapeHtml(msg.text)}</div>`;
+  }
+  if (!bubbleHtml) bubbleHtml = '<em style="opacity:.5">(empty)</em>';
   div.innerHTML = `
     <div class="meta"><span class="msg-user">${escapeHtml(msg.username)}</span><span class="msg-time">${hh}:${mm}</span></div>
-    <div class="bubble">${escapeHtml(msg.text)}</div>
+    <div class="bubble">${bubbleHtml}</div>
   `;
   messagesContainer.appendChild(div);
   // Auto-scroll
@@ -1564,6 +1608,168 @@ function sendMessage() {
 }
 sendBtn.onclick = sendMessage;
 msgInput.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+
+// ── Image sharing (file picker, clipboard paste, drag-and-drop) ──────────
+// We don't have Firebase Storage on this project, so images are resized
+// client-side and embedded inline as data-URL strings on the message.
+const IMAGE_INPUT_MAX_BYTES = 8 * 1024 * 1024;   // reject obviously-huge inputs
+const IMAGE_ENCODED_MAX_BYTES = 260000;          // cap on the stored data URL (~195 KB raw)
+const IMAGE_RESIZE_MAX_EDGE = 900;               // shrink so largest side ≤ 900 px
+const attachBtn = document.getElementById('attachBtn');
+const fileInput = document.getElementById('fileInput');
+const dropOverlay = document.getElementById('dropOverlay');
+const chatMain = document.querySelector('.chat-main') || document.body;
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read-failed'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('decode-failed'));
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function resizeToDataUrl(img, maxEdge, quality) {
+  const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  // White backdrop so transparent PNGs render cleanly as JPEG
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+async function uploadAndSendImage(file) {
+  if (_isBanned) return;
+  if (!file || !file.type.startsWith('image/')) {
+    appendSystemMessage('Only images can be shared.');
+    return;
+  }
+  if (file.size > IMAGE_INPUT_MAX_BYTES) {
+    appendSystemMessage('Image too large — max 8 MB before resize.');
+    return;
+  }
+  if (!currentRoomId) return;
+  const now = Date.now();
+  if (now - _lastSendAt < MSG_COOLDOWN_MS) return;
+  _lastSendAt = now;
+
+  attachBtn.disabled = true;
+  const origIcon = attachBtn.textContent;
+  attachBtn.textContent = '⏳';
+  try {
+    const img = await loadImageFromFile(file);
+    // Try progressively lower quality until it fits the storage cap.
+    let dataUrl = null;
+    for (const q of [0.8, 0.7, 0.55, 0.4, 0.3]) {
+      const candidate = resizeToDataUrl(img, IMAGE_RESIZE_MAX_EDGE, q);
+      if (candidate.length <= IMAGE_ENCODED_MAX_BYTES) { dataUrl = candidate; break; }
+      dataUrl = candidate;
+    }
+    // Last-ditch: if still too big, shrink the edge instead.
+    if (dataUrl.length > IMAGE_ENCODED_MAX_BYTES) {
+      dataUrl = resizeToDataUrl(img, 600, 0.5);
+    }
+    if (dataUrl.length > IMAGE_ENCODED_MAX_BYTES) {
+      appendSystemMessage('Image too complex to compress — try a smaller screenshot.');
+      _lastSendAt = 0;
+      return;
+    }
+    await db.ref(`rooms/${currentRoomId}/messages`).push({
+      userId: currentUser.userId,
+      username: currentUser.username,
+      text: '',
+      imageUrl: dataUrl,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  } catch (err) {
+    console.warn('Image send failed:', err);
+    appendSystemMessage('Image failed to send — ' + (err && err.message ? err.message : 'try again.'));
+    _lastSendAt = 0;
+  } finally {
+    attachBtn.textContent = origIcon;
+    attachBtn.disabled = false;
+  }
+}
+
+// File picker
+attachBtn.onclick = () => fileInput.click();
+fileInput.onchange = (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) uploadAndSendImage(f);
+  fileInput.value = ''; // allow re-picking same file
+};
+
+// Clipboard paste (e.g. screenshots)
+msgInput.addEventListener('paste', (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (const it of items) {
+    if (it.type && it.type.startsWith('image/')) {
+      e.preventDefault();
+      const f = it.getAsFile();
+      if (f) uploadAndSendImage(f);
+      return;
+    }
+  }
+});
+
+// Drag and drop onto the chat area
+let _dragDepth = 0;
+function hasImage(dt) {
+  if (!dt) return false;
+  if (dt.types && [...dt.types].includes('Files')) return true;
+  return false;
+}
+chatMain.addEventListener('dragenter', (e) => {
+  if (!hasImage(e.dataTransfer)) return;
+  e.preventDefault();
+  _dragDepth++;
+  dropOverlay.style.display = 'flex';
+});
+chatMain.addEventListener('dragover', (e) => {
+  if (hasImage(e.dataTransfer)) e.preventDefault();
+});
+chatMain.addEventListener('dragleave', () => {
+  _dragDepth = Math.max(0, _dragDepth - 1);
+  if (_dragDepth === 0) dropOverlay.style.display = 'none';
+});
+chatMain.addEventListener('drop', (e) => {
+  _dragDepth = 0;
+  dropOverlay.style.display = 'none';
+  if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) uploadAndSendImage(f);
+  else appendSystemMessage('Only images can be dropped here.');
+});
+
+// Lightbox for enlarging chat images
+(function setupImageLightbox() {
+  const modal = document.createElement('div');
+  modal.className = 'image-modal';
+  modal.innerHTML = '<img alt="">';
+  document.body.appendChild(modal);
+  modal.onclick = () => modal.classList.remove('show');
+  document.addEventListener('click', (e) => {
+    const img = e.target.closest && e.target.closest('img.chat-image');
+    if (!img) return;
+    modal.querySelector('img').src = img.src;
+    modal.classList.add('show');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') modal.classList.remove('show');
+  });
+})();
 
 // Cleanup on leave - remove from all rooms
 window.addEventListener('beforeunload', () => {

@@ -27,11 +27,12 @@
         "messages": {
           ".write": true,
           "$msgId": {
-            ".validate": "newData.hasChildren(['userId','username','text','timestamp']) && ($roomId === 'lobby' || root.child('rooms/'+$roomId+'/members/'+newData.child('userId').val()).exists()) && !root.child('rooms/'+$roomId+'/banned/'+newData.child('userId').val()).exists() && !root.child('rooms/'+$roomId+'/kicked/'+newData.child('userId').val()).exists()",
+            ".validate": "newData.hasChildren(['userId','username','text','timestamp']) && (newData.child('text').val().length > 0 || (newData.hasChild('imageUrl') && newData.child('imageUrl').val().length > 0)) && ($roomId === 'lobby' || root.child('rooms/'+$roomId+'/members/'+newData.child('userId').val()).exists()) && !root.child('rooms/'+$roomId+'/banned/'+newData.child('userId').val()).exists() && !root.child('rooms/'+$roomId+'/kicked/'+newData.child('userId').val()).exists()",
             "userId":    { ".validate": "newData.isString() && newData.val().length <= 64" },
             "username":  { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30" },
-            "text":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 500" },
+            "text":      { ".validate": "newData.isString() && newData.val().length <= 500" },
             "timestamp": { ".validate": "newData.val() == now" },
+            "imageUrl":  { ".validate": "newData.isString() && newData.val().length <= 300000 && (newData.val().beginsWith('data:image/jpeg;base64,') || newData.val().beginsWith('data:image/png;base64,') || newData.val().beginsWith('data:image/webp;base64,') || newData.val().beginsWith('https://firebasestorage.googleapis.com/') || newData.val().beginsWith('https://storage.googleapis.com/'))" },
             "$other":    { ".validate": false }
           }
         },
