@@ -736,7 +736,7 @@ checkBanOnLoad();
 
 // User management
 let currentUser = { userId: null, username: null };
-let currentRoomId = LOBBY_ID;
+let currentRoomId = null; // set by _doJoinRoom on first successful join
 let messageListener = null;
 let membersListener = null;
 let roomsListener = null;
