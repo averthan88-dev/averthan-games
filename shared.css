@@ -1,7 +1,37 @@
 /* Averthan Games — shared ad-container styles */
-.ad-container { text-align: center; margin: 15px auto; max-width: 728px; min-height: 90px; z-index: 10; position: relative; overflow: hidden; }
-.ad-container.ad-top { margin-top: 10px; margin-bottom: 5px; }
-.ad-container.ad-mid { margin: 20px auto; }
+/* Default: ad containers are collapsed (no reserved empty space).
+   They only appear when AdSense actually fills the slot, signalled via
+   data-ad-status="filled" on the <ins> element. */
+
+.ad-container {
+  display: none;
+  text-align: center;
+  margin: 15px auto;
+  max-width: 728px;
+  z-index: 10;
+  position: relative;
+  overflow: hidden;
+}
+.ad-container.ad-top    { margin-top: 10px; margin-bottom: 5px; }
+.ad-container.ad-mid    { margin: 20px auto; }
 .ad-container.ad-bottom { margin-top: 15px; margin-bottom: 10px; }
-.ad-anchor { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; text-align: center; background: rgba(10,10,26,0.95); padding: 5px 0; }
-@media (max-width: 468px) { .ad-container { min-height: 50px; } }
+
+.ad-anchor {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0;
+  width: 100%;
+  z-index: 9999;
+  text-align: center;
+  background: rgba(10,10,26,0.95);
+  padding: 0;
+}
+
+/* Show the container only when AdSense has served a real ad. */
+.ad-container:has(ins.adsbygoogle[data-ad-status="filled"]) { display: block; }
+.ad-anchor:has(ins.adsbygoogle[data-ad-status="filled"])    { display: block; padding: 5px 0; }
+
+/* JS fallback for browsers without :has() support. shared-ad-fallback.js
+   adds .av-ad-filled once the <ins> reports a filled status. */
+.ad-container.av-ad-filled { display: block; }
+.ad-anchor.av-ad-filled    { display: block; padding: 5px 0; }
