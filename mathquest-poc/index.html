@@ -44,9 +44,13 @@
     min-height: calc(100vh - var(--ad-anchor-height, 0px));
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    /* 'safe center' centers on tall viewports but falls back to flex-start
+       when content is taller than the viewport, so the top of the menu
+       is always reachable by scroll. */
+    justify-content: safe center;
     align-items: center;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .container {
