@@ -531,7 +531,7 @@ function genPatternQuestion(){
       answer={shape:s2,color:c2};
     }
     options=[answer];
-    while(options.length<4){
+    for(let guard=0;options.length<4&&guard<200;guard++){
       const o={shape:pick(PAT_SHAPES),color:pick(PAT_COLORS)};
       if(!options.some(op=>op.shape===o.shape&&op.color===o.color))options.push(o);
     }
@@ -559,7 +559,7 @@ function genPatternQuestion(){
       answer={shape:shapes[2],color:colors[2]};
     }
     options=[answer];
-    while(options.length<4){
+    for(let guard=0;options.length<4&&guard<200;guard++){
       const o={shape:pick(PAT_SHAPES),color:pick(PAT_COLORS)};
       if(!options.some(op=>op.shape===o.shape&&op.color===o.color))options.push(o);
     }
@@ -769,7 +769,6 @@ initProfile();
   document.addEventListener('DOMContentLoaded',updateAdPadding);
   window.addEventListener('load',updateAdPadding);
   window.addEventListener('resize',updateAdPadding);
-  var polls=0,iv=setInterval(function(){updateAdPadding();if(++polls>=20)clearInterval(iv);},500);
   if(window.ResizeObserver){
     var ro=new ResizeObserver(updateAdPadding);
     var el=document.querySelector('.ad-anchor');

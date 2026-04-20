@@ -235,34 +235,60 @@ cookieEl.addEventListener('click', (e) => {
   updateDisplay();
 });
 
-// Shop
+// Shop — build the static DOM once, then update affordability classes in
+// place every tick instead of rebuilding 10+ nodes 20 times per second.
+const _shopNodes = []; // { div, countEl, costEl, handler }
+
 function renderShop() {
   listEl.innerHTML = '';
-  upgrades.forEach((u,i) => {
-    const cost = getCost(i);
-    const canAfford = state.cookies >= cost;
-    const isClickUpgrade = u.clickMult && state.owned[i] > 0;
+  _shopNodes.length = 0;
+  upgrades.forEach((u, i) => {
     const div = document.createElement('div');
-    div.className = 'upgrade' + (canAfford && !isClickUpgrade ? '' : ' cant-afford');
+    div.className = 'upgrade';
     div.innerHTML = `
       <div class="u-top">
         <span><span class="u-icon">${u.icon}</span><span class="u-name">${u.name}</span></span>
-        <span class="u-count">${state.owned[i]}</span>
+        <span class="u-count"></span>
       </div>
       <div class="u-desc">${u.desc}</div>
-      <div class="u-cost">${isClickUpgrade ? '✅ Owned' : '🍪 ' + fmt(cost)}</div>
+      <div class="u-cost"></div>
     `;
-    if(canAfford && !isClickUpgrade) {
-      div.addEventListener('click', () => {
-        initAudio(); buySound();
-        state.cookies -= cost;
-        state.owned[i]++;
-        calcCPS(); calcClickPower();
-        renderShop(); updateDisplay();
-      });
-    }
+    const countEl = div.querySelector('.u-count');
+    const costEl  = div.querySelector('.u-cost');
+    const handler = () => {
+      const cost = getCost(i);
+      const isClickUpgrade = upgrades[i].clickMult && state.owned[i] > 0;
+      if (isClickUpgrade || state.cookies < cost) return;
+      initAudio(); buySound();
+      state.cookies -= cost;
+      state.owned[i]++;
+      calcCPS(); calcClickPower();
+      refreshShopRow(i);
+      updateDisplay();
+    };
+    div.addEventListener('click', handler);
     listEl.appendChild(div);
+    _shopNodes.push({ div, countEl, costEl });
+    refreshShopRow(i);
   });
+}
+
+function refreshShopRow(i) {
+  const node = _shopNodes[i];
+  if (!node) return;
+  const u = upgrades[i];
+  const cost = getCost(i);
+  const isClickUpgrade = u.clickMult && state.owned[i] > 0;
+  const canAfford = !isClickUpgrade && state.cookies >= cost;
+  node.countEl.textContent = state.owned[i];
+  const nextCostText = isClickUpgrade ? '✅ Owned' : '🍪 ' + fmt(cost);
+  if (node.costEl.textContent !== nextCostText) node.costEl.textContent = nextCostText;
+  const wantClass = 'upgrade' + (canAfford ? '' : ' cant-afford');
+  if (node.div.className !== wantClass) node.div.className = wantClass;
+}
+
+function refreshShopAffordability() {
+  for (let i = 0; i < upgrades.length; i++) refreshShopRow(i);
 }
 
 // Golden cookie
@@ -360,7 +386,7 @@ setInterval(()=>{
     state.totalCookies += earned;
     checkMilestones();
     updateDisplay();
-    renderShop();
+    refreshShopAffordability();
   }
 }, 50);
 
@@ -398,7 +424,6 @@ calcCPS(); calcClickPower(); renderShop(); updateDisplay(); scheduleGolden(); an
   document.addEventListener('DOMContentLoaded',updateAdPadding);
   window.addEventListener('load',updateAdPadding);
   window.addEventListener('resize',updateAdPadding);
-  var polls=0,iv=setInterval(function(){updateAdPadding();if(++polls>=20)clearInterval(iv);},500);
   if(window.ResizeObserver){
     var ro=new ResizeObserver(updateAdPadding);
     var el=document.querySelector('.ad-anchor');

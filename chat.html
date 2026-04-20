@@ -2216,12 +2216,6 @@ try {
   window.addEventListener('load', updateAdPadding);
   window.addEventListener('resize', updateAdPadding);
 
-  // Poll for the first 10 seconds to catch lazy-loaded ads
-  var polls = 0;
-  var interval = setInterval(function() {
-    updateAdPadding();
-    if (++polls >= 20) clearInterval(interval); // stop after 10s
-  }, 500);
 
   // ResizeObserver on both the container and ins element
   var ro = null;

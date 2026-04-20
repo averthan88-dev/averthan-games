@@ -753,7 +753,6 @@ function spawnParticles(x,y,color){
   document.addEventListener('DOMContentLoaded',updateAdPadding);
   window.addEventListener('load',updateAdPadding);
   window.addEventListener('resize',updateAdPadding);
-  var polls=0,iv=setInterval(function(){updateAdPadding();if(++polls>=20)clearInterval(iv);},500);
   if(window.ResizeObserver){
     var ro=new ResizeObserver(updateAdPadding);
     var el=document.querySelector('.ad-anchor');

@@ -2137,12 +2137,15 @@ function rand(min, max) {
 
 function generateChoices(answer) {
   const choices = new Set([answer]);
-  while (choices.size < 4) {
+  for (let guard = 0; choices.size < 4 && guard < 200; guard++) {
     let offset = rand(1, Math.max(5, Math.floor(Math.abs(answer) * 0.4)));
     let wrong = answer + (Math.random() < 0.5 ? offset : -offset);
     if (wrong < 0 && difficulty !== 'expert') wrong = Math.abs(wrong);
     if (wrong !== answer) choices.add(wrong);
   }
+  // Fallback: if we couldn't find 4 distinct neighbours (e.g. answer=0), pad.
+  let pad = 1;
+  while (choices.size < 4) { if (!choices.has(answer + pad)) choices.add(answer + pad); pad++; }
   return shuffle([...choices]);
 }
 
@@ -2469,7 +2472,6 @@ function endGame() {
   document.addEventListener('DOMContentLoaded',updateAdPadding);
   window.addEventListener('load',updateAdPadding);
   window.addEventListener('resize',updateAdPadding);
-  var polls=0,iv=setInterval(function(){updateAdPadding();if(++polls>=20)clearInterval(iv);},500);
   if(window.ResizeObserver){
     var ro=new ResizeObserver(updateAdPadding);
     var el=document.querySelector('.ad-anchor');
