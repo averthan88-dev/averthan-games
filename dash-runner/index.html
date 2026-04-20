@@ -895,12 +895,29 @@ canvas.addEventListener('touchstart', handleDown, { passive: false });
 canvas.addEventListener('touchend', handleUp, { passive: false });
 
 // --- Main Loop ---
-function loop() {
-  update();
+// Fixed 60Hz physics step so high-refresh monitors don't run the game
+// 2-4× faster. Render still runs every animation frame for smoothness.
+const FIXED_DT_MS = 1000/60;
+const MAX_CATCHUP_STEPS = 5;
+let _lastTime = performance.now();
+let _accum = 0;
+function loop(now) {
+  if (typeof now !== 'number') now = performance.now();
+  let delta = now - _lastTime;
+  _lastTime = now;
+  if (delta > 250) delta = FIXED_DT_MS; // tab was backgrounded
+  _accum += delta;
+  let steps = 0;
+  while (_accum >= FIXED_DT_MS && steps < MAX_CATCHUP_STEPS) {
+    update();
+    _accum -= FIXED_DT_MS;
+    steps++;
+  }
+  if (steps >= MAX_CATCHUP_STEPS) _accum = 0;
   draw();
   requestAnimationFrame(loop);
 }
-loop();
+requestAnimationFrame(loop);
 </script>
 <script src="../av-scores.js"></script>
 <div class="ad-anchor">
