@@ -145,13 +145,21 @@ return FRUIT_TYPES[0];
 // ===== SPAWN =====
 function spawnFruit(){
 const type=pickFruit();
-const side=Math.random();
 const x=W*.15+Math.random()*W*.7;
-const vx=(Math.random()-.5)*4;
-const vy=-(H*.018+Math.random()*H*.008);
 const r=type.radius*(W<500?.7:1);
-fruits.push({type,x,y:H+r+10,vx,vy,r,rot:0,rotSpeed:(Math.random()-.5)*.1,sliced:false,missed:false,age:0,
-halfL:null,halfR:null,sliceAngle:0,fadeOut:0});
+// Size-based physics: a watermelon feels heavier than a banana.
+// sizeFactor ~ 0.8 (smallest fruit) to 1.4 (watermelon on desktop).
+const sizeFactor=r/28;
+// Big fruit launches slower (lower arc); small fruit pops up fast and high.
+const vy=-(H*.014+Math.random()*H*.006)/Math.sqrt(sizeFactor);
+// Big fruit drifts horizontally less (heavier = less tumble).
+const vx=(Math.random()-.5)*3/sizeFactor;
+// Rotation slower for big fruit.
+const rotSpeed=(Math.random()-.5)*.08/sizeFactor;
+// Per-fruit gravity: slightly softer on big fruit so they don't fall like bricks.
+const fruitGravity=0.28*(1.05-Math.min(0.25,(sizeFactor-1)*0.15));
+fruits.push({type,x,y:H+r+10,vx,vy,r,rot:0,rotSpeed,sliced:false,missed:false,age:0,
+halfL:null,halfR:null,sliceAngle:0,fadeOut:0,gravity:fruitGravity});
 }
 
 // ===== PARTICLES =====
@@ -401,7 +409,7 @@ difficulty=1;spawnTimer=0;frameCount=0;
 if(m==='zen'){timerMax=90;timer=90*60}
 else if(m==='arcade'){timerMax=60;timer=60*60}
 else{timer=0;timerMax=0}
-spawnInterval=m==='arcade'?40:55;
+spawnInterval=m==='arcade'?55:80;
 document.getElementById('menu').style.display='none';
 document.getElementById('gameover').style.display='none';
 document.getElementById('hud').style.display='block';
@@ -450,14 +458,14 @@ if(timer<=0){gameOver();return}
 }
 // Difficulty ramp
 difficulty=1+Math.floor(score/200)*.15;
-// Spawn
+// Spawn — slower cadence so the screen doesn't feel frantic.
 spawnTimer--;
 if(spawnTimer<=0){
-const count=Math.random()<.3+difficulty*.05?2:1;
+const count=Math.random()<.18+difficulty*.04?2:1;
 for(let i=0;i<count;i++)spawnFruit();
-spawnInterval=Math.max(20,55-difficulty*3);
-if(mode==='arcade')spawnInterval=Math.max(15,35-difficulty*3);
-spawnTimer=spawnInterval+Math.random()*20;
+spawnInterval=Math.max(30,80-difficulty*3);
+if(mode==='arcade')spawnInterval=Math.max(22,55-difficulty*3);
+spawnTimer=spawnInterval+Math.random()*25;
 }
 // Fruits physics
 for(const f of fruits){
@@ -465,7 +473,7 @@ if(f.sliced){
 f.fadeOut+=.025;
 continue;
 }
-f.vy+=.35;
+f.vy+=f.gravity;
 f.x+=f.vx;
 f.y+=f.vy;
 f.rot+=f.rotSpeed;
